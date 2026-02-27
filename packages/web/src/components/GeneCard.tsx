@@ -1,6 +1,25 @@
 import { Link } from 'react-router-dom';
 import type { Gene } from '../api/client';
 
+export const ICON_MAP: Record<string, string> = {
+  'search-code': '🔍',
+  'test-tubes': '🧪',
+  brain: '🧠',
+  sparkles: '✨',
+  broom: '🧹',
+  'message-circle': '💬',
+  'bar-chart': '📊',
+  zap: '⚡',
+  shield: '🛡️',
+  palette: '🎨',
+  terminal: '💻',
+  book: '📖',
+  rocket: '🚀',
+  gear: '⚙️',
+  lightbulb: '💡',
+  dna: '🧬',
+};
+
 const CATEGORY_COLORS: Record<string, string> = {
   development: 'bg-blue-50 text-blue-700',
   efficiency: 'bg-green-50 text-green-700',
@@ -22,7 +41,7 @@ export default function GeneCard({ gene }: { gene: Gene }) {
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-xl">{gene.icon ? `${gene.icon}` : '🧬'}</span>
+          <span className="text-xl">{(gene.icon && ICON_MAP[gene.icon]) || '🧬'}</span>
           <h3 className="font-semibold text-gray-900 group-hover:text-primary transition">
             {gene.name}
           </h3>

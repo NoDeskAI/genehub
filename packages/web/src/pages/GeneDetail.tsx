@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { type Gene, type GeneVersion, getGene, getGeneVersions } from '../api/client';
+import { ICON_MAP } from '../components/GeneCard';
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -112,7 +113,7 @@ export default function GeneDetail() {
         <div className="lg:col-span-2 space-y-6">
           {/* Header */}
           <div className="flex items-start gap-4">
-            <span className="text-4xl">{gene.icon || '🧬'}</span>
+            <span className="text-4xl">{(gene.icon && ICON_MAP[gene.icon]) || '🧬'}</span>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{gene.name}</h1>
               <p className="text-muted text-sm mt-1">
