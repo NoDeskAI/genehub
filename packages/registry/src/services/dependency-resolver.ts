@@ -100,7 +100,10 @@ async function resolveRecursive(
     throw AppError.dependencyResolveFailed(`${slug} 没有满足 ${versionRange} 的版本`);
   }
 
-  const versionRow = versions.find((v) => v.version === matchedVersion)!;
+  const versionRow = versions.find((v) => v.version === matchedVersion);
+  if (!versionRow) {
+    throw AppError.dependencyResolveFailed(`${slug}@${matchedVersion} 版本数据异常`);
+  }
 
   const manifest = versionRow.manifest as Record<string, unknown>;
   const deps = (manifest.dependencies ?? []) as Array<{

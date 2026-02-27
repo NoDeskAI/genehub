@@ -229,7 +229,7 @@ export class LearningEngine {
       mode: mode ?? 'learn',
       decision,
       content: body || undefined,
-      self_eval: get('self_eval') ? Number.parseFloat(get('self_eval')!) : undefined,
+      self_eval: get('self_eval') ? Number.parseFloat(get('self_eval') as string) : undefined,
       reason: get('reason'),
       completed_at: new Date().toISOString(),
     };
