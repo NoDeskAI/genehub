@@ -41,6 +41,32 @@ GeneHub 是 NoDeskClaw 生态的核心基因注册中心（Gene Registry），�
 - pip 兼容：`pip install genehub-<slug>`
 - HTTP API：程序化调用（ClawBuddy 等平台对接）
 
+## 官方基因仓库
+
+**🌐 [genehub.nodeskai.com](https://genehub.nodeskai.com)**
+
+官方基因仓库是 GeneHub 的中心化基因市场，你可以在上面：
+
+- 浏览和搜索所有已发布的基因
+- 查看基因详情、版本历史和学习配置
+- 获取一键安装命令
+
+所有 CLI 命令默认连接官方仓库，无需额外配置。
+
+## 安装
+
+```bash
+npm install -g @nodeskai/genehub
+```
+
+安装后即可使用 `genehub` 命令。相关 npm 包：
+
+| 包名 | 说明 |
+|---|---|
+| [`@nodeskai/genehub`](https://www.npmjs.com/package/@nodeskai/genehub) | CLI 命令行工具 |
+| [`@nodeskai/genehub-sdk`](https://www.npmjs.com/package/@nodeskai/genehub-sdk) | TypeScript SDK（Adapters + Learning Engine） |
+| [`@nodeskai/genehub-types`](https://www.npmjs.com/package/@nodeskai/genehub-types) | 共享类型定义与 Zod Schemas |
+
 ## 快速开始
 
 ### 开发环境搭建
@@ -115,19 +141,19 @@ pnpm test
 
 ```
 genehub/
-├── docs/                           # 设计文档
-│   ├── architecture.md             # 架构设计
-│   └── gene-learning-protocol.md   # 标准学习协议规范
 ├── packages/
 │   ├── types/                      # @nodeskai/genehub-types - 共享类型与 Zod schemas
 │   ├── registry/                   # @nodeskai/genehub-registry - Gene Registry Service (Hono + Drizzle)
 │   ├── sdk/typescript/             # @nodeskai/genehub-sdk - TypeScript SDK + Adapters
-│   └── cli/                        # genehub - 命令行工具 (Commander.js)
+│   ├── cli/                        # @nodeskai/genehub - 命令行工具 (Commander.js)
+│   └── web/                        # 基因仓库 Web UI (React + Vite + Tailwind)
 ├── genes/                          # 官方基因库
 │   └── skills/<gene-slug>/
 │       ├── gene.yaml               # Gene Manifest
 │       └── SKILL.md                # 技能内容
-├── package.json                    # monorepo 根配置 (pnpm workspace)
+├── deploy/k8s/                     # Kubernetes 部署清单
+├── docs/                           # 设计文档
+├── Dockerfile                      # 多阶段构建 (Registry + Web)
 ├── docker-compose.yml              # PostgreSQL 本地开发
 └── biome.json                      # Lint / Format 配置
 ```
