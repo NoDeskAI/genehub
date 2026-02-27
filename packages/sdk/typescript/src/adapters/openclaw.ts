@@ -11,7 +11,7 @@ import type {
 } from '@genehub/types';
 import { BaseAdapter } from './base.js';
 
-const DEFAULT_SKILLS_DIR = join(homedir(), '.openclaw', 'skills');
+const DEFAULT_SKILLS_DIR = join(homedir(), '.openclaw', 'workspace', 'skills');
 const DEFAULT_CONFIG_PATH = join(homedir(), '.openclaw', 'openclaw.json');
 
 export class OpenClawAdapter extends BaseAdapter {
@@ -27,7 +27,7 @@ export class OpenClawAdapter extends BaseAdapter {
 
   async detect(): Promise<boolean> {
     try {
-      await stat(join(homedir(), '.openclaw'));
+      await stat(join(homedir(), '.openclaw', 'openclaw.json'));
       return true;
     } catch {
       return false;
