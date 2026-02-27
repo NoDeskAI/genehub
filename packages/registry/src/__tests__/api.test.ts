@@ -2,12 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { app } from '../app.js';
 
 describe('Registry API', () => {
-  it('GET / 应返回服务信息', async () => {
-    const res = await app.request('/');
+  it('GET /api/info 应返回服务信息', async () => {
+    const res = await app.request('/api/info');
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.name).toBe('GeneHub Registry');
     expect(json.version).toBe('0.1.0');
+  });
+
+  it('GET /api/health 应返回健康状态', async () => {
+    const res = await app.request('/api/health');
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.status).toBe('ok');
   });
 
   it.skipIf(!process.env.DATABASE_URL)(
