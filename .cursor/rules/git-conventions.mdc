@@ -1,0 +1,79 @@
+---
+description: Git 提交规范
+globs: 
+alwaysApply: true
+---
+
+# Git 提交规范
+
+## 自动提交
+
+**每次完成一个有意义的改动后，必须主动提交 commit，不要等用户提醒。**
+
+完成改动 → 立刻 git add + commit → 然后才回复用户。
+
+触发提交的时机：
+- 修复了一个 bug
+- 完成了一个功能
+- 完成了一次重构或优化
+- 修改了配置/规则文件
+- 新增了组件、工具函数等
+- 连续多个小改动后，合并为一次有意义的提交
+
+## Commit Message 格式
+
+```
+<type>(<scope>): <subject>
+```
+
+- 冒号后面有空格
+- subject 必须使用中文
+- scope 选填：`registry` / `cli` / `sdk` / `protocol` / `genes` / `docs` 等
+
+### type 类型
+
+- `feat` - 新功能
+- `fix` - 修复 bug
+- `docs` - 文档
+- `style` - 代码格式（不影响运行）
+- `refactor` - 重构/优化
+- `perf` - 性能优化
+- `test` - 测试
+- `chore` - 构建/工具变动
+- `revert` - 回退
+- `build` - 打包
+
+### 示例
+
+```
+feat(registry): 基因搜索 API 支持标签过滤
+fix(cli): 修复 install 命令依赖解析死循环
+docs(protocol): 补充 nanobot Adapter 映射规则
+chore: 升级 Hono 到 4.x
+```
+
+## 版本号规则
+
+项目版本号格式：`yyyy-MM-dd[-tag]`
+
+- 正式发布：`2026-02-27`
+- 内测：`2026-02-27-alpha`
+- 公测：`2026-02-27-beta`
+- 候选：`2026-02-27-rc.1`
+- 热修复：`2026-02-27-hotfix.1`
+
+Git Tag 加 `v` 前缀：`v2026-02-27`
+
+## 分支策略
+
+- `main`：稳定发布，PR 合入
+- `dev`：开发主分支，PR 合入
+- `feat/<name>`：功能分支，从 dev 拉出
+- `fix/<name>`：修复分支，从 dev 拉出
+- `release/<version>`：发布分支
+
+## 禁止
+
+- 禁止 `Co-authored-by` 署名
+- 禁止提交 `.env`、`node_modules/`、`__pycache__/`、`.venv/`
+- 一次 commit 尽量只做一件事，保持原子性

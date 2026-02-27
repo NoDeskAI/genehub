@@ -1,0 +1,87 @@
+---
+description: 开源项目规范
+globs: 
+alwaysApply: true
+---
+
+# 开源项目规范
+
+## 代码许可
+
+本项目使用 MIT License。所有新文件不需要在头部添加许可声明。
+
+## 公开代码标准
+
+- 不得提交任何密钥、凭证、内部 URL
+- 不得提交调试用的 console.log / print 语句（生产日志除外）
+- 不得包含公司内部基础设施地址（IP / 域名 / 集群名）
+- `.env.example` 只包含变量名和说明，不包含真实值
+
+## 版本号
+
+项目版本号格式：`yyyy-MM-dd[-tag]`
+
+| 格式 | 用途 |
+|------|------|
+| `2026-02-27` | 正式发布 |
+| `2026-02-27-alpha` | 内测 |
+| `2026-02-27-beta` | 公测 |
+| `2026-02-27-rc.1` | 候选 |
+| `2026-02-27-hotfix.1` | 热修复 |
+
+Git Tag 加 `v` 前缀。package.json 中使用不带 `v` 的版本号。
+
+基因版本号（Gene Manifest 中的 `version`）使用 SemVer（`1.0.0`），与项目版本号独立。
+
+## CHANGELOG
+
+每次发布版本时更新 `CHANGELOG.md`：
+
+```markdown
+## v2026-02-27
+
+### Added
+- 基因搜索 API 支持标签过滤
+
+### Fixed
+- CLI install 命令依赖解析死循环
+
+### Changed
+- 调整 Gene Manifest 的 config 结构
+```
+
+## Issue / PR
+
+### Issue 标题
+
+`[模块] 描述`：`[registry] 基因搜索不支持模糊匹配`
+
+### PR 标题
+
+同 commit 格式：`feat(registry): 基因搜索 API 支持标签过滤`
+
+### PR 正文
+
+```markdown
+## Summary
+- 简要描述变更
+
+## Test plan
+- 测试方案
+
+Closes #123
+```
+
+## CI 要求
+
+PR 合入前必须通过：
+- lint（Biome / Ruff）
+- 类型检查（tsc / mypy）
+- 单元测试
+- 构建成功
+
+## 依赖管理
+
+- 新增依赖时使用包管理器添加最新版本，不要手写版本号
+- 定期审计依赖安全性
+- 尽量减少依赖数量，优先选择零依赖或轻量库

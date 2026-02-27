@@ -1,0 +1,62 @@
+---
+description: 文档驱动开发工作流
+globs: 
+alwaysApply: true
+---
+
+# 文档驱动开发工作流
+
+## 核心规则
+
+**任何功能实现之前，必须先更新对应的设计文档。** 不允许跳过文档直接写代码。
+
+## 工作流程
+
+1. **接到需求** → 先确认涉及哪些文档
+2. **更新文档** → 在设计文档中补充/修改对应章节
+3. **Review 文档** → 让用户确认文档变更
+4. **再写代码** → 文档确认后才开始实现
+
+## README 规则
+
+**任何新建的目录/项目/模块，必须包含 README。**
+
+- README 至少包含：用途、目录结构、使用方法
+- 已有目录补 README 时，随改动一并提交
+
+## 代码变更必须同步文档
+
+**每次改完代码，在同一轮操作中必须更新所有受影响的文档。**
+
+### docs/ 设计文档对照表
+
+| 变更内容 | 必须更新 |
+|----------|----------|
+| API/路由变更 | `docs/architecture.md` |
+| Gene Manifest 格式变更 | `docs/gene-learning-protocol.md` |
+| 学习/安装协议变更 | `docs/gene-learning-protocol.md` |
+| 数据模型变更 | `docs/architecture.md` |
+| 项目结构变更 | `docs/architecture.md`、`README.md` |
+| 新增适配器 | `docs/architecture.md`、`docs/gene-learning-protocol.md` |
+
+### README 对照表
+
+- **根 README**：整体架构、项目结构变更时更新
+- **packages/registry/README.md**：Registry 变更时更新
+- **packages/cli/README.md**：CLI 变更时更新
+- **packages/sdk/*/README.md**：SDK 变更时更新
+- **子目录 README**：新建目录时必须创建
+
+## 设计文档写作规范
+
+- 重架构轻代码
+- 代码仅用于说明接口签名或数据结构
+- 每个代码块不超过 10 行，只展示关键签名
+- 用架构图、流程图、数据模型表格为主
+
+## 禁止
+
+- 不准跳过文档直接写代码
+- 不准改了代码不更新文档
+- 不准说"后续再更新文档"
+- 不准新建目录不写 README

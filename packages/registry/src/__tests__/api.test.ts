@@ -1,0 +1,33 @@
+import { describe, it, expect } from 'vitest';
+import { app } from '../app.js';
+
+describe('Registry API', () => {
+  it('GET / 应返回服务信息', async () => {
+    const res = await app.request('/');
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.name).toBe('GeneHub Registry');
+    expect(json.version).toBe('0.1.0');
+  });
+
+  it.skipIf(!process.env.DATABASE_URL)(
+    'GET /api/v1/genes/:slug 不存在的基因应返回 404',
+    async () => {
+      const res = await app.request('/api/v1/genes/nonexistent');
+      expect(res.status).toBe(404);
+      const json = await res.json();
+      expect(json.error_code).toBe('gene_not_found');
+    },
+  );
+
+  it('POST /api/v1/genes 非法 manifest 应返回 422', async () => {
+    const res = await app.request('/api/v1/genes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manifest: { slug: 'BAD' } }),
+    });
+    expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.error_code).toBe('gene_manifest_invalid');
+  });
+});

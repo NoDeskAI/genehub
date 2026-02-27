@@ -1,0 +1,31 @@
+{
+  "name": "@genehub/sdk",
+  "version": "0.1.0",
+  "description": "GeneHub TypeScript SDK - API 客户端与产品适配器",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@genehub/types": "workspace:*",
+    "yaml": "^2.7"
+  },
+  "devDependencies": {
+    "tsup": "^8.3",
+    "typescript": "^5.7",
+    "vitest": "^3.0",
+    "@types/node": "^22.0"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,36 @@
+{
+  "name": "@genehub/registry",
+  "version": "0.1.0",
+  "description": "GeneHub Gene Registry Service",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@genehub/types": "workspace:*",
+    "@hono/node-server": "^1.13",
+    "hono": "^4.6",
+    "drizzle-orm": "^0.38",
+    "postgres": "^3.4",
+    "zod": "^3.24"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.30",
+    "tsup": "^8.3",
+    "tsx": "^4.19",
+    "typescript": "^5.7",
+    "vitest": "^3.0",
+    "@types/node": "^22.0"
+  },
+  "license": "MIT"
+}

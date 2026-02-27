@@ -4,10 +4,45 @@ ClawBuddy/
 # Dependencies
 node_modules/
 .venv/
+__pycache__/
+*.pyc
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
 
 # OS
 .DS_Store
+Thumbs.db
 
 # IDE
 .idea/
 .vscode/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+.coverage
+htmlcov/
+
+# Package manager
+pnpm-debug.log*
+.pnpm-store/
+
+# Drizzle migrations (generated)
+packages/registry/drizzle/
+
+# Misc
+*.tgz

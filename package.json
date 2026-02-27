@@ -1,0 +1,23 @@
+{
+  "name": "genehub-monorepo",
+  "private": true,
+  "version": "2026-02-27-alpha",
+  "description": "NoDeskClaw AI 员工基因库",
+  "scripts": {
+    "dev:registry": "pnpm --filter @genehub/registry dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "db:generate": "pnpm --filter @genehub/registry db:generate",
+    "db:migrate": "pnpm --filter @genehub/registry db:migrate",
+    "db:seed": "pnpm --filter @genehub/registry db:seed"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "license": "MIT"
+}
