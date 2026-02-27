@@ -1,8 +1,8 @@
-import { Command } from 'commander';
-import ora from 'ora';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { GeneHubClient, LearningEngine, detectAdapter, getAdapter } from '@genehub/sdk';
+import { detectAdapter, GeneHubClient, getAdapter, LearningEngine } from '@genehub/sdk';
+import { Command } from 'commander';
+import ora from 'ora';
 import { loadConfig } from '../config.js';
 import * as output from '../output.js';
 
@@ -26,9 +26,7 @@ export const learnCommand = new Command('learn')
     const config = await loadConfig();
     const client = new GeneHubClient({ registryUrl: config.registryUrl, token: config.token });
 
-    const adapter = opts.product
-      ? getAdapter(opts.product)
-      : await detectAdapter();
+    const adapter = opts.product ? getAdapter(opts.product) : await detectAdapter();
 
     const workspaceDir = getWorkspaceDir(adapter.product);
     const engine = new LearningEngine({ workspaceDir, adapter });
@@ -87,7 +85,7 @@ export const learnCommand = new Command('learn')
       output.info('');
       output.info('下一步：');
       output.info('  1. Agent 在下次对话中会自动发现并处理学习任务');
-      output.info('  2. 学习完成后运行: genehub learn --check ' + slug);
+      output.info(`  2. 学习完成后运行: genehub learn --check ${slug}`);
     } catch (err) {
       spinner.fail('学习任务创建失败');
       output.fail(err instanceof Error ? err.message : String(err));

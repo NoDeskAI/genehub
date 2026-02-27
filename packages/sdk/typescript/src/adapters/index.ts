@@ -1,7 +1,7 @@
 import type { GeneAdapter } from '@genehub/types';
-import { OpenClawAdapter } from './openclaw.js';
-import { NanobotAdapter } from './nanobot.js';
 import { GenericAdapter } from './generic.js';
+import { NanobotAdapter } from './nanobot.js';
+import { OpenClawAdapter } from './openclaw.js';
 
 const ADAPTERS: (() => GeneAdapter)[] = [
   () => new OpenClawAdapter(),

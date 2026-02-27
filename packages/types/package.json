@@ -11,9 +11,13 @@
       "import": "./dist/index.js"
     }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "prepublishOnly": "pnpm build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -26,5 +30,18 @@
     "typescript": "^5.7",
     "vitest": "^3.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NoDeskAI/genehub.git",
+    "directory": "packages/types"
+  },
+  "homepage": "https://github.com/NoDeskAI/genehub",
+  "keywords": [
+    "genehub",
+    "ai",
+    "agent",
+    "gene",
+    "types"
+  ],
   "license": "MIT"
 }

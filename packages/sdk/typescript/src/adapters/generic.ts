@@ -1,14 +1,14 @@
-import { writeFile, mkdir, readdir, rm, stat, readFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { stringify } from 'yaml';
 import type {
   GeneManifest,
+  InstalledGene,
   InstallOptions,
   InstallResult,
   UninstallOptions,
   UninstallResult,
-  InstalledGene,
 } from '@genehub/types';
+import { stringify } from 'yaml';
 import { BaseAdapter } from './base.js';
 
 const DEFAULT_DIR = join(process.cwd(), '.genehub', 'genes');
@@ -26,7 +26,10 @@ export class GenericAdapter extends BaseAdapter {
     return true;
   }
 
-  protected async doInstall(manifest: GeneManifest, options?: InstallOptions): Promise<InstallResult> {
+  protected async doInstall(
+    manifest: GeneManifest,
+    options?: InstallOptions,
+  ): Promise<InstallResult> {
     const targetDir = options?.targetPath
       ? join(options.targetPath, manifest.slug)
       : join(this.genesDir, manifest.slug);

@@ -1,8 +1,8 @@
-import { Command } from 'commander';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { detectAdapter, GeneHubClient, getAdapter, LearningEngine } from '@genehub/sdk';
+import { Command } from 'commander';
 import ora from 'ora';
-import { GeneHubClient, LearningEngine, detectAdapter, getAdapter } from '@genehub/sdk';
 import { loadConfig } from '../config.js';
 import * as output from '../output.js';
 
@@ -32,9 +32,7 @@ export const installCommand = new Command('install')
       const manifest = await client.getManifest(slug, version);
       spinner.succeed(`获取 ${manifest.name} v${manifest.version}`);
 
-      const adapter = opts.product
-        ? getAdapter(opts.product)
-        : await detectAdapter();
+      const adapter = opts.product ? getAdapter(opts.product) : await detectAdapter();
 
       output.info(`目标产品: ${adapter.product}`);
 
@@ -69,11 +67,12 @@ export const installCommand = new Command('install')
       }
 
       if (opts.learn) {
-        const workspaceDir = adapter.product === 'openclaw'
-          ? join(homedir(), '.openclaw', 'workspace')
-          : adapter.product === 'nanobot'
-            ? join(homedir(), '.nanobot', 'workspace')
-            : join(process.cwd(), '.genehub');
+        const workspaceDir =
+          adapter.product === 'openclaw'
+            ? join(homedir(), '.openclaw', 'workspace')
+            : adapter.product === 'nanobot'
+              ? join(homedir(), '.nanobot', 'workspace')
+              : join(process.cwd(), '.genehub');
 
         const engine = new LearningEngine({ workspaceDir, adapter });
         const learnSpinner = ora('生成学习任务...').start();

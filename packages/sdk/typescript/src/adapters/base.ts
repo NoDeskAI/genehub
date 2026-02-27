@@ -1,11 +1,11 @@
 import type {
   GeneAdapter,
   GeneManifest,
+  InstalledGene,
   InstallOptions,
   InstallResult,
   UninstallOptions,
   UninstallResult,
-  InstalledGene,
 } from '@genehub/types';
 
 export abstract class BaseAdapter implements GeneAdapter {
@@ -24,15 +24,9 @@ export abstract class BaseAdapter implements GeneAdapter {
     options?: InstallOptions,
   ): Promise<InstallResult>;
 
-  protected async onPostInstall(
-    _manifest: GeneManifest,
-    _result: InstallResult,
-  ): Promise<void> {}
+  protected async onPostInstall(_manifest: GeneManifest, _result: InstallResult): Promise<void> {}
 
-  protected async onPostUninstall(
-    _slug: string,
-    _result: UninstallResult,
-  ): Promise<void> {}
+  protected async onPostUninstall(_slug: string, _result: UninstallResult): Promise<void> {}
 
   async uninstall(slug: string, options?: UninstallOptions): Promise<UninstallResult> {
     const result = await this.doUninstall(slug, options);

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { GeneCategory, GeneTag, AuthorType, ProductId } from './enums.js';
+import { AuthorType, GeneCategory, GeneTag, ProductId } from './enums.js';
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$/;

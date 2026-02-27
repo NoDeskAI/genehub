@@ -1,9 +1,9 @@
-import { Hono } from 'hono';
-import { eq, isNull, and } from 'drizzle-orm';
-import { db, schema } from '../db/index.js';
-import { success } from '../middleware/response.js';
-import { AppError } from '../middleware/error-handler.js';
 import { ERROR_CODES } from '@genehub/types';
+import { and, eq, isNull } from 'drizzle-orm';
+import { Hono } from 'hono';
+import { db, schema } from '../db/index.js';
+import { AppError } from '../middleware/error-handler.js';
+import { success } from '../middleware/response.js';
 
 const { genomes } = schema;
 
@@ -25,7 +25,12 @@ genomesRouter.get('/:slug', async (c) => {
     .where(and(eq(genomes.slug, slug), isNull(genomes.deleted_at)));
 
   if (result.length === 0) {
-    throw new AppError(ERROR_CODES.GENOME_NOT_FOUND, 'genome_not_found', `基因组 ${slug} 不存在`, 404);
+    throw new AppError(
+      ERROR_CODES.GENOME_NOT_FOUND,
+      'genome_not_found',
+      `基因组 ${slug} 不存在`,
+      404,
+    );
   }
 
   return success(c, result[0]);

@@ -53,5 +53,8 @@ export interface GeneAdapter {
    * Implementations should invalidate caches and inject notifications
    * so the agent sees the change immediately.
    */
-  notifySkillChange?(geneName: string, action: 'installed' | 'updated' | 'uninstalled'): Promise<void>;
+  notifySkillChange?(
+    geneName: string,
+    action: 'installed' | 'updated' | 'uninstalled',
+  ): Promise<void>;
 }

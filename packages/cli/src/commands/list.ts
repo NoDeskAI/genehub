@@ -1,5 +1,5 @@
-import { Command } from 'commander';
 import { detectAdapter, getAdapter } from '@genehub/sdk';
+import { Command } from 'commander';
 import * as output from '../output.js';
 
 export const listCommand = new Command('list')
@@ -8,9 +8,7 @@ export const listCommand = new Command('list')
   .option('--json', 'JSON 格式输出', false)
   .action(async (opts) => {
     try {
-      const adapter = opts.product
-        ? getAdapter(opts.product)
-        : await detectAdapter();
+      const adapter = opts.product ? getAdapter(opts.product) : await detectAdapter();
 
       const genes = await adapter.list();
 

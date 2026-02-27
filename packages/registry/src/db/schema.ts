@@ -1,15 +1,15 @@
 import {
+  boolean,
+  index,
+  integer,
+  jsonb,
   pgTable,
+  real,
+  text,
+  timestamp,
+  uniqueIndex,
   uuid,
   varchar,
-  text,
-  jsonb,
-  boolean,
-  integer,
-  real,
-  timestamp,
-  index,
-  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
 export const genes = pgTable(

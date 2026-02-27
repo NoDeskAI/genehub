@@ -19,5 +19,8 @@
     "pnpm": ">=9.0.0"
   },
   "packageManager": "pnpm@9.15.4",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4"
+  }
 }

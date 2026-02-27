@@ -1,13 +1,13 @@
-import { readFile, writeFile, mkdir, readdir, rm, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
+import { join } from 'node:path';
 import type {
   GeneManifest,
+  InstalledGene,
   InstallOptions,
   InstallResult,
   UninstallOptions,
   UninstallResult,
-  InstalledGene,
 } from '@genehub/types';
 import { BaseAdapter } from './base.js';
 
@@ -35,7 +35,10 @@ export class NanobotAdapter extends BaseAdapter {
     }
   }
 
-  protected async doInstall(manifest: GeneManifest, options?: InstallOptions): Promise<InstallResult> {
+  protected async doInstall(
+    manifest: GeneManifest,
+    options?: InstallOptions,
+  ): Promise<InstallResult> {
     const targetDir = options?.targetPath
       ? join(options.targetPath, manifest.skill.name)
       : join(this.skillsDir, manifest.skill.name);
@@ -81,7 +84,10 @@ export class NanobotAdapter extends BaseAdapter {
   }
 
   protected async onPostUninstall(slug: string, _result: UninstallResult): Promise<void> {
-    await this.writeMemoryEntry({ slug, name: slug, version: 'unknown' } as GeneManifest, 'uninstall');
+    await this.writeMemoryEntry(
+      { slug, name: slug, version: 'unknown' } as GeneManifest,
+      'uninstall',
+    );
   }
 
   async list(): Promise<InstalledGene[]> {
@@ -131,7 +137,10 @@ export class NanobotAdapter extends BaseAdapter {
     }
   }
 
-  private async writeMemoryEntry(manifest: GeneManifest, action: 'install' | 'uninstall'): Promise<void> {
+  private async writeMemoryEntry(
+    manifest: GeneManifest,
+    action: 'install' | 'uninstall',
+  ): Promise<void> {
     const memoryDir = join(this.workspace, 'memory');
     await mkdir(memoryDir, { recursive: true });
 
@@ -141,7 +150,9 @@ export class NanobotAdapter extends BaseAdapter {
     let existing = '';
     try {
       existing = await readFile(memoryPath, 'utf-8');
-    } catch { /* new file */ }
+    } catch {
+      /* new file */
+    }
 
     const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
     const verb = action === 'install' ? '学习了' : '遗忘了';
@@ -169,10 +180,10 @@ export class NanobotAdapter extends BaseAdapter {
       return;
     }
 
-    if (!config['tools']) config['tools'] = {};
-    const tools = config['tools'] as Record<string, unknown>;
-    if (!tools['mcpServers']) tools['mcpServers'] = {};
-    const servers = tools['mcpServers'] as Record<string, unknown>;
+    if (!config.tools) config.tools = {};
+    const tools = config.tools as Record<string, unknown>;
+    if (!tools.mcpServers) tools.mcpServers = {};
+    const servers = tools.mcpServers as Record<string, unknown>;
 
     for (const srv of mcpServers) {
       if (servers[srv.name]) continue;

@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, rm, readFile, writeFile, mkdir } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { LearningEngine } from '../learning/engine.js';
 import type { GeneManifest } from '@genehub/types';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { LearningEngine } from '../learning/engine.js';
 
 const TEST_MANIFEST: GeneManifest = {
   slug: 'test-skill',
@@ -22,9 +22,7 @@ const TEST_MANIFEST: GeneManifest = {
   learning: {
     force_deep_learn: false,
     objectives: ['理解测试的基本概念', '掌握单元测试的写法'],
-    scenarios: [
-      { title: '测试场景', context: '一段有 bug 的代码', expected_focus: '边界条件' },
-    ],
+    scenarios: [{ title: '测试场景', context: '一段有 bug 的代码', expected_focus: '边界条件' }],
   },
 };
 
@@ -86,9 +84,9 @@ describe('LearningEngine', () => {
 
     const result = await engine.checkResult('test-skill');
     expect(result).not.toBeNull();
-    expect(result!.decision).toBe('learned');
-    expect(result!.self_eval).toBe(0.85);
-    expect(result!.content).toContain('个性化后的 SKILL.md 内容');
+    expect(result?.decision).toBe('learned');
+    expect(result?.self_eval).toBe(0.85);
+    expect(result?.content).toContain('个性化后的 SKILL.md 内容');
   });
 
   it('applyResult() 应将个性化内容写入 skills 目录', async () => {

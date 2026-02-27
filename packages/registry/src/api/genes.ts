@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
+import { paginated, success } from '../middleware/response.js';
 import * as geneService from '../services/gene-service.js';
-import { success, paginated } from '../middleware/response.js';
 
 export const genesRouter = new Hono();
 

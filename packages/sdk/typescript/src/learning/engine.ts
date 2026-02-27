@@ -1,9 +1,9 @@
-import { readFile, writeFile, mkdir, readdir, stat, rm } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { GeneManifest, GeneAdapter } from '@genehub/types';
-import type { LearningTask, LearningResult } from './task.js';
-import { generateLearningTaskMarkdown, generateForgetTaskMarkdown } from './prompts.js';
+import type { GeneAdapter, GeneManifest } from '@genehub/types';
 import { META_LEARNER_MANIFEST } from './meta-gene.js';
+import { generateForgetTaskMarkdown, generateLearningTaskMarkdown } from './prompts.js';
+import type { LearningResult, LearningTask } from './task.js';
 
 export type LearningEngineOptions = {
   workspaceDir: string;
@@ -70,9 +70,9 @@ export class LearningEngine {
     if (everySession !== -1) {
       const nextSection = content.indexOf('\n## ', everySession + 1);
       const insertPos = nextSection !== -1 ? nextSection : content.length;
-      content = content.slice(0, insertPos) + '\n' + instruction + '\n' + content.slice(insertPos);
+      content = `${content.slice(0, insertPos)}\n${instruction}\n${content.slice(insertPos)}`;
     } else {
-      content += '\n' + instruction + '\n';
+      content += `\n${instruction}\n`;
     }
 
     await writeFile(agentsPath, content, 'utf-8');
@@ -193,10 +193,14 @@ export class LearningEngine {
   async cleanupTask(slug: string): Promise<void> {
     try {
       await rm(join(this.tasksDir, `${slug}.md`));
-    } catch { /* ok */ }
+    } catch {
+      /* ok */
+    }
     try {
       await rm(join(this.resultsDir, `${slug}.md`));
-    } catch { /* ok */ }
+    } catch {
+      /* ok */
+    }
   }
 
   private parseResult(content: string): LearningResult | null {

@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, rm, readFile, writeFile, mkdir } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { OpenClawAdapter } from '../adapters/openclaw.js';
 import type { GeneManifest } from '@genehub/types';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { OpenClawAdapter } from '../adapters/openclaw.js';
 
 const TEST_MANIFEST: GeneManifest = {
   slug: 'test-gene',

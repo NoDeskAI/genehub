@@ -1,7 +1,7 @@
-import { eq, and, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
+import semver from 'semver';
 import { db, schema } from '../db/index.js';
 import { AppError } from '../middleware/error-handler.js';
-import semver from 'semver';
 
 const { genes, geneVersions } = schema;
 
@@ -27,7 +27,16 @@ export async function resolve(
   const plan: InstallPlanItem[] = [];
   const warnings: string[] = [];
 
-  await resolveRecursive(slug, versionRange ?? '*', false, visited, resolving, plan, warnings, product);
+  await resolveRecursive(
+    slug,
+    versionRange ?? '*',
+    false,
+    visited,
+    resolving,
+    plan,
+    warnings,
+    product,
+  );
 
   return { plan, warnings };
 }
@@ -75,10 +84,7 @@ async function resolveRecursive(
     }
   }
 
-  const versions = await db
-    .select()
-    .from(geneVersions)
-    .where(eq(geneVersions.gene_id, gene.id));
+  const versions = await db.select().from(geneVersions).where(eq(geneVersions.gene_id, gene.id));
 
   const matchedVersion = findMatchingVersion(
     versions.map((v) => v.version),
@@ -129,9 +135,7 @@ async function resolveRecursive(
 
 function findMatchingVersion(available: string[], range: string): string | null {
   if (range === '*' || range === 'latest') {
-    const sorted = available
-      .filter((v) => semver.valid(v))
-      .sort((a, b) => semver.compare(b, a));
+    const sorted = available.filter((v) => semver.valid(v)).sort((a, b) => semver.compare(b, a));
     return sorted[0] ?? null;
   }
 

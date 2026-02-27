@@ -1,6 +1,6 @@
+import { detectAdapter, getAdapter } from '@genehub/sdk';
 import { Command } from 'commander';
 import ora from 'ora';
-import { detectAdapter, getAdapter } from '@genehub/sdk';
 import * as output from '../output.js';
 
 export const uninstallCommand = new Command('uninstall')
@@ -8,9 +8,7 @@ export const uninstallCommand = new Command('uninstall')
   .argument('<slug>', '基因标识符')
   .option('-p, --product <product>', '指定目标产品（openclaw / nanobot / generic）')
   .action(async (slug: string, opts) => {
-    const adapter = opts.product
-      ? getAdapter(opts.product)
-      : await detectAdapter();
+    const adapter = opts.product ? getAdapter(opts.product) : await detectAdapter();
 
     output.info(`目标产品: ${adapter.product}`);
 

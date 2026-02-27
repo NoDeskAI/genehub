@@ -1,10 +1,10 @@
-import { Command } from 'commander';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { parse } from 'yaml';
-import ora from 'ora';
-import { GeneManifestSchema } from '@genehub/types';
 import { GeneHubClient } from '@genehub/sdk';
+import { GeneManifestSchema } from '@genehub/types';
+import { Command } from 'commander';
+import ora from 'ora';
+import { parse } from 'yaml';
 import { loadConfig } from '../config.js';
 import * as output from '../output.js';
 

@@ -1,11 +1,11 @@
 import type {
-  Gene,
-  GeneVersion,
-  GeneManifest,
-  Genome,
   ApiResponse,
-  PaginatedData,
+  Gene,
   GeneListParams,
+  GeneManifest,
+  GeneVersion,
+  Genome,
+  PaginatedData,
   ResolvedGene,
 } from '@genehub/types';
 
@@ -30,7 +30,7 @@ export class GeneHubClient {
     };
 
     if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+      headers.Authorization = `Bearer ${this.token}`;
     }
 
     const res = await fetch(`${this.baseUrl}${path}`, { ...init, headers });

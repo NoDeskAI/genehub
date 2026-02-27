@@ -1,8 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
+  "$schema": "https://biomejs.dev/schemas/2.4.4/schema.json",
   "linter": {
     "enabled": true,
     "rules": {
@@ -28,13 +25,14 @@
       "trailingCommas": "all"
     }
   },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
   "files": {
-    "ignore": [
-      "node_modules",
-      "dist",
-      "*.d.ts",
-      "ClawBuddy",
-      "coverage"
-    ]
+    "includes": ["packages/**/*.ts", "packages/**/*.json"]
   }
 }

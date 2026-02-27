@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { resolve } from '../services/dependency-resolver.js';
 import { success } from '../middleware/response.js';
+import { resolve } from '../services/dependency-resolver.js';
 
 export const resolveRouter = new Hono();
 

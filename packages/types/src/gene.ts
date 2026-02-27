@@ -1,5 +1,5 @@
-import type { GeneManifest, Author } from './manifest.js';
 import type { GeneSource, ReviewStatus } from './enums.js';
+import type { Author, GeneManifest } from './manifest.js';
 
 export type Gene = {
   id: string;

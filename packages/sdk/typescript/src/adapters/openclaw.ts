@@ -1,14 +1,14 @@
-import { readFile, writeFile, mkdir, readdir, rm, stat, appendFile } from 'node:fs/promises';
-import { join, basename } from 'node:path';
-import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
+import { appendFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { basename, join } from 'node:path';
 import type {
   GeneManifest,
+  InstalledGene,
   InstallOptions,
   InstallResult,
   UninstallOptions,
   UninstallResult,
-  InstalledGene,
 } from '@genehub/types';
 import { BaseAdapter } from './base.js';
 
@@ -25,7 +25,12 @@ export class OpenClawAdapter extends BaseAdapter {
   private configDir: string;
   private workspaceDir: string;
 
-  constructor(options?: { skillsDir?: string; configPath?: string; workspaceDir?: string; configDir?: string }) {
+  constructor(options?: {
+    skillsDir?: string;
+    configPath?: string;
+    workspaceDir?: string;
+    configDir?: string;
+  }) {
     super();
     this.configDir = options?.configDir ?? DEFAULT_CONFIG_DIR;
     this.workspaceDir = options?.workspaceDir ?? DEFAULT_WORKSPACE_DIR;
@@ -42,7 +47,10 @@ export class OpenClawAdapter extends BaseAdapter {
     }
   }
 
-  protected async doInstall(manifest: GeneManifest, options?: InstallOptions): Promise<InstallResult> {
+  protected async doInstall(
+    manifest: GeneManifest,
+    options?: InstallOptions,
+  ): Promise<InstallResult> {
     const targetDir = options?.targetPath
       ? join(options.targetPath, manifest.skill.name)
       : join(this.skillsDir, manifest.skill.name);
@@ -75,7 +83,7 @@ export class OpenClawAdapter extends BaseAdapter {
     };
   }
 
-  protected async onPostInstall(manifest: GeneManifest, result: InstallResult): Promise<void> {
+  protected async onPostInstall(manifest: GeneManifest, _result: InstallResult): Promise<void> {
     await this.updateAgentsMd(manifest, 'add');
     await this.writeMemoryEntry(manifest, 'install');
     await this.invalidateSkillSnapshots();
@@ -98,7 +106,10 @@ export class OpenClawAdapter extends BaseAdapter {
 
   protected async onPostUninstall(slug: string, _result: UninstallResult): Promise<void> {
     await this.updateAgentsMd({ slug } as GeneManifest, 'remove');
-    await this.writeMemoryEntry({ slug, name: slug, version: 'unknown' } as GeneManifest, 'uninstall');
+    await this.writeMemoryEntry(
+      { slug, name: slug, version: 'unknown' } as GeneManifest,
+      'uninstall',
+    );
     await this.invalidateSkillSnapshots();
     await this.injectEvolutionNotification(slug, 'uninstalled');
   }
@@ -178,7 +189,7 @@ export class OpenClawAdapter extends BaseAdapter {
       if (toolsSection !== -1) {
         const nextSection = content.indexOf('\n## ', toolsSection + 1);
         const insertPos = nextSection !== -1 ? nextSection : content.length;
-        content = content.slice(0, insertPos) + '\n' + geneBlock + '\n' + content.slice(insertPos);
+        content = `${content.slice(0, insertPos)}\n${geneBlock}\n${content.slice(insertPos)}`;
       } else {
         content += `\n\n## GeneHub Skills\n\n${geneBlock}\n`;
       }
@@ -196,7 +207,10 @@ export class OpenClawAdapter extends BaseAdapter {
     await writeFile(agentsPath, content, 'utf-8');
   }
 
-  private async writeMemoryEntry(manifest: GeneManifest, action: 'install' | 'uninstall'): Promise<void> {
+  private async writeMemoryEntry(
+    manifest: GeneManifest,
+    action: 'install' | 'uninstall',
+  ): Promise<void> {
     const memoryDir = join(this.workspaceDir, 'memory');
     await mkdir(memoryDir, { recursive: true });
 
@@ -233,10 +247,10 @@ export class OpenClawAdapter extends BaseAdapter {
     }
 
     if (config.tool_allow) {
-      const current = (existing['tools'] as Record<string, unknown>)?.['allow'] as string[] ?? [];
+      const current = ((existing.tools as Record<string, unknown>)?.allow as string[]) ?? [];
       const merged = [...new Set([...current, ...config.tool_allow])];
-      if (!existing['tools']) existing['tools'] = {};
-      (existing['tools'] as Record<string, unknown>)['allow'] = merged;
+      if (!existing.tools) existing.tools = {};
+      (existing.tools as Record<string, unknown>).allow = merged;
     }
 
     await writeFile(this.configPath, JSON.stringify(existing, null, 2), 'utf-8');
@@ -253,7 +267,7 @@ export class OpenClawAdapter extends BaseAdapter {
       return;
     }
 
-    const mcpServers = (existing['mcpServers'] ?? {}) as Record<string, unknown>;
+    const mcpServers = (existing.mcpServers ?? {}) as Record<string, unknown>;
     for (const server of servers) {
       mcpServers[server.name] = {
         transport: server.transport,
@@ -262,12 +276,15 @@ export class OpenClawAdapter extends BaseAdapter {
         env: server.env,
       };
     }
-    existing['mcpServers'] = mcpServers;
+    existing.mcpServers = mcpServers;
 
     await writeFile(this.configPath, JSON.stringify(existing, null, 2), 'utf-8');
   }
 
-  async notifySkillChange(geneName: string, action: 'installed' | 'updated' | 'uninstalled'): Promise<void> {
+  async notifySkillChange(
+    geneName: string,
+    action: 'installed' | 'updated' | 'uninstalled',
+  ): Promise<void> {
     await this.invalidateSkillSnapshots();
     const notifyAction = action === 'uninstalled' ? 'uninstalled' : 'installed';
     await this.injectEvolutionNotification(geneName, notifyAction);
@@ -292,7 +309,7 @@ export class OpenClawAdapter extends BaseAdapter {
 
       for (const entry of Object.values(store)) {
         if (entry && typeof entry === 'object' && 'skillsSnapshot' in entry) {
-          delete (entry as Record<string, unknown>)['skillsSnapshot'];
+          delete (entry as Record<string, unknown>).skillsSnapshot;
           changed = true;
         }
       }
@@ -313,7 +330,10 @@ export class OpenClawAdapter extends BaseAdapter {
    * By appending a user+assistant message pair about the evolution, we override
    * the stale context. Also resets systemSent to force system prompt rebuild.
    */
-  private async injectEvolutionNotification(geneName: string, action: 'installed' | 'uninstalled'): Promise<void> {
+  private async injectEvolutionNotification(
+    geneName: string,
+    action: 'installed' | 'uninstalled',
+  ): Promise<void> {
     const sessionsDir = join(this.configDir, SESSIONS_REL);
     const sessionsPath = join(sessionsDir, 'sessions.json');
 
@@ -324,13 +344,15 @@ export class OpenClawAdapter extends BaseAdapter {
       return;
     }
 
-    const userText = action === 'installed'
-      ? `[System] 基因系统通知: 你刚刚获取了新的基因「${geneName}」，完成了一轮进化。你的技能列表已更新，请以 system prompt 中 <available_skills> 为准。`
-      : `[System] 基因系统通知: 基因「${geneName}」已遗忘。你的技能列表已更新，请以 system prompt 中 <available_skills> 为准。`;
+    const userText =
+      action === 'installed'
+        ? `[System] 基因系统通知: 你刚刚获取了新的基因「${geneName}」，完成了一轮进化。你的技能列表已更新，请以 system prompt 中 <available_skills> 为准。`
+        : `[System] 基因系统通知: 基因「${geneName}」已遗忘。你的技能列表已更新，请以 system prompt 中 <available_skills> 为准。`;
 
-    const assistantText = action === 'installed'
-      ? `收到，我已获取新基因「${geneName}」并完成进化。我的技能列表已更新。`
-      : `收到，基因「${geneName}」已遗忘。我的技能列表已更新。`;
+    const assistantText =
+      action === 'installed'
+        ? `收到，我已获取新基因「${geneName}」并完成进化。我的技能列表已更新。`
+        : `收到，基因「${geneName}」已遗忘。我的技能列表已更新。`;
 
     try {
       const store = JSON.parse(raw) as Record<string, unknown>;
@@ -339,7 +361,7 @@ export class OpenClawAdapter extends BaseAdapter {
       for (const entry of Object.values(store)) {
         if (!entry || typeof entry !== 'object') continue;
         const rec = entry as Record<string, unknown>;
-        const sessionFile = rec['sessionFile'] as string | undefined;
+        const sessionFile = rec.sessionFile as string | undefined;
         if (!sessionFile) continue;
 
         const localPath = join(sessionsDir, basename(sessionFile));
@@ -354,7 +376,7 @@ export class OpenClawAdapter extends BaseAdapter {
         try {
           const lastLine = content.split('\n').pop() ?? '';
           const lastEntry = JSON.parse(lastLine) as Record<string, unknown>;
-          const parentId = (lastEntry['id'] as string) ?? randomUUID().slice(0, 8);
+          const parentId = (lastEntry.id as string) ?? randomUUID().slice(0, 8);
 
           const now = new Date();
           const tsIso = now.toISOString();
@@ -362,8 +384,8 @@ export class OpenClawAdapter extends BaseAdapter {
           const userId = randomUUID().slice(0, 8);
           const assistantId = randomUUID().slice(0, 8);
 
-          const modelProvider = (rec['modelProvider'] as string) ?? 'system';
-          const modelName = (rec['model'] as string) ?? 'system';
+          const modelProvider = (rec.modelProvider as string) ?? 'system';
+          const modelName = (rec.model as string) ?? 'system';
 
           const userMsg = JSON.stringify({
             type: 'message',
@@ -389,8 +411,11 @@ export class OpenClawAdapter extends BaseAdapter {
               provider: modelProvider,
               model: modelName,
               usage: {
-                input: 0, output: 0,
-                cacheRead: 0, cacheWrite: 0, totalTokens: 0,
+                input: 0,
+                output: 0,
+                cacheRead: 0,
+                cacheWrite: 0,
+                totalTokens: 0,
                 cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
               },
               stopReason: 'stop',
@@ -403,7 +428,7 @@ export class OpenClawAdapter extends BaseAdapter {
           continue;
         }
 
-        rec['systemSent'] = false;
+        rec.systemSent = false;
         storeChanged = true;
       }
 

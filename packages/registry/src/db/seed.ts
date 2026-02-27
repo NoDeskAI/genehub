@@ -148,7 +148,7 @@ async function seed() {
   console.log('Seeding database...');
 
   for (const gene of SEED_GENES) {
-    const existing = await db
+    const _existing = await db
       .select({ id: schema.genes.id })
       .from(schema.genes)
       .where(/* drizzle eq */ undefined as never)

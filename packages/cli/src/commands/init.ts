@@ -1,6 +1,6 @@
-import { Command } from 'commander';
-import { writeFile, mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { Command } from 'commander';
 import { stringify } from 'yaml';
 import * as output from '../output.js';
 

@@ -1,8 +1,8 @@
-import { eq, sql, isNull, and, desc } from 'drizzle-orm';
-import { db, schema } from '../db/index.js';
 import { GeneManifestSchema } from '@genehub/types';
-import { AppError } from '../middleware/error-handler.js';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import semver from 'semver';
+import { db, schema } from '../db/index.js';
+import { AppError } from '../middleware/error-handler.js';
 
 const { genes, geneVersions } = schema;
 
@@ -33,7 +33,12 @@ export async function listGenes(query: GeneListQuery) {
 
   if (query.tags) {
     const tagList = query.tags.split(',');
-    conditions.push(sql`${genes.tags} ?| array[${sql.join(tagList.map((t) => sql`${t}`), sql`, `)}]`);
+    conditions.push(
+      sql`${genes.tags} ?| array[${sql.join(
+        tagList.map((t) => sql`${t}`),
+        sql`, `,
+      )}]`,
+    );
   }
 
   if (query.q) {
@@ -45,7 +50,7 @@ export async function listGenes(query: GeneListQuery) {
 
   const where = and(...conditions);
 
-  let orderBy;
+  let orderBy: ReturnType<typeof desc> = desc(genes.created_at);
   switch (query.sort) {
     case 'popular':
       orderBy = desc(genes.install_count);
@@ -54,7 +59,6 @@ export async function listGenes(query: GeneListQuery) {
       orderBy = desc(genes.avg_rating);
       break;
     default:
-      orderBy = desc(genes.created_at);
   }
 
   const [items, countResult] = await Promise.all([
@@ -137,7 +141,10 @@ export async function createGene(manifestRaw: unknown) {
     throw AppError.manifestInvalid(`无效的版本号: ${manifest.version}`);
   }
 
-  const existing = await db.select({ id: genes.id }).from(genes).where(eq(genes.slug, manifest.slug));
+  const existing = await db
+    .select({ id: genes.id })
+    .from(genes)
+    .where(eq(genes.slug, manifest.slug));
   if (existing.length > 0) {
     throw AppError.slugExists(manifest.slug);
   }
@@ -205,9 +212,7 @@ export async function publishVersion(slug: string, manifestRaw: unknown, changel
   }
 
   if (!semver.gt(manifest.version, gene.version)) {
-    throw AppError.manifestInvalid(
-      `新版本 ${manifest.version} 必须大于当前版本 ${gene.version}`,
-    );
+    throw AppError.manifestInvalid(`新版本 ${manifest.version} 必须大于当前版本 ${gene.version}`);
   }
 
   await db
