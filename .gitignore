@@ -1,0 +1,13 @@
+# Reference repos
+ClawBuddy/
+
+# Dependencies
+node_modules/
+.venv/
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
