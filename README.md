@@ -79,6 +79,9 @@ cd genehub
 # 安装依赖（需要 pnpm >= 9 和 Node.js >= 20）
 pnpm install
 
+# 构建所有包
+pnpm build
+
 # 启动 PostgreSQL（需要 Docker）
 docker compose up -d
 
@@ -94,6 +97,25 @@ pnpm dev:registry
 ```
 
 ### 使用 CLI
+
+如果通过 npm 全局安装：
+
+```bash
+npm install -g @nodeskai/genehub
+genehub search code-review
+```
+
+如果在本地开发环境中使用：
+
+```bash
+# 方式一：通过 pnpm 调用（推荐）
+pnpm genehub search code-review
+
+# 方式二：直接运行源码（无需构建）
+pnpm --filter @nodeskai/genehub dev -- search code-review
+```
+
+CLI 常用命令：
 
 ```bash
 # 搜索基因
@@ -121,7 +143,7 @@ genehub list
 genehub uninstall code-review
 
 # 管理配置
-genehub config set registry http://localhost:3000
+genehub config set registry https://genehub.nodeskai.com
 genehub config set token ghb_your_token
 
 # 初始化新基因模板
