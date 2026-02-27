@@ -11,7 +11,7 @@ export type CliConfig = {
 };
 
 const DEFAULT_CONFIG: CliConfig = {
-  registryUrl: 'http://localhost:3000',
+  registryUrl: 'https://genehub.nodeskai.com',
 };
 
 export async function loadConfig(): Promise<CliConfig> {

@@ -5,48 +5,102 @@ on:
     tags:
       - "v*"
 
-permissions:
-  contents: write
+env:
+  CR_REGISTRY: nodesk-center-cn-beijing.cr.volces.com
+  CR_IMAGE: nodesk-center-cn-beijing.cr.volces.com/base-image/genehub
 
 jobs:
-  release:
+  ci:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm build
+      - run: pnpm test
 
+  publish-npm:
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
           registry-url: https://registry.npmjs.org
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        run: pnpm build
-
-      - name: Test
-        run: pnpm test
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
 
       - name: Publish @nodeskai/genehub-types
         run: pnpm --filter @nodeskai/genehub-types publish --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @nodeskai/genehub-sdk
         run: pnpm --filter @nodeskai/genehub-sdk publish --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish genehub (CLI)
+      - name: Publish @nodeskai/genehub (CLI)
         run: pnpm --filter @nodeskai/genehub publish --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+  deploy-k8s:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag from git tag
+        run: echo "IMAGE_TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+
+      - name: Login to Volcengine CR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.CR_REGISTRY }}
+          username: ${{ secrets.CR_USERNAME }}
+          password: ${{ secrets.CR_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          build-args: NODE_IMAGE=node:22-alpine
+          tags: |
+            ${{ env.CR_IMAGE }}:${{ env.IMAGE_TAG }}
+            ${{ env.CR_IMAGE }}:latest
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Deploy to K8s
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_DATA }}
+        run: |
+          mkdir -p ~/.kube
+          echo "$KUBECONFIG_DATA" | base64 -d > ~/.kube/config
+
+          kubectl set image deployment/genehub \
+            genehub=${{ env.CR_IMAGE }}:${{ env.IMAGE_TAG }} \
+            -n nodeskclaw-system
+
+          kubectl rollout status deployment/genehub \
+            -n nodeskclaw-system --timeout=120s
+
+  github-release:
+    needs: [publish-npm, deploy-k8s]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

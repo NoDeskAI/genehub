@@ -16,14 +16,14 @@ describe('CLI Config', () => {
     await rm(tempDir, { recursive: true });
   });
 
-  it('默认 registryUrl 应为 localhost:3000（无配置文件时）', async () => {
+  it('默认 registryUrl 应为 genehub.nodeskai.com（无配置文件时）', async () => {
     vi.doMock('node:os', async (importOriginal) => {
       const original = await importOriginal<typeof import('node:os')>();
       return { ...original, homedir: () => tempDir };
     });
     const { loadConfig } = await import('../config.js');
     const config = await loadConfig();
-    expect(config.registryUrl).toBe('http://localhost:3000');
+    expect(config.registryUrl).toBe('https://genehub.nodeskai.com');
   });
 
   it('配置文件存在时应合并配置', async () => {

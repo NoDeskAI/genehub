@@ -6,4 +6,9 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
+  bundle: true,
+  noExternal: [/.*/],
+  banner: {
+    js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);",
+  },
 });
