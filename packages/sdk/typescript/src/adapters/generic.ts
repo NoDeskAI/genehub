@@ -26,7 +26,7 @@ export class GenericAdapter extends BaseAdapter {
     return true;
   }
 
-  async install(manifest: GeneManifest, options?: InstallOptions): Promise<InstallResult> {
+  protected async doInstall(manifest: GeneManifest, options?: InstallOptions): Promise<InstallResult> {
     const targetDir = options?.targetPath
       ? join(options.targetPath, manifest.slug)
       : join(this.genesDir, manifest.slug);
@@ -54,7 +54,7 @@ export class GenericAdapter extends BaseAdapter {
     };
   }
 
-  async uninstall(slug: string, _options?: UninstallOptions): Promise<UninstallResult> {
+  protected async doUninstall(slug: string, _options?: UninstallOptions): Promise<UninstallResult> {
     const targetDir = join(this.genesDir, slug);
     try {
       await rm(targetDir, { recursive: true });

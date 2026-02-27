@@ -1,33 +1,46 @@
 import { Command } from 'commander';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import ora from 'ora';
-import { GeneHubClient, detectAdapter } from '@genehub/sdk';
+import { GeneHubClient, LearningEngine, detectAdapter, getAdapter } from '@genehub/sdk';
 import { loadConfig } from '../config.js';
 import * as output from '../output.js';
 
+function parseSlugVersion(input: string): { slug: string; version?: string } {
+  const atIdx = input.lastIndexOf('@');
+  if (atIdx > 0) {
+    return { slug: input.slice(0, atIdx), version: input.slice(atIdx + 1) };
+  }
+  return { slug: input };
+}
+
 export const installCommand = new Command('install')
   .description('安装基因到当前 Agent 环境')
-  .argument('<slug>', '基因标识符')
+  .argument('<slug>', '基因标识符（支持 slug@version 格式）')
   .option('-p, --product <product>', '指定目标产品（openclaw / nanobot / generic）')
   .option('-f, --force', '强制覆盖已安装版本', false)
   .option('--target <path>', '指定安装目标路径')
-  .action(async (slug: string, opts) => {
+  .option('--learn', '安装后自动触发深度学习', false)
+  .action(async (rawSlug: string, opts) => {
     const config = await loadConfig();
     const client = new GeneHubClient({ registryUrl: config.registryUrl, token: config.token });
 
-    const spinner = ora(`获取基因 ${slug} 的 manifest...`).start();
+    const { slug, version } = parseSlugVersion(rawSlug);
+    const spinner = ora(`获取基因 ${slug}${version ? `@${version}` : ''} 的 manifest...`).start();
 
     try {
-      const manifest = await client.getManifest(slug);
+      const manifest = await client.getManifest(slug, version);
       spinner.succeed(`获取 ${manifest.name} v${manifest.version}`);
 
       const adapter = opts.product
-        ? (await import('@genehub/sdk')).getAdapter(opts.product)
+        ? getAdapter(opts.product)
         : await detectAdapter();
 
       output.info(`目标产品: ${adapter.product}`);
 
       if (!opts.force && (await adapter.isInstalled(slug))) {
-        output.warn(`${slug} 已安装，使用 --force 覆盖`);
+        const installedVer = await adapter.getInstalledVersion(slug);
+        output.warn(`${slug}${installedVer ? ` v${installedVer}` : ''} 已安装，使用 --force 覆盖`);
         return;
       }
 
@@ -47,6 +60,25 @@ export const installCommand = new Command('install')
 
       if (result.dependencies.length > 0) {
         output.info(`依赖基因: ${result.dependencies.join(', ')}`);
+      }
+
+      try {
+        await client.reportInstall(slug);
+      } catch {
+        // non-critical
+      }
+
+      if (opts.learn) {
+        const workspaceDir = adapter.product === 'openclaw'
+          ? join(homedir(), '.openclaw', 'workspace')
+          : adapter.product === 'nanobot'
+            ? join(homedir(), '.nanobot', 'workspace')
+            : join(process.cwd(), '.genehub');
+
+        const engine = new LearningEngine({ workspaceDir, adapter });
+        const learnSpinner = ora('生成学习任务...').start();
+        await engine.createLearningTask(manifest);
+        learnSpinner.succeed('学习任务已创建，Agent 将在下次对话中处理');
       }
     } catch (err) {
       spinner.fail('安装失败');

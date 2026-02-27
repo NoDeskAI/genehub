@@ -11,6 +11,7 @@ export const searchCommand = new Command('search')
   .option('--compat <product>', '按兼容产品过滤')
   .option('-s, --sort <sort>', '排序方式（newest / popular / rating）', 'newest')
   .option('--page <page>', '页码', '1')
+  .option('--json', 'JSON 格式输出', false)
   .action(async (keyword: string | undefined, opts) => {
     const config = await loadConfig();
     const client = new GeneHubClient({ registryUrl: config.registryUrl, token: config.token });
@@ -24,6 +25,11 @@ export const searchCommand = new Command('search')
         sort: opts.sort,
         page: Number(opts.page),
       });
+
+      if (opts.json) {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
 
       if (result.items.length === 0) {
         output.info('未找到匹配的基因');

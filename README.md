@@ -76,8 +76,27 @@ genehub search code-review
 # 安装基因（自动检测当前 Agent 产品：openClaw / nanobot）
 genehub install code-review
 
+# 安装指定版本
+genehub install code-review@1.2.0
+
+# 安装并触发深度学习
+genehub install code-review --learn
+
+# 触发深度学习（L2）
+genehub learn code-review
+
+# 检查学习结果
+genehub learn --check code-review
+
 # 查看已安装基因
 genehub list
+
+# 卸载基因
+genehub uninstall code-review
+
+# 管理配置
+genehub config set registry http://localhost:3000
+genehub config set token ghb_your_token
 
 # 初始化新基因模板
 genehub init ./my-gene

@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { genesRouter } from './api/genes.js';
 import { genomesRouter } from './api/genomes.js';
+import { resolveRouter } from './api/resolve.js';
 import { errorHandler } from './middleware/error-handler.js';
 
 export const app = new Hono();
@@ -22,3 +23,4 @@ app.get('/', (c) =>
 
 app.route('/api/v1/genes', genesRouter);
 app.route('/api/v1/genomes', genomesRouter);
+app.route('/api/v1/resolve', resolveRouter);

@@ -47,4 +47,11 @@ export interface GeneAdapter {
   isInstalled(slug: string): Promise<boolean>;
 
   getInstalledVersion(slug: string): Promise<string | null>;
+
+  /**
+   * Notify the host that a skill was added/removed/updated.
+   * Implementations should invalidate caches and inject notifications
+   * so the agent sees the change immediately.
+   */
+  notifySkillChange?(geneName: string, action: 'installed' | 'updated' | 'uninstalled'): Promise<void>;
 }

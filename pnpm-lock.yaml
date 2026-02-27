@@ -65,6 +65,9 @@ importers:
       postgres:
         specifier: ^3.4
         version: 3.4.8
+      semver:
+        specifier: ^7.7.4
+        version: 7.7.4
       zod:
         specifier: ^3.24
         version: 3.25.76
@@ -72,6 +75,9 @@ importers:
       '@types/node':
         specifier: ^22.0
         version: 22.19.13
+      '@types/semver':
+        specifier: ^7.7.1
+        version: 7.7.1
       drizzle-kit:
         specifier: ^0.30
         version: 0.30.6
@@ -730,6 +736,9 @@ packages:
 
   '@types/node@22.19.13':
     resolution: {integrity: sha512-akNQMv0wW5uyRpD2v2IEyRSZiR+BeGuoB6L310EgGObO44HSMNT8z1xzio28V8qOrgYaopIDNA18YgdXd+qTiw==}
+
+  '@types/semver@7.7.1':
+    resolution: {integrity: sha512-FmgJfu+MOcQ370SD0ev7EI8TlCAfKYU+B4m5T3yXc1CiRN94g/SZPtsCkk506aUDtlMnFZvasDwHHUcZUEaYuA==}
 
   '@vitest/expect@3.2.4':
     resolution: {integrity: sha512-Io0yyORnB6sikFlt8QW5K7slY4OjqNX9jmJQ02QDda8lyM6B5oNgVWoSoKPac8/kgnCUzuHQKrSLtu/uOqqrig==}
@@ -1727,6 +1736,8 @@ snapshots:
   '@types/node@22.19.13':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/semver@7.7.1': {}
 
   '@vitest/expect@3.2.4':
     dependencies:

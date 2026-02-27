@@ -28,14 +28,14 @@ export class NanobotAdapter extends BaseAdapter {
 
   async detect(): Promise<boolean> {
     try {
-      await stat(join(homedir(), '.nanobot'));
+      await stat(join(homedir(), '.nanobot', 'config.json'));
       return true;
     } catch {
       return false;
     }
   }
 
-  async install(manifest: GeneManifest, options?: InstallOptions): Promise<InstallResult> {
+  protected async doInstall(manifest: GeneManifest, options?: InstallOptions): Promise<InstallResult> {
     const targetDir = options?.targetPath
       ? join(options.targetPath, manifest.skill.name)
       : join(this.skillsDir, manifest.skill.name);
@@ -62,7 +62,11 @@ export class NanobotAdapter extends BaseAdapter {
     };
   }
 
-  async uninstall(slug: string, _options?: UninstallOptions): Promise<UninstallResult> {
+  protected async onPostInstall(manifest: GeneManifest, _result: InstallResult): Promise<void> {
+    await this.writeMemoryEntry(manifest, 'install');
+  }
+
+  protected async doUninstall(slug: string, _options?: UninstallOptions): Promise<UninstallResult> {
     const targetDir = join(this.skillsDir, slug);
     const files: string[] = [];
 
@@ -76,6 +80,10 @@ export class NanobotAdapter extends BaseAdapter {
     return { success: true, slug, files, needsRestart: false };
   }
 
+  protected async onPostUninstall(slug: string, _result: UninstallResult): Promise<void> {
+    await this.writeMemoryEntry({ slug, name: slug, version: 'unknown' } as GeneManifest, 'uninstall');
+  }
+
   async list(): Promise<InstalledGene[]> {
     try {
       const dirs = await readdir(this.skillsDir, { withFileTypes: true });
@@ -86,9 +94,11 @@ export class NanobotAdapter extends BaseAdapter {
         const skillPath = join(this.skillsDir, dir.name, 'SKILL.md');
         try {
           const s = await stat(skillPath);
+          const content = await readFile(skillPath, 'utf-8');
+          const version = this.parseSkillVersion(content) ?? 'unknown';
           results.push({
             slug: dir.name,
-            version: 'unknown',
+            version,
             installedAt: s.mtime.toISOString(),
             files: [skillPath],
           });
@@ -112,8 +122,32 @@ export class NanobotAdapter extends BaseAdapter {
     }
   }
 
-  async getInstalledVersion(_slug: string): Promise<string | null> {
-    return null;
+  async getInstalledVersion(slug: string): Promise<string | null> {
+    try {
+      const content = await readFile(join(this.skillsDir, slug, 'SKILL.md'), 'utf-8');
+      return this.parseSkillVersion(content);
+    } catch {
+      return null;
+    }
+  }
+
+  private async writeMemoryEntry(manifest: GeneManifest, action: 'install' | 'uninstall'): Promise<void> {
+    const memoryDir = join(this.workspace, 'memory');
+    await mkdir(memoryDir, { recursive: true });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const memoryPath = join(memoryDir, `${today}.md`);
+
+    let existing = '';
+    try {
+      existing = await readFile(memoryPath, 'utf-8');
+    } catch { /* new file */ }
+
+    const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    const verb = action === 'install' ? '学习了' : '遗忘了';
+    const entry = `\n- [${time}] 通过 GeneHub ${verb}基因: **${manifest.name ?? manifest.slug}** v${manifest.version ?? '?'}\n`;
+
+    await writeFile(memoryPath, existing + entry, 'utf-8');
   }
 
   private buildNanobotSkillContent(manifest: GeneManifest): string {
@@ -121,32 +155,10 @@ export class NanobotAdapter extends BaseAdapter {
       return manifest.skill.content;
     }
 
-    const nanobotMeta: Record<string, unknown> = {
-      always: manifest.skill.always,
-    };
-
-    const nanobotConfig = manifest.config?.nanobot;
-    if (nanobotConfig?.requires) nanobotMeta['requires'] = nanobotConfig.requires;
-    if (nanobotConfig?.os) nanobotMeta['os'] = nanobotConfig.os;
-    if (nanobotConfig?.install) nanobotMeta['install'] = nanobotConfig.install;
-
-    const metadataJson = JSON.stringify({ nanobot: nanobotMeta });
-
-    const frontMatter = [
-      '---',
-      `name: ${manifest.skill.name}`,
-      `description: ${manifest.short_description}`,
-      `metadata: ${metadataJson}`,
-      '---',
-    ].join('\n');
-
-    const body = manifest.skill.content?.trim() ?? '';
-    return body ? `${frontMatter}\n\n${body}` : frontMatter;
+    return this.generateSkillContent(manifest, 'nanobot');
   }
 
-  private async mergeNanobotMcpConfig(
-    mcpServers: GeneManifest['mcp_servers'],
-  ): Promise<void> {
+  private async mergeNanobotMcpConfig(mcpServers: GeneManifest['mcp_servers']): Promise<void> {
     const configPath = join(homedir(), '.nanobot', 'config.json');
 
     let config: Record<string, unknown> = {};
@@ -154,7 +166,7 @@ export class NanobotAdapter extends BaseAdapter {
       const raw = await readFile(configPath, 'utf-8');
       config = JSON.parse(raw);
     } catch {
-      // no existing config
+      return;
     }
 
     if (!config['tools']) config['tools'] = {};

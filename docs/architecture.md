@@ -563,13 +563,14 @@ DeskClaw 使用 Cursor Rules（`.cursor/rules/*.mdc`）和 Skills（SKILL.md）�
 - [x] Registry API 骨架（CRUD + 搜索 + 统一响应/错误处理）
 - [x] CLI 骨架（install / search / list / publish / init）
 
-### M1 - 核心功能（3-4 周）
+### M1 - 核心功能（3-4 周）✅
 
-- [ ] Registry 完整 API（版本管理、依赖解析、兼容校验）
-- [ ] TypeScript SDK（客户端 + OpenClaw Adapter + nanobot Adapter）
-- [ ] CLI 完整命令集
-- [ ] ClawBuddy 集成（gene_service 对接 GeneHub API）
-- [ ] 官方基因库（从 ClawBuddy 导入现有基因模板）
+- [x] Registry 完整 API（版本管理、依赖解析、兼容校验、认证中间件、效能数据上报）
+- [x] TypeScript SDK（客户端 + OpenClaw Adapter L1 + nanobot Adapter L1 + Generic Adapter）
+- [x] Learning Engine（L1 浅层学习 + L2 深度学习引擎 + genehub-learner 元学习基因）
+- [x] CLI 完整命令集（install/uninstall/search/list/publish/init/config/learn）
+- [ ] ClawBuddy 集成（推迟到 M2）
+- [x] 官方基因库（7 个高质量基因含 learning objectives + scenarios）
 
 ### M2 - 生态扩展（5-6 周）
 

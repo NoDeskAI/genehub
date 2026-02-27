@@ -13,9 +13,37 @@ export abstract class BaseAdapter implements GeneAdapter {
 
   abstract detect(): Promise<boolean>;
 
-  abstract install(manifest: GeneManifest, options?: InstallOptions): Promise<InstallResult>;
+  async install(manifest: GeneManifest, options?: InstallOptions): Promise<InstallResult> {
+    const result = await this.doInstall(manifest, options);
+    await this.onPostInstall(manifest, result);
+    return result;
+  }
 
-  abstract uninstall(slug: string, options?: UninstallOptions): Promise<UninstallResult>;
+  protected abstract doInstall(
+    manifest: GeneManifest,
+    options?: InstallOptions,
+  ): Promise<InstallResult>;
+
+  protected async onPostInstall(
+    _manifest: GeneManifest,
+    _result: InstallResult,
+  ): Promise<void> {}
+
+  protected async onPostUninstall(
+    _slug: string,
+    _result: UninstallResult,
+  ): Promise<void> {}
+
+  async uninstall(slug: string, options?: UninstallOptions): Promise<UninstallResult> {
+    const result = await this.doUninstall(slug, options);
+    await this.onPostUninstall(slug, result);
+    return result;
+  }
+
+  protected abstract doUninstall(
+    slug: string,
+    options?: UninstallOptions,
+  ): Promise<UninstallResult>;
 
   abstract list(): Promise<InstalledGene[]>;
 
@@ -28,6 +56,7 @@ export abstract class BaseAdapter implements GeneAdapter {
     const frontMatter = [
       '---',
       `name: ${manifest.skill.name}`,
+      `version: ${manifest.version}`,
       `description: ${manifest.short_description}`,
       'metadata:',
       `  ${metadataNamespace}:`,
@@ -44,5 +73,10 @@ export abstract class BaseAdapter implements GeneAdapter {
     }
 
     return frontMatter;
+  }
+
+  protected parseSkillVersion(content: string): string | null {
+    const match = content.match(/^---[\s\S]*?version:\s*(.+?)[\s\n][\s\S]*?---/m);
+    return match?.[1]?.trim() ?? null;
   }
 }

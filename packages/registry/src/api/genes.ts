@@ -27,7 +27,8 @@ genesRouter.get('/:slug', async (c) => {
 
 genesRouter.get('/:slug/manifest', async (c) => {
   const slug = c.req.param('slug');
-  const manifest = await geneService.getGeneManifest(slug);
+  const version = c.req.query('version');
+  const manifest = await geneService.getGeneManifest(slug, version);
   return success(c, manifest);
 });
 
@@ -37,8 +38,48 @@ genesRouter.get('/:slug/versions', async (c) => {
   return success(c, versions);
 });
 
+genesRouter.get('/:slug/versions/:version', async (c) => {
+  const slug = c.req.param('slug');
+  const version = c.req.param('version');
+  const ver = await geneService.getGeneVersion(slug, version);
+  return success(c, ver);
+});
+
 genesRouter.post('/', async (c) => {
   const body = await c.req.json();
   const gene = await geneService.createGene(body.manifest ?? body);
   return success(c, gene);
+});
+
+genesRouter.post('/:slug/versions', async (c) => {
+  const slug = c.req.param('slug');
+  const body = await c.req.json();
+  const gene = await geneService.publishVersion(slug, body.manifest ?? body, body.changelog);
+  return success(c, gene);
+});
+
+genesRouter.put('/:slug', async (c) => {
+  const slug = c.req.param('slug');
+  const body = await c.req.json();
+  const gene = await geneService.updateGene(slug, body);
+  return success(c, gene);
+});
+
+genesRouter.delete('/:slug', async (c) => {
+  const slug = c.req.param('slug');
+  const gene = await geneService.deleteGene(slug);
+  return success(c, gene);
+});
+
+genesRouter.post('/:slug/installed', async (c) => {
+  const slug = c.req.param('slug');
+  await geneService.incrementInstallCount(slug);
+  return success(c, { slug, recorded: true });
+});
+
+genesRouter.post('/:slug/effectiveness', async (c) => {
+  const slug = c.req.param('slug');
+  const body = await c.req.json();
+  await geneService.reportEffectiveness(slug, body);
+  return success(c, { slug, recorded: true });
 });

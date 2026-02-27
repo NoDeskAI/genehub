@@ -6,6 +6,7 @@ import type {
   ApiResponse,
   PaginatedData,
   GeneListParams,
+  ResolvedGene,
 } from '@genehub/types';
 
 export type GeneHubClientOptions = {
@@ -62,12 +63,17 @@ export class GeneHubClient {
     return this.request<Gene>(`/api/v1/genes/${slug}`);
   }
 
-  async getManifest(slug: string): Promise<GeneManifest> {
-    return this.request<GeneManifest>(`/api/v1/genes/${slug}/manifest`);
+  async getManifest(slug: string, version?: string): Promise<GeneManifest> {
+    const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+    return this.request<GeneManifest>(`/api/v1/genes/${slug}/manifest${qs}`);
   }
 
   async getVersions(slug: string): Promise<GeneVersion[]> {
     return this.request<GeneVersion[]>(`/api/v1/genes/${slug}/versions`);
+  }
+
+  async getVersion(slug: string, version: string): Promise<GeneVersion> {
+    return this.request<GeneVersion>(`/api/v1/genes/${slug}/versions/${version}`);
   }
 
   async getGenome(slug: string): Promise<Genome> {
@@ -78,6 +84,38 @@ export class GeneHubClient {
     return this.request<Gene>('/api/v1/genes', {
       method: 'POST',
       body: JSON.stringify({ manifest }),
+    });
+  }
+
+  async publishVersion(slug: string, manifest: GeneManifest, changelog?: string): Promise<Gene> {
+    return this.request<Gene>(`/api/v1/genes/${slug}/versions`, {
+      method: 'POST',
+      body: JSON.stringify({ manifest, changelog }),
+    });
+  }
+
+  async resolve(
+    slug: string,
+    version?: string,
+    product?: string,
+  ): Promise<{ plan: ResolvedGene[]; warnings: string[] }> {
+    return this.request(`/api/v1/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({ slug, version, product }),
+    });
+  }
+
+  async reportInstall(slug: string): Promise<void> {
+    await this.request(`/api/v1/genes/${slug}/installed`, { method: 'POST', body: '{}' });
+  }
+
+  async reportEffectiveness(
+    slug: string,
+    report: { metric_type: string; value: number; context?: string },
+  ): Promise<void> {
+    await this.request(`/api/v1/genes/${slug}/effectiveness`, {
+      method: 'POST',
+      body: JSON.stringify(report),
     });
   }
 }
