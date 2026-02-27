@@ -1,5 +1,5 @@
 {
-  "name": "@genehub/registry",
+  "name": "@nodeskai/genehub-registry",
   "version": "0.1.0",
   "description": "GeneHub Gene Registry Service",
   "type": "module",
@@ -17,7 +17,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@genehub/types": "workspace:*",
+    "@nodeskai/genehub-types": "workspace:*",
     "@hono/node-server": "^1.13",
     "drizzle-orm": "^0.38",
     "hono": "^4.6",

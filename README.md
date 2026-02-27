@@ -119,9 +119,9 @@ genehub/
 │   ├── architecture.md             # 架构设计
 │   └── gene-learning-protocol.md   # 标准学习协议规范
 ├── packages/
-│   ├── types/                      # @genehub/types - 共享类型与 Zod schemas
-│   ├── registry/                   # @genehub/registry - Gene Registry Service (Hono + Drizzle)
-│   ├── sdk/typescript/             # @genehub/sdk - TypeScript SDK + Adapters
+│   ├── types/                      # @nodeskai/genehub-types - 共享类型与 Zod schemas
+│   ├── registry/                   # @nodeskai/genehub-registry - Gene Registry Service (Hono + Drizzle)
+│   ├── sdk/typescript/             # @nodeskai/genehub-sdk - TypeScript SDK + Adapters
 │   └── cli/                        # genehub - 命令行工具 (Commander.js)
 ├── genes/                          # 官方基因库
 │   └── skills/<gene-slug>/

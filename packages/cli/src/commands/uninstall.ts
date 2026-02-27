@@ -1,4 +1,4 @@
-import { detectAdapter, getAdapter } from '@genehub/sdk';
+import { detectAdapter, getAdapter } from '@nodeskai/genehub-sdk';
 import { Command } from 'commander';
 import ora from 'ora';
 import * as output from '../output.js';

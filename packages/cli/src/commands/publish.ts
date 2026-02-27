@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { GeneHubClient } from '@genehub/sdk';
-import { GeneManifestSchema } from '@genehub/types';
+import { GeneHubClient } from '@nodeskai/genehub-sdk';
+import { GeneManifestSchema } from '@nodeskai/genehub-types';
 import { Command } from 'commander';
 import ora from 'ora';
 import { parse } from 'yaml';

@@ -1,4 +1,4 @@
-import { GeneHubClient } from '@genehub/sdk';
+import { GeneHubClient } from '@nodeskai/genehub-sdk';
 import { Command } from 'commander';
 import { loadConfig } from '../config.js';
 import * as output from '../output.js';

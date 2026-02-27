@@ -9,7 +9,7 @@ import type {
   InstallResult,
   UninstallOptions,
   UninstallResult,
-} from '@genehub/types';
+} from '@nodeskai/genehub-types';
 import { BaseAdapter } from './base.js';
 
 const DEFAULT_CONFIG_DIR = join(homedir(), '.openclaw');

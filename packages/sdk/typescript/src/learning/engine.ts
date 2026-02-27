@@ -1,6 +1,6 @@
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { GeneAdapter, GeneManifest } from '@genehub/types';
+import type { GeneAdapter, GeneManifest } from '@nodeskai/genehub-types';
 import { META_LEARNER_MANIFEST } from './meta-gene.js';
 import { generateForgetTaskMarkdown, generateLearningTaskMarkdown } from './prompts.js';
 import type { LearningResult, LearningTask } from './task.js';

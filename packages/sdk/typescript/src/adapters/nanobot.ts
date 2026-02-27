@@ -8,7 +8,7 @@ import type {
   InstallResult,
   UninstallOptions,
   UninstallResult,
-} from '@genehub/types';
+} from '@nodeskai/genehub-types';
 import { BaseAdapter } from './base.js';
 
 const DEFAULT_WORKSPACE = join(homedir(), '.nanobot', 'workspace');

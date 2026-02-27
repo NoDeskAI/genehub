@@ -6,7 +6,7 @@ import type {
   InstallResult,
   UninstallOptions,
   UninstallResult,
-} from '@genehub/types';
+} from '@nodeskai/genehub-types';
 
 export abstract class BaseAdapter implements GeneAdapter {
   abstract readonly product: string;

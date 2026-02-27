@@ -1,4 +1,4 @@
-import type { GeneAdapter } from '@genehub/types';
+import type { GeneAdapter } from '@nodeskai/genehub-types';
 import { GenericAdapter } from './generic.js';
 import { NanobotAdapter } from './nanobot.js';
 import { OpenClawAdapter } from './openclaw.js';

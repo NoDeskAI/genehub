@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '@genehub/types';
+import { ERROR_CODES } from '@nodeskai/genehub-types';
 import type { Context } from 'hono';
 
 export class AppError extends Error {

@@ -1,5 +1,5 @@
 {
-  "name": "@genehub/sdk",
+  "name": "@nodeskai/genehub-sdk",
   "version": "0.1.0",
   "description": "GeneHub TypeScript SDK - API 客户端与产品适配器",
   "type": "module",
@@ -22,7 +22,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@genehub/types": "workspace:*",
+    "@nodeskai/genehub-types": "workspace:*",
     "yaml": "^2.7"
   },
   "devDependencies": {

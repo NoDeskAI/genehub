@@ -1,5 +1,5 @@
 {
-  "name": "@genehub/types",
+  "name": "@nodeskai/genehub-types",
   "version": "0.1.0",
   "description": "GeneHub 共享类型定义与 Zod schemas",
   "type": "module",

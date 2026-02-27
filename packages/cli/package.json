@@ -1,5 +1,5 @@
 {
-  "name": "genehub",
+  "name": "@nodeskai/genehub",
   "version": "0.1.0",
   "description": "GeneHub CLI - AI 员工基因管理命令行工具",
   "type": "module",
@@ -17,8 +17,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@genehub/types": "workspace:*",
-    "@genehub/sdk": "workspace:*",
+    "@nodeskai/genehub-types": "workspace:*",
+    "@nodeskai/genehub-sdk": "workspace:*",
     "commander": "^13.1",
     "chalk": "^5.4",
     "cli-table3": "^0.6",

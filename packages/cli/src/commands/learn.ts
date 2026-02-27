@@ -1,6 +1,6 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { detectAdapter, GeneHubClient, getAdapter, LearningEngine } from '@genehub/sdk';
+import { detectAdapter, GeneHubClient, getAdapter, LearningEngine } from '@nodeskai/genehub-sdk';
 import { Command } from 'commander';
 import ora from 'ora';
 import { loadConfig } from '../config.js';

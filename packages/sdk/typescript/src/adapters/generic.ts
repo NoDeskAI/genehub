@@ -7,7 +7,7 @@ import type {
   InstallResult,
   UninstallOptions,
   UninstallResult,
-} from '@genehub/types';
+} from '@nodeskai/genehub-types';
 import { stringify } from 'yaml';
 import { BaseAdapter } from './base.js';
 

@@ -1,4 +1,4 @@
-import { GeneManifestSchema } from '@genehub/types';
+import { GeneManifestSchema } from '@nodeskai/genehub-types';
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import semver from 'semver';
 import { db, schema } from '../db/index.js';

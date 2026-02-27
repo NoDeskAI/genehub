@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { GeneManifest } from '@genehub/types';
+import type { GeneManifest } from '@nodeskai/genehub-types';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GenericAdapter } from '../adapters/generic.js';
 

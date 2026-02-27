@@ -7,7 +7,7 @@ import type {
   Genome,
   PaginatedData,
   ResolvedGene,
-} from '@genehub/types';
+} from '@nodeskai/genehub-types';
 
 export type GeneHubClientOptions = {
   registryUrl: string;

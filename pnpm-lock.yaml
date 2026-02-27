@@ -14,10 +14,10 @@ importers:
 
   packages/cli:
     dependencies:
-      '@genehub/sdk':
+      '@nodeskai/genehub-sdk':
         specifier: workspace:*
         version: link:../sdk/typescript
-      '@genehub/types':
+      '@nodeskai/genehub-types':
         specifier: workspace:*
         version: link:../types
       chalk:
@@ -54,12 +54,12 @@ importers:
 
   packages/registry:
     dependencies:
-      '@genehub/types':
-        specifier: workspace:*
-        version: link:../types
       '@hono/node-server':
         specifier: ^1.13
         version: 1.19.9(hono@4.12.3)
+      '@nodeskai/genehub-types':
+        specifier: workspace:*
+        version: link:../types
       drizzle-orm:
         specifier: ^0.38
         version: 0.38.4(postgres@3.4.8)
@@ -100,7 +100,7 @@ importers:
 
   packages/sdk/typescript:
     dependencies:
-      '@genehub/types':
+      '@nodeskai/genehub-types':
         specifier: workspace:*
         version: link:../../types
       yaml:

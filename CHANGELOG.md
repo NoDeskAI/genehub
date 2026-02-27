@@ -54,10 +54,10 @@ All notable changes to this project will be documented in this file.
 
 ### M0 - 基础设施
 
-- pnpm monorepo 搭建（`@genehub/types` + `@genehub/registry` + `@genehub/sdk` + `genehub` CLI）
-- `@genehub/types`：Gene Manifest Zod schema、实体类型、API 类型、Adapter 接口
-- `@genehub/registry`：Hono + Drizzle ORM + PostgreSQL，Gene CRUD API（搜索/详情/manifest/版本/发布）
-- `@genehub/sdk`：GeneHub API 客户端 + OpenClaw Adapter + nanobot Adapter + Generic Adapter
+- pnpm monorepo 搭建（`@nodeskai/genehub-types` + `@nodeskai/genehub-registry` + `@nodeskai/genehub-sdk` + `genehub` CLI）
+- `@nodeskai/genehub-types`：Gene Manifest Zod schema、实体类型、API 类型、Adapter 接口
+- `@nodeskai/genehub-registry`：Hono + Drizzle ORM + PostgreSQL，Gene CRUD API（搜索/详情/manifest/版本/发布）
+- `@nodeskai/genehub-sdk`：GeneHub API 客户端 + OpenClaw Adapter + nanobot Adapter + Generic Adapter
 - `genehub` CLI：install / search / list / publish / init 五个子命令
 - 官方基因示例：`genes/skills/code-review/`
 - Docker Compose 本地 PostgreSQL 环境

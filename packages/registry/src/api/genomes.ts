@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '@genehub/types';
+import { ERROR_CODES } from '@nodeskai/genehub-types';
 import { and, eq, isNull } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { db, schema } from '../db/index.js';

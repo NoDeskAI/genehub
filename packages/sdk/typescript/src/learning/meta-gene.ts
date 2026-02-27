@@ -1,4 +1,4 @@
-import type { GeneManifest } from '@genehub/types';
+import type { GeneManifest } from '@nodeskai/genehub-types';
 
 const SKILL_CONTENT = `---
 name: genehub-learner
