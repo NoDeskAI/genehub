@@ -46,13 +46,13 @@ jobs:
       - run: pnpm build
 
       - name: Publish @nodeskai/genehub-types
-        run: pnpm --filter @nodeskai/genehub-types publish --no-git-checks --access public
+        run: pnpm --filter @nodeskai/genehub-types publish --no-git-checks --access public --provenance
 
       - name: Publish @nodeskai/genehub-sdk
-        run: pnpm --filter @nodeskai/genehub-sdk publish --no-git-checks --access public
+        run: pnpm --filter @nodeskai/genehub-sdk publish --no-git-checks --access public --provenance
 
       - name: Publish @nodeskai/genehub (CLI)
-        run: pnpm --filter @nodeskai/genehub publish --no-git-checks --access public
+        run: pnpm --filter @nodeskai/genehub publish --no-git-checks --access public --provenance
 
   deploy-k8s:
     needs: ci
