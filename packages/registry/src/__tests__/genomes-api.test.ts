@@ -57,87 +57,75 @@ describe('Genomes API', () => {
     expect(json.error_code).toBe('permission_denied');
   });
 
-  it.skipIf(!hasDB)(
-    'POST /api/v1/genomes 空基因列表应返回 422',
-    async () => {
-      const res = await app.request('/api/v1/genomes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ghb_admin_dev',
-        },
-        body: JSON.stringify({
-          name: 'Test Genome',
-          slug: 'test-empty-genes',
-          version: '1.0.0',
-          genes: [],
-        }),
-      });
-      expect(res.status).toBe(422);
-      const json = await res.json();
-      expect(json.error_code).toBe('genome_validation_failed');
-    },
-  );
+  it.skipIf(!hasDB)('POST /api/v1/genomes 空基因列表应返回 422', async () => {
+    const res = await app.request('/api/v1/genomes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ghb_admin_dev',
+      },
+      body: JSON.stringify({
+        name: 'Test Genome',
+        slug: 'test-empty-genes',
+        version: '1.0.0',
+        genes: [],
+      }),
+    });
+    expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.error_code).toBe('genome_validation_failed');
+  });
 
-  it.skipIf(!hasDB)(
-    'POST /api/v1/genomes 引用不存在基因应返回 422',
-    async () => {
-      const res = await app.request('/api/v1/genomes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ghb_admin_dev',
-        },
-        body: JSON.stringify({
-          name: 'Test Genome',
-          slug: 'test-bad-refs',
-          version: '1.0.0',
-          genes: [{ slug: 'this-gene-does-not-exist', version: '1.0.0' }],
-        }),
-      });
-      expect(res.status).toBe(422);
-      const json = await res.json();
-      expect(json.error_code).toBe('genome_validation_failed');
-      expect(json.message).toContain('不存在');
-    },
-  );
+  it.skipIf(!hasDB)('POST /api/v1/genomes 引用不存在基因应返回 422', async () => {
+    const res = await app.request('/api/v1/genomes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ghb_admin_dev',
+      },
+      body: JSON.stringify({
+        name: 'Test Genome',
+        slug: 'test-bad-refs',
+        version: '1.0.0',
+        genes: [{ slug: 'this-gene-does-not-exist', version: '1.0.0' }],
+      }),
+    });
+    expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.error_code).toBe('genome_validation_failed');
+    expect(json.message).toContain('不存在');
+  });
 
-  it.skipIf(!hasDB)(
-    'POST /api/v1/genomes 无效版本号应返回 422',
-    async () => {
-      const res = await app.request('/api/v1/genomes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ghb_admin_dev',
-        },
-        body: JSON.stringify({
-          name: 'Test Genome',
-          slug: 'test-bad-version',
-          version: 'not-a-version',
-          genes: [{ slug: 'some-gene', version: '1.0.0' }],
-        }),
-      });
-      expect(res.status).toBe(422);
-      const json = await res.json();
-      expect(json.error_code).toBe('genome_validation_failed');
-    },
-  );
+  it.skipIf(!hasDB)('POST /api/v1/genomes 无效版本号应返回 422', async () => {
+    const res = await app.request('/api/v1/genomes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ghb_admin_dev',
+      },
+      body: JSON.stringify({
+        name: 'Test Genome',
+        slug: 'test-bad-version',
+        version: 'not-a-version',
+        genes: [{ slug: 'some-gene', version: '1.0.0' }],
+      }),
+    });
+    expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.error_code).toBe('genome_validation_failed');
+  });
 
-  it.skipIf(!hasDB)(
-    'POST /api/v1/genomes 缺少必填字段应返回 422',
-    async () => {
-      const res = await app.request('/api/v1/genomes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ghb_admin_dev',
-        },
-        body: JSON.stringify({ genes: [{ slug: 'x', version: '1.0.0' }] }),
-      });
-      expect(res.status).toBe(422);
-      const json = await res.json();
-      expect(json.error_code).toBe('genome_validation_failed');
-    },
-  );
+  it.skipIf(!hasDB)('POST /api/v1/genomes 缺少必填字段应返回 422', async () => {
+    const res = await app.request('/api/v1/genomes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ghb_admin_dev',
+      },
+      body: JSON.stringify({ genes: [{ slug: 'x', version: '1.0.0' }] }),
+    });
+    expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.error_code).toBe('genome_validation_failed');
+  });
 });
