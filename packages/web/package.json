@@ -1,7 +1,7 @@
 {
   "name": "@nodeskai/genehub-web",
   "private": true,
-  "version": "2026.2.28",
+  "version": "2026.2.28-1",
   "type": "module",
   "scripts": {
     "dev": "vite",
