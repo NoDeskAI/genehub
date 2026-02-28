@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check VERSION sync
+        run: node scripts/sync-version.mjs --check
+
       - name: Lint
         run: pnpm lint
 

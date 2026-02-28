@@ -1,7 +1,7 @@
 {
   "name": "genehub-monorepo",
   "private": true,
-  "version": "2026-02-27-alpha",
+  "version": "2026.2.28",
   "description": "NoDeskClaw AI 员工基因库",
   "scripts": {
     "dev:registry": "pnpm --filter @nodeskai/genehub-registry dev",
@@ -14,7 +14,10 @@
     "db:generate": "pnpm --filter @nodeskai/genehub-registry db:generate",
     "db:migrate": "pnpm --filter @nodeskai/genehub-registry db:migrate",
     "db:seed": "pnpm --filter @nodeskai/genehub-registry db:seed",
-    "genehub": "node packages/cli/dist/index.js"
+    "genehub": "node packages/cli/dist/index.js",
+    "version:sync": "node scripts/sync-version.mjs",
+    "version:check": "node scripts/sync-version.mjs --check",
+    "release": "node scripts/sync-version.mjs && git add -A && git commit -m \"chore: bump version to $(node scripts/sync-version.mjs --npm-version)\" && git tag $(node scripts/sync-version.mjs --tag) && git push origin master --tags"
   },
   "engines": {
     "node": ">=20.0.0",

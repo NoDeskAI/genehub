@@ -20,6 +20,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Sync VERSION → package.json
+        run: node scripts/sync-version.mjs --check
       - run: pnpm lint
       - run: pnpm build
       - run: pnpm test
@@ -39,6 +41,8 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
+      - name: Sync VERSION → package.json
+        run: node scripts/sync-version.mjs
       - run: pnpm build
 
       - name: Publish @nodeskai/genehub-types
