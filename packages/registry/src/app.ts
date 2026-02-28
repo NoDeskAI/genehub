@@ -8,6 +8,8 @@ import { logger } from 'hono/logger';
 import { genesRouter } from './api/genes.js';
 import { genomesRouter } from './api/genomes.js';
 import { resolveRouter } from './api/resolve.js';
+import { syncRouter } from './api/sync.js';
+import { webhooksRouter } from './api/webhooks.js';
 import { errorHandler } from './middleware/error-handler.js';
 
 export const app = new Hono();
@@ -30,6 +32,8 @@ app.get('/api/info', (c) =>
 app.route('/api/v1/genes', genesRouter);
 app.route('/api/v1/genomes', genomesRouter);
 app.route('/api/v1/resolve', resolveRouter);
+app.route('/api/v1/sync', syncRouter);
+app.route('/api/v1/webhooks', webhooksRouter);
 
 const PUBLIC_DIR = process.env.PUBLIC_DIR || './public';
 

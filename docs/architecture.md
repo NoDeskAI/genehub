@@ -466,45 +466,123 @@ GeneHub Registry                     ClawBuddy
 
 ### 9.1 ClawHub 适配
 
+> ClawHub（clawhub.ai）是 OpenClaw 官方的公共技能注册中心，拥有 3,286 个技能、1.5M+ 下载量。
+> 技术栈：TanStack Start + Convex + OpenAI embeddings 向量搜索。
+> GitHub：openclaw/clawhub（3,131 stars）
+
+#### 交互流程
+
 ```
-ClawHub Registry                GeneHub
+ClawHub (clawhub.ai)            GeneHub
      │                              │
-     │  1. GET /packages?q=...      │
-     │ ◄────────────────────────────│ (搜索)
+     │  1. 搜索：向量语义搜索        │
+     │ ◄────────────────────────────│
      │                              │
-     │  2. GET /packages/:id        │
-     │ ◄────────────────────────────│ (获取详情)
+     │  2. 获取技能详情 + SKILL.md    │
+     │ ◄────────────────────────────│
      │                              │
-     │  3. 转换 manifest 格式        │
+     │  3. 下载技能包（zip）          │
+     │ ◄────────────────────────────│
+     │                              │
+     │  4. 转换格式                  │
+     │     SKILL.md frontmatter     │
+     │     → gene.yaml manifest     │
      │                      ────────│
      │                      │       │
      │                      ▼       │
-     │  4. 存入 GeneHub              │
-     │         source=clawhub       │
+     │  5. 存入 GeneHub              │
+     │     source=clawhub           │
+     │     source_ref=clawhub URL   │
      │                              │
 ```
 
-转换规则：
-- ClawHub 的 package manifest → GeneHub Gene Manifest
-- ClawHub 的标签体系 → GeneHub 标签映射
-- 保留 `source_ref` 指向 ClawHub 原始 URL
+#### ClawHub 技能格式
+
+```yaml
+# SKILL.md frontmatter
+---
+name: my-skill
+description: Does a thing with an API.
+metadata:
+  openclaw:
+    requires:
+      env:
+        - MY_API_KEY
+      bins:
+        - curl
+    primaryEnv: MY_API_KEY
+---
+# 技能内容（Markdown）
+```
+
+#### 转换规则
+
+| ClawHub 字段 | GeneHub gene.yaml 字段 |
+|-------------|----------------------|
+| `name` | `name` + `slug`（kebab-case） |
+| `description` | `description` / `short_description` |
+| `metadata.openclaw.requires` | `config.openclaw` |
+| `tags` | `tags` |
+| 技能正文 | `skill.content`（SKILL.md） |
+| 下载量 / 星标数 | `install_count` / `avg_rating` |
+| — | `source: clawhub` |
+| 技能 URL | `source_ref` |
+
+#### ClawHub CLI 协议参考
+
+```bash
+clawhub search "query"            # 语义搜索
+clawhub install <slug>            # 安装（下载 zip → 解压到 ./skills/）
+clawhub publish <path>            # 发布
+clawhub sync                      # 批量同步
+```
+
+#### 安全注意事项
+
+2026-02 ClawHavoc 事件：341 个恶意技能被发现，ClawHub 已接入 VirusTotal 扫描。
+GeneHub 同步时应：跳过被标记/隐藏的技能、校验技能包完整性、记录审计日志。
 
 ### 9.2 Evomap 适配
 
-Evomap 提供基于 Agent 能力图谱的进化路径推荐：
+> EvoMap（evomap.ai）是 AI 自进化基础设施平台，基于 Genome Evolution Protocol（GEP）。
+> 核心引擎：Capability Evolver，实时分析日志 → 提取信号 → 生成/验证策略 → 固化能力。
+> GitHub：EvoMap/evolver（872 stars）
+
+#### GEP 协议核心概念
+
+| GEP 概念 | 说明 | GeneHub 映射 |
+|----------|------|-------------|
+| Gene | 原子能力单元（如 "read file"、"execute SQL"） | Gene Manifest |
+| Capsule | 成功执行路径的封装，复合问题解决方案 | Genome（基因组） |
+| Event | 不可变的突变/修复日志，完整上下文记录 | GeneVersion changelog |
+
+#### 交互流程
 
 ```
-Evomap                          GeneHub
+EvoMap (evomap.ai)              GeneHub
   │                                │
-  │  1. POST /recommend            │
-  │ ◄──────────────────────────────│ (提交 Agent 当前能力画像)
+  │  1. 提交 Agent 能力画像         │
+  │ ◄──────────────────────────────│ (当前已安装基因 + 效能数据)
   │                                │
-  │  2. 返回推荐基因组合            │
-  │ ──────────────────────────────►│
+  │  2. Evolver 分析 + 推荐        │
+  │ ──────────────────────────────►│ (推荐基因/Capsule 组合)
   │                                │
   │  3. GeneHub 解析推荐            │
-  │       并生成安装建议             │
+  │     GEP Gene → gene.yaml      │
+  │     GEP Capsule → genome      │
   │                                │
+  │  4. 效能数据回传                │
+  │ ◄──────────────────────────────│ (用于进化信号分析)
+  │                                │
+```
+
+#### Evolver 策略模式
+
+```bash
+EVOLVE_STRATEGY=balanced      # 平衡模式（默认）
+EVOLVE_STRATEGY=innovate      # 最大化新能力
+EVOLVE_STRATEGY=harden        # 聚焦稳定性
+EVOLVE_STRATEGY=repair-only   # 紧急修复模式
 ```
 
 ---
@@ -569,23 +647,53 @@ DeskClaw 使用 Cursor Rules（`.cursor/rules/*.mdc`）和 Skills（SKILL.md）�
 - [x] TypeScript SDK（客户端 + OpenClaw Adapter L1 + nanobot Adapter L1 + Generic Adapter）
 - [x] Learning Engine（L1 浅层学习 + L2 深度学习引擎 + genehub-learner 元学习基因）
 - [x] CLI 完整命令集（install/uninstall/search/list/publish/init/config/learn）
-- [ ] ClawBuddy 集成（推迟到 M2）
+- [ ] ClawBuddy 集成（→ M2.1）
 - [x] 官方基因库（7 个高质量基因含 learning objectives + scenarios）
 
-### M2 - 生态扩展（5-6 周）
+### M2 - 生态对接（5-6 周）
 
-- [ ] ClawHub Adapter（外部基因拉取）
-- [ ] Evomap Adapter（进化推荐）
-- [ ] Python SDK
-- [ ] npm / pip 分发支持
+#### M2.1 — ClawBuddy 集成（最高优先级，M1 遗留）
+
+将 GeneHub 与 ClawBuddy 打通，使 ClawBuddy 的基因市场以 GeneHub 为后端。
+
+- [ ] ClawBuddy 现有基因数据批量导入 GeneHub（Phase 1）
+- [ ] ClawBuddy 基因市场 API 代理转发到 GeneHub Registry（Phase 2）
+- [ ] ClawBuddy 学习引擎接入 GeneHub 标准学习协议（Phase 3）
+- [ ] ClawBuddy `genes` 表降级为本地缓存，GeneHub 为数据主源（Phase 4）
+
+#### M2.2 — ClawHub Adapter（高优先级）
+
+从 ClawHub（clawhub.ai，OpenClaw 官方技能市场，3,286 个技能）拉取社区技能到 GeneHub。
+
+- [ ] ClawHub API 客户端（搜索 / 获取技能详情 / 下载技能包）
+- [ ] 格式转换：ClawHub `SKILL.md` frontmatter → GeneHub `gene.yaml` Manifest
+- [ ] 定时同步 / 手动触发同步（`POST /sync/clawhub`）
+- [ ] 来源溯源：`source=clawhub` + `source_ref` 指向 ClawHub 原始 URL
+- [ ] 安全审查：过滤 ClawHavoc 事件后被标记的恶意技能
+
+#### M2.3 — Evomap Adapter（中优先级）
+
+对接 EvoMap（evomap.ai，AI 自进化基础设施）的 GEP 协议，获取进化推荐。
+
+- [ ] GEP 协议数据结构映射：EvoMap Gene/Capsule/Event → GeneHub Gene Manifest
+- [ ] Evolver 推荐接口对接：提交 Agent 能力画像 → 获取推荐基因组合
+- [ ] 进化信号集成：将 GeneHub 的效能数据回传给 EvoMap 用于进化分析
+- [ ] `POST /sync/evomap`：请求 Evomap 推荐并导入推荐基因
+
+#### M2.4 — 推迟到 M3
+
+- Python SDK（暂不紧急）
+- npm / pip 分发支持（依赖 Python SDK）
 
 ### M3 - 进阶能力（7-8 周）
 
-- [ ] DeskClaw Adapter（后续扩展）
-- [ ] Agent 创造基因自动发布到 GeneHub
-- [ ] 基因效能数据聚合与排行
-- [ ] 全文搜索升级（Meilisearch）
+- [ ] Python SDK
+- [ ] npm / pip 分发支持
 - [ ] 基因市场 Web UI
+- [ ] 基因效能数据聚合与排行
+- [ ] Agent 创造基因自动发布到 GeneHub
+- [ ] 全文搜索升级（Meilisearch）
+- [ ] DeskClaw Adapter（后续扩展）
 
 ---
 
@@ -596,8 +704,9 @@ DeskClaw 使用 Cursor Rules（`.cursor/rules/*.mdc`）和 Skills（SKILL.md）�
 | 1 | GeneHub 是独立部署还是嵌入 ClawBuddy | 独立部署，ClawBuddy 作为客户端 | 待确认 |
 | 2 | 基因文件存储用数据库还是 Git 仓库 | 混合：元数据在 DB，内容在 Git | 待确认 |
 | 3 | Registry 是否对外公开 | 初期内网部署，后期开放公共 Registry | 待确认 |
-| 4 | ClawHub 的具体 API 协议 | 待 ClawHub 方提供文档 | 待确认 |
-| 5 | Evomap 的推荐算法接口 | 待 Evomap 方提供文档 | 待确认 |
+| 4 | ClawHub API 协议 | Convex HTTP API，技能格式为 SKILL.md + frontmatter，有完整 CLI | 已调研 |
+| 5 | Evomap GEP 协议 | Gene/Capsule/Event 三层结构，Evolver 引擎 + 能力市场 | 已调研 |
+| 6 | ClawHub 恶意技能过滤策略 | 跳过被标记/低星级技能，结合 VirusTotal 扫描结果 | 待确认 |
 
 ---
 
