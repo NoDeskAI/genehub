@@ -18,7 +18,7 @@ Gene Learning Protocol（GLP）是 GeneHub 定义的标准化基因注入协议�
 |------|------|
 | 产品无关 | 协议不绑定任何特定 Agent 框架，初期支持 OpenClaw / nanobot，后续可扩展 DeskClaw 等 |
 | 渐进式 | 最简实现只需 `install` + `uninstall`，高级能力（深度学习、遗忘仪式）按需实现 |
-| 向后兼容 | ClawBuddy 现有的 Learning Channel Plugin 通信协议是 GLP 的第一个实现 |
+| 向后兼容 | NoDeskClaw 现有的 Learning Channel Plugin 通信协议是 GLP 的第一个实现 |
 | 可扩展 | Manifest 结构支持产品专属扩展字段，不影响通用字段 |
 
 ### 1.2 术语定义
@@ -208,9 +208,9 @@ learning:
 | `knowledge` | 知识——领域背景 | `always: true` |
 | `tool` | 工具——接入外部 | `always: false` + mcp_servers |
 
-### 2.4 与 ClawBuddy manifest 的映射
+### 2.4 与 NoDeskClaw manifest 的映射
 
-| GeneHub Manifest | ClawBuddy manifest |
+| GeneHub Manifest | NoDeskClaw manifest |
 |------------------|-------------------|
 | `skill.name` | `manifest.skill.slug` |
 | `skill.content` | `manifest.skill.content` |
@@ -219,7 +219,7 @@ learning:
 | `mcp_servers` | `manifest.mcp_servers` |
 | `learning` | `manifest.learning` |
 
-ClawBuddy 的 `gene_service.py` 可以零成本适配：只需在 `install_gene` 时从 GeneHub Manifest 提取 ClawBuddy 格式的 manifest。
+NoDeskClaw 的 `gene_service.py` 可以零成本适配：只需在 `install_gene` 时从 GeneHub Manifest 提取 NoDeskClaw 格式的 manifest。
 
 ---
 
@@ -228,7 +228,7 @@ ClawBuddy 的 `gene_service.py` 可以零成本适配：只需在 `install_gene`
 ### 3.1 安装流程
 
 ```
-Client (CLI / SDK / ClawBuddy)        GeneHub Registry         Agent Host
+Client (CLI / SDK / NoDeskClaw)        GeneHub Registry         Agent Host
      │                                      │                      │
      │  1. GET /genes/:slug/manifest        │                      │
      │ ─────────────────────────────────────►│                      │
@@ -392,7 +392,7 @@ Gene Manifest
 | L2 | 深度学习 | Agent 个性化改写技能，生成专属版本 | L1 + Learning Engine |
 | L3 | 自主进化 | Agent 主动发现、学习、创造、遗忘基因 | L2 + meta-learning 基因 |
 
-ClawBuddy 当前实现了 L0-L3 全部等级。新接入的产品可以从 L0 开始，逐步升级。
+NoDeskClaw 当前实现了 L0-L3 全部等级。新接入的产品可以从 L0 开始，逐步升级。
 
 ### 4.2 学习任务协议
 
@@ -744,9 +744,9 @@ Token 通过 `genehub auth login` 或 GeneHub Web UI 生成。
 
 ## 十、实现参考
 
-### 10.1 ClawBuddy 现有实现对照
+### 10.1 NoDeskClaw 现有实现对照
 
-| GLP 概念 | ClawBuddy 对应实现 |
+| GLP 概念 | NoDeskClaw 对应实现 |
 |----------|-------------------|
 | Gene Manifest | `Gene.manifest` JSON 字段 |
 | Adapter.install | `gene_service._direct_install()` |

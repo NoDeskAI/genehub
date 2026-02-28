@@ -39,7 +39,7 @@ GeneHub 是 NoDeskClaw 生态的核心基因注册中心（Gene Registry），�
 - ClawHub 兼容：`claw install @genehub/<slug>`
 - npm 兼容：`npx genehub install <slug>`
 - pip 兼容：`pip install genehub-<slug>`
-- HTTP API：程序化调用（ClawBuddy 等平台对接）
+- HTTP API：程序化调用（NoDeskClaw 等平台对接）
 
 ## 官方基因仓库
 
@@ -186,7 +186,7 @@ genehub/
 
 | 产品 | 安装 | 学习(L0) | 深度学习(L2) | 自主进化(L3) | 状态 |
 |------|------|----------|-------------|-------------|------|
-| openClaw / ClawBuddy | ✅ | ✅ | ✅ | ✅ | 初期支持 |
+| openClaw / NoDeskClaw | ✅ | ✅ | ✅ | ✅ | 初期支持 |
 | nanobot | ✅ | ✅ | 🚧 | 🚧 | 初期支持 |
 | DeskClaw | — | — | — | — | 后续扩展 |
 | ClawHub | — | — | — | — | 后续扩展 |

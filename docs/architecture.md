@@ -10,16 +10,16 @@
 
 ### 1.1 为什么需要 GeneHub
 
-ClawBuddy 已经实现了一套完整的基因进化生态（Gene Evolution Ecosystem），包括基因市场、学习引擎、遗忘机制、Agent 创造等能力。但这套系统存在以下问题：
+NoDeskClaw 已经实现了一套完整的基因进化生态（Gene Evolution Ecosystem），包括基因市场、学习引擎、遗忘机制、Agent 创造等能力。但这套系统存在以下问题：
 
 | 问题 | 影响 |
 |------|------|
-| 基因存储与管理耦合在 ClawBuddy 后端 | 其他 Agent 产品无法复用 |
+| 基因存储与管理耦合在 NoDeskClaw 后端 | 其他 Agent 产品无法复用 |
 | 基因格式绑定 OpenClaw（SKILL.md + openclaw.json） | nanobot 等产品需要各自适配 |
 | 无外部基因引入通道 | 无法从 ClawHub、Evomap 等外部生态获取基因 |
 | 安装方式单一（API 调用） | 无法兼容 `claw install`、`npm`、`pip` 等主流分发方式 |
 
-**GeneHub 的目标**：将基因能力从 ClawBuddy 中抽离为独立的中心化基因服务，成为 NoDeskClaw 全生态的基因基础设施。
+**GeneHub 的目标**：将基因能力从 NoDeskClaw 中抽离为独立的中心化基因服务，成为 NoDeskClaw 全生态的基因基础设施。
 
 ### 1.2 核心定位
 
@@ -106,7 +106,7 @@ GeneHub = 基因注册中心（Registry）+ 标准学习协议（Protocol）+ �
 │                          Agent 产品                                           │
 │                                                                              │
 │   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                    │
-│   │  ClawBuddy   │  │  openClaw    │  │  nanobot     │  (更多产品后续)    │
+│   │  NoDeskClaw   │  │  openClaw    │  │  nanobot     │  (更多产品后续)    │
 │   │  (K8s 管理)  │  │  (开源框架)   │  │ (轻量 Agent) │                    │
 │   └──────────────┘  └──────────────┘  └──────────────┘                    │
 │                                                                              │
@@ -144,7 +144,7 @@ GeneHub = 基因注册中心（Registry）+ 标准学习协议（Protocol）+ �
 
 | 适配器 | 目标产品 | 注入方式 |
 |--------|---------|---------|
-| OpenClaw Adapter | openClaw / ClawBuddy | SKILL.md + openclaw.json（NFS / API） | 初期 |
+| OpenClaw Adapter | openClaw / NoDeskClaw | SKILL.md + openclaw.json（NFS / API） | 初期 |
 | nanobot Adapter | nanobot | 配置注入（待定） | 初期 |
 | Generic Adapter | 通用 Agent | 标准学习协议 HTTP 回调 | 初期 |
 | DeskClaw Adapter | DeskClaw | .cursor/rules/ + SKILL.md | 后续扩展 |
@@ -176,7 +176,7 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 
 #### Gene（基因）
 
-从 ClawBuddy 的 Gene 模型演化而来，增加多产品兼容字段：
+从 NoDeskClaw 的 Gene 模型演化而来，增加多产品兼容字段：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -239,10 +239,10 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | is_latest | bool | 是否最新 |
 | published_at | datetime | 发布时间 |
 
-### 3.2 与 ClawBuddy 的数据关系
+### 3.2 与 NoDeskClaw 的数据关系
 
 ```
-ClawBuddy                              GeneHub
+NoDeskClaw                              GeneHub
 ┌─────────────────────┐         ┌─────────────────────┐
 │ Instance             │         │ Gene (Registry)      │
 │ InstanceGene         │◄───────►│ Genome (Registry)    │
@@ -251,11 +251,11 @@ ClawBuddy                              GeneHub
 │ GeneRating           │   sync  │                      │
 └─────────────────────┘  ◄────► └─────────────────────┘
 
-ClawBuddy 保留：实例级基因状态（InstanceGene）、进化日志、效能数据
+NoDeskClaw 保留：实例级基因状态（InstanceGene）、进化日志、效能数据
 GeneHub 统管：基因元数据、版本、manifest、搜索、兼容性
 ```
 
-ClawBuddy 的 `genes` 表将作为 GeneHub 的客户端缓存，定期与 GeneHub Registry 同步。新基因由 GeneHub 统一管理，ClawBuddy 通过 API 拉取。
+NoDeskClaw 的 `genes` 表将作为 GeneHub 的客户端缓存，定期与 GeneHub Registry 同步。新基因由 GeneHub 统一管理，NoDeskClaw 通过 API 拉取。
 
 ---
 
@@ -270,7 +270,7 @@ ClawBuddy 的 `genes` 表将作为 GeneHub 的客户端缓存，定期与 GeneHu
 | 层级 | 选型 | 说明 |
 |------|------|------|
 | Registry API | TypeScript + Hono | 轻量高性能，运行在 Node.js / Bun / Edge |
-| 数据库 | PostgreSQL | 与 ClawBuddy 同生态，支持 JSONB 全文搜索 |
+| 数据库 | PostgreSQL | 与 NoDeskClaw 同生态，支持 JSONB 全文搜索 |
 | 基因文件存储 | 文件系统 + Git | 基因内容版本化天然适合 Git 管理 |
 | 搜索引擎 | PostgreSQL FTS（初期）/ Meilisearch（后期） | 先简后繁 |
 | CLI | TypeScript (tsx) | 跨平台，单文件分发 |
@@ -420,31 +420,31 @@ genehub/
 
 ---
 
-## 八、与 ClawBuddy 集成方案
+## 八、与 NoDeskClaw 集成方案
 
 ### 8.1 迁移路径
 
-| 阶段 | 动作 | ClawBuddy 影响 |
+| 阶段 | 动作 | NoDeskClaw 影响 |
 |------|------|----------------|
-| Phase 1 | GeneHub Registry 独立部署，导入 ClawBuddy 现有基因数据 | ClawBuddy 保持现有功能不变 |
-| Phase 2 | ClawBuddy 基因市场 API 改为代理转发到 GeneHub | 前端无感知，后端 gene_service 添加 GeneHub 客户端 |
-| Phase 3 | ClawBuddy 学习引擎接入标准学习协议 | Learning Channel Plugin 无需改动，gene_service 适配 |
-| Phase 4 | ClawBuddy genes 表降级为本地缓存 | 基因元数据以 GeneHub 为主，本地缓存加速 |
+| Phase 1 | GeneHub Registry 独立部署，导入 NoDeskClaw 现有基因数据 | NoDeskClaw 保持现有功能不变 |
+| Phase 2 | NoDeskClaw 基因市场 API 改为代理转发到 GeneHub | 前端无感知，后端 gene_service 添加 GeneHub 客户端 |
+| Phase 3 | NoDeskClaw 学习引擎接入标准学习协议 | Learning Channel Plugin 无需改动，gene_service 适配 |
+| Phase 4 | NoDeskClaw genes 表降级为本地缓存 | 基因元数据以 GeneHub 为主，本地缓存加速 |
 
 ### 8.2 API 映射
 
-| ClawBuddy 现有 API | GeneHub 替代 |
+| NoDeskClaw 现有 API | GeneHub 替代 |
 |---------------------|-------------|
 | `GET /genes` | `GET /api/v1/genes` (Registry) |
 | `GET /genes/:id` | `GET /api/v1/genes/:slug` (Registry) |
 | `POST /genes/:id/rate` | `POST /api/v1/genes/:slug/rate` (Registry) |
-| `POST /instances/:id/genes/install` | 保留（实例级操作留在 ClawBuddy，拉取 manifest 从 GeneHub） |
-| `POST /genes/learning-callback` | 保留（学习回调留在 ClawBuddy） |
+| `POST /instances/:id/genes/install` | 保留（实例级操作留在 NoDeskClaw，拉取 manifest 从 GeneHub） |
+| `POST /genes/learning-callback` | 保留（学习回调留在 NoDeskClaw） |
 
 ### 8.3 数据同步
 
 ```
-GeneHub Registry                     ClawBuddy
+GeneHub Registry                     NoDeskClaw
      │                                    │
      │  GET /genes/:slug/manifest         │
      │ ◄──────────────────────────────────│ (install_gene 时拉取)
@@ -598,7 +598,7 @@ EVOLVE_STRATEGY=repair-only   # 紧急修复模式
 | npx | `npx genehub install <slug>` | 前端 / Node.js 项目 |
 | pip | `pip install genehub-<slug>` | Python Agent 项目 |
 | Git Clone | `git clone .../<slug>.git` | 开发者直接引用 |
-| HTTP API | `POST /install` | 程序化调用（ClawBuddy 等） |
+| HTTP API | `POST /install` | 程序化调用（NoDeskClaw 等） |
 
 ### 10.2 CLI 安装流程
 
@@ -647,19 +647,19 @@ DeskClaw 使用 Cursor Rules（`.cursor/rules/*.mdc`）和 Skills（SKILL.md）�
 - [x] TypeScript SDK（客户端 + OpenClaw Adapter L1 + nanobot Adapter L1 + Generic Adapter）
 - [x] Learning Engine（L1 浅层学习 + L2 深度学习引擎 + genehub-learner 元学习基因）
 - [x] CLI 完整命令集（install/uninstall/search/list/publish/init/config/learn）
-- [ ] ClawBuddy 集成（→ M2.1）
+- [ ] NoDeskClaw 集成（→ M2.1）
 - [x] 官方基因库（7 个高质量基因含 learning objectives + scenarios）
 
 ### M2 - 生态对接（5-6 周）
 
-#### M2.1 — ClawBuddy 集成（最高优先级，M1 遗留）
+#### M2.1 — NoDeskClaw 集成（最高优先级，M1 遗留）
 
-将 GeneHub 与 ClawBuddy 打通，使 ClawBuddy 的基因市场以 GeneHub 为后端。
+将 GeneHub 与 NoDeskClaw 打通，使 NoDeskClaw 的基因市场以 GeneHub 为后端。
 
-- [ ] ClawBuddy 现有基因数据批量导入 GeneHub（Phase 1）
-- [ ] ClawBuddy 基因市场 API 代理转发到 GeneHub Registry（Phase 2）
-- [ ] ClawBuddy 学习引擎接入 GeneHub 标准学习协议（Phase 3）
-- [ ] ClawBuddy `genes` 表降级为本地缓存，GeneHub 为数据主源（Phase 4）
+- [ ] NoDeskClaw 现有基因数据批量导入 GeneHub（Phase 1）
+- [ ] NoDeskClaw 基因市场 API 代理转发到 GeneHub Registry（Phase 2）
+- [ ] NoDeskClaw 学习引擎接入 GeneHub 标准学习协议（Phase 3）
+- [ ] NoDeskClaw `genes` 表降级为本地缓存，GeneHub 为数据主源（Phase 4）
 
 #### M2.2 — ClawHub Adapter（高优先级）
 
@@ -701,7 +701,7 @@ DeskClaw 使用 Cursor Rules（`.cursor/rules/*.mdc`）和 Skills（SKILL.md）�
 
 | # | 问题 | 倾向 | 状态 |
 |---|------|------|------|
-| 1 | GeneHub 是独立部署还是嵌入 ClawBuddy | 独立部署，ClawBuddy 作为客户端 | 待确认 |
+| 1 | GeneHub 是独立部署还是嵌入 NoDeskClaw | 独立部署，NoDeskClaw 作为客户端 | 待确认 |
 | 2 | 基因文件存储用数据库还是 Git 仓库 | 混合：元数据在 DB，内容在 Git | 待确认 |
 | 3 | Registry 是否对外公开 | 初期内网部署，后期开放公共 Registry | 待确认 |
 | 4 | ClawHub API 协议 | Convex HTTP API，技能格式为 SKILL.md + frontmatter，有完整 CLI | 已调研 |
