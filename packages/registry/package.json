@@ -1,6 +1,6 @@
 {
   "name": "@nodeskai/genehub-registry",
-  "version": "2026.2.28-4",
+  "version": "2026.2.28-5",
   "description": "GeneHub Gene Registry Service",
   "type": "module",
   "main": "./dist/index.js",

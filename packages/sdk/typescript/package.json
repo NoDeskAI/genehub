@@ -1,6 +1,6 @@
 {
   "name": "@nodeskai/genehub-sdk",
-  "version": "2026.2.28-4",
+  "version": "2026.2.28-5",
   "description": "GeneHub TypeScript SDK - API 客户端与产品适配器",
   "type": "module",
   "main": "./dist/index.js",
