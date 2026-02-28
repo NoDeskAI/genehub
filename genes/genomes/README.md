@@ -6,10 +6,14 @@
 
 ```
 genomes/
-├── README.md           # 本文件
-├── agile-executor/     # 灵敏 -- 执行者基因组
+├── README.md             # 本文件
+├── agile-executor/       # 灵敏 -- 执行者基因组
 │   └── genome.yaml
-└── visionary-planner/  # 远见 -- 规划者基因组
+├── visionary-planner/    # 远见 -- 规划者基因组
+│   └── genome.yaml
+├── erudite-scholar/      # 渊博 -- 博学者基因组
+│   └── genome.yaml
+└── steadfast-guardian/   # 威严 -- 守护者基因组
     └── genome.yaml
 ```
 
@@ -29,3 +33,5 @@ genomes/
 |------|------|------|
 | agile-executor | 灵敏 -- 执行者基因组 | 卓越执行者（Act 类型） |
 | visionary-planner | 远见 -- 规划者基因组 | 远见规划者（Plan 类型） |
+| erudite-scholar | 渊博 -- 博学者基因组 | 博学者（Knowledge 类型） |
+| steadfast-guardian | 威严 -- 守护者基因组 | 守护者（Judge 类型） |
