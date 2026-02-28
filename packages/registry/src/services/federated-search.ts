@@ -80,26 +80,29 @@ async function searchLocal(
   }));
 }
 
-function mapClawHubResult(item: ClawHubSearchResult): FederatedGeneItem {
-  return {
+function normalizeClawHubScores(items: ClawHubSearchResult[]): FederatedGeneItem[] {
+  if (items.length === 0) return [];
+  const maxScore = Math.max(...items.map((i) => i.score), 1);
+
+  return items.map((item) => ({
     slug: item.slug,
     name: item.displayName ?? item.slug,
     description: item.summary,
     version: item.version,
     category: null,
     tags: [],
-    source: 'clawhub',
-    score: item.score,
+    source: 'clawhub' as const,
+    score: (item.score / maxScore) * 0.85,
     install_count: null,
     avg_rating: null,
     clawhub_display_name: item.displayName,
-  };
+  }));
 }
 
 async function searchClawHub(query: string): Promise<FederatedGeneItem[]> {
   try {
     const response = await clawhubClient.searchSkills(query);
-    return response.results.map(mapClawHubResult);
+    return normalizeClawHubScores(response.results);
   } catch {
     return [];
   }

@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import semver from 'semver';
 import { db, schema } from '../db/index.js';
 import { AppError } from '../middleware/error-handler.js';
@@ -100,7 +100,7 @@ async function validateGeneRefs(geneRefs: GenomeGeneInput[]) {
   const existing = await db
     .select({ slug: genes.slug, is_published: genes.is_published, version: genes.version })
     .from(genes)
-    .where(and(sql`${genes.slug} = ANY(${uniqueSlugs})`, isNull(genes.deleted_at)));
+    .where(and(inArray(genes.slug, uniqueSlugs), isNull(genes.deleted_at)));
 
   const existingMap = new Map(existing.map((g) => [g.slug, g]));
   const missing: string[] = [];

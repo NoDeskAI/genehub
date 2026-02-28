@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db, schema } from '../../db/index.js';
 
 const { genomes, genomeVersions, genes, geneRelations } = schema;
@@ -112,7 +112,7 @@ export async function validateGenome(args: { gene_slugs: string[] }) {
       category: genes.category,
     })
     .from(genes)
-    .where(sql`${genes.slug} = ANY(${slugs})`);
+    .where(inArray(genes.slug, slugs));
 
   const geneMap = new Map(existing.map((g) => [g.slug, g]));
 
@@ -134,23 +134,29 @@ export async function validateGenome(args: { gene_slugs: string[] }) {
     }
   }
 
+  const sourceGenes = db
+    .$with('source_genes')
+    .as(
+      db.select({ id: genes.id, slug: genes.slug }).from(genes).where(inArray(genes.slug, slugs)),
+    );
+  const targetGenes = db
+    .$with('target_genes')
+    .as(
+      db.select({ id: genes.id, slug: genes.slug }).from(genes).where(inArray(genes.slug, slugs)),
+    );
+
   const conflicts = await db
+    .with(sourceGenes, targetGenes)
     .select({
-      source: sql<string>`src.slug`,
-      target: sql<string>`tgt.slug`,
+      source: sourceGenes.slug,
+      target: targetGenes.slug,
       relation_type: geneRelations.relation_type,
       reason: geneRelations.reason,
     })
     .from(geneRelations)
-    .innerJoin(sql`${genes} src`, eq(sql`src.id`, geneRelations.source_gene_id))
-    .innerJoin(sql`${genes} tgt`, eq(sql`tgt.id`, geneRelations.target_gene_id))
-    .where(
-      and(
-        eq(geneRelations.relation_type, 'conflict'),
-        sql`src.slug = ANY(${slugs})`,
-        sql`tgt.slug = ANY(${slugs})`,
-      ),
-    );
+    .innerJoin(sourceGenes, eq(sourceGenes.id, geneRelations.source_gene_id))
+    .innerJoin(targetGenes, eq(targetGenes.id, geneRelations.target_gene_id))
+    .where(eq(geneRelations.relation_type, 'conflict'));
 
   const valid = missing.length === 0 && unpublished.length === 0 && deleted.length === 0;
 
