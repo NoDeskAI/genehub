@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  type ClawBuddyGeneRow,
-  convertClawBuddyGene,
+  convertNoDeskClawGene,
   extractGeneMetadata,
-} from '../clawbuddy/converter.js';
+  type NoDeskClawGeneRow,
+} from '../nodeskclaw/converter.js';
 
-function makeRow(overrides: Partial<ClawBuddyGeneRow> = {}): ClawBuddyGeneRow {
+function makeRow(overrides: Partial<NoDeskClawGeneRow> = {}): NoDeskClawGeneRow {
   return {
     id: 'cb-uuid-1',
     name: 'Code Review',
@@ -43,9 +43,9 @@ function makeRow(overrides: Partial<ClawBuddyGeneRow> = {}): ClawBuddyGeneRow {
   };
 }
 
-describe('convertClawBuddyGene', () => {
+describe('convertNoDeskClawGene', () => {
   it('should map core fields directly', () => {
-    const result = convertClawBuddyGene(makeRow());
+    const result = convertNoDeskClawGene(makeRow());
     expect(result.slug).toBe('code-review');
     expect(result.name).toBe('Code Review');
     expect(result.version).toBe('1.2.0');
@@ -56,84 +56,86 @@ describe('convertClawBuddyGene', () => {
   });
 
   it('should parse JSON string tags into array', () => {
-    const result = convertClawBuddyGene(makeRow());
+    const result = convertNoDeskClawGene(makeRow());
     expect(result.tags).toEqual(['ability', 'tool']);
   });
 
   it('should filter out invalid tags and fallback to ["ability"]', () => {
-    const result = convertClawBuddyGene(makeRow({ tags: JSON.stringify(['invalid', 'nonsense']) }));
+    const result = convertNoDeskClawGene(
+      makeRow({ tags: JSON.stringify(['invalid', 'nonsense']) }),
+    );
     expect(result.tags).toEqual(['ability']);
   });
 
   it('should handle null tags gracefully', () => {
-    const result = convertClawBuddyGene(makeRow({ tags: null }));
+    const result = convertNoDeskClawGene(makeRow({ tags: null }));
     expect(result.tags).toEqual(['ability']);
   });
 
   it('should handle malformed JSON tags gracefully', () => {
-    const result = convertClawBuddyGene(makeRow({ tags: '{broken json' }));
+    const result = convertNoDeskClawGene(makeRow({ tags: '{broken json' }));
     expect(result.tags).toEqual(['ability']);
   });
 
   it('should map created_by to author.ref', () => {
-    const result = convertClawBuddyGene(makeRow());
+    const result = convertNoDeskClawGene(makeRow());
     expect(result.author).toEqual({ type: 'human', name: '', ref: 'user-abc' });
   });
 
   it('should set default compatibility to openclaw', () => {
-    const result = convertClawBuddyGene(makeRow());
+    const result = convertNoDeskClawGene(makeRow());
     expect(result.compatibility).toEqual([{ product: 'openclaw', min_version: '0.0.0' }]);
   });
 
   it('should map manifest.skill correctly', () => {
-    const result = convertClawBuddyGene(makeRow());
+    const result = convertNoDeskClawGene(makeRow());
     expect(result.skill.name).toBe('code-review');
     expect(result.skill.content).toContain('Code Review');
     expect(result.skill.always).toBe(false);
   });
 
   it('should map manifest.openclaw_config + tool_allow into config.openclaw', () => {
-    const result = convertClawBuddyGene(makeRow());
+    const result = convertNoDeskClawGene(makeRow());
     expect(result.config?.openclaw?.openclaw_config).toEqual({ model: 'gpt-4' });
     expect(result.config?.openclaw?.tool_allow).toEqual(['read_file', 'write_file']);
   });
 
   it('should map manifest.mcp_servers', () => {
-    const result = convertClawBuddyGene(makeRow());
+    const result = convertNoDeskClawGene(makeRow());
     expect(result.mcp_servers).toHaveLength(1);
     expect(result.mcp_servers[0].name).toBe('github');
     expect(result.mcp_servers[0].command).toBe('gh-mcp');
   });
 
   it('should map manifest.learning', () => {
-    const result = convertClawBuddyGene(makeRow());
+    const result = convertNoDeskClawGene(makeRow());
     expect(result.learning?.objectives).toEqual(['understand PR diffs']);
     expect(result.learning?.scenarios).toHaveLength(1);
   });
 
   it('should parse JSON string dependencies', () => {
-    const result = convertClawBuddyGene(makeRow());
+    const result = convertNoDeskClawGene(makeRow());
     expect(result.dependencies).toEqual([{ slug: 'memory', version: '>=1.0.0' }]);
   });
 
   it('should handle null manifest gracefully', () => {
-    const result = convertClawBuddyGene(makeRow({ manifest: null }));
+    const result = convertNoDeskClawGene(makeRow({ manifest: null }));
     expect(result.skill.name).toBe('code-review');
     expect(result.skill.content).toBe('');
   });
 
   it('should default version to 1.0.0 when empty', () => {
-    const result = convertClawBuddyGene(makeRow({ version: '' }));
+    const result = convertNoDeskClawGene(makeRow({ version: '' }));
     expect(result.version).toBe('1.0.0');
   });
 
   it('should normalize unknown category to development', () => {
-    const result = convertClawBuddyGene(makeRow({ category: 'unknown-cat' }));
+    const result = convertNoDeskClawGene(makeRow({ category: 'unknown-cat' }));
     expect(result.category).toBe('development');
   });
 
   it('should normalize null category to development', () => {
-    const result = convertClawBuddyGene(makeRow({ category: null }));
+    const result = convertNoDeskClawGene(makeRow({ category: null }));
     expect(result.category).toBe('development');
   });
 });

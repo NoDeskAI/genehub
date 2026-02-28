@@ -7,9 +7,9 @@ function _sign(body: string, secret: string): string {
 }
 
 describe('Webhooks API', () => {
-  it('POST /api/v1/webhooks/clawbuddy/gene-created should reject missing slug', async () => {
+  it('POST /api/v1/webhooks/nodeskclaw/gene-created should reject missing slug', async () => {
     const body = JSON.stringify({ manifest: {} });
-    const res = await app.request('/api/v1/webhooks/clawbuddy/gene-created', {
+    const res = await app.request('/api/v1/webhooks/nodeskclaw/gene-created', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
@@ -17,9 +17,9 @@ describe('Webhooks API', () => {
     expect(res.status).toBe(422);
   });
 
-  it('POST /api/v1/webhooks/clawbuddy/gene-learned should reject missing slug', async () => {
+  it('POST /api/v1/webhooks/nodeskclaw/gene-learned should reject missing slug', async () => {
     const body = JSON.stringify({});
-    const res = await app.request('/api/v1/webhooks/clawbuddy/gene-learned', {
+    const res = await app.request('/api/v1/webhooks/nodeskclaw/gene-learned', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
@@ -27,9 +27,9 @@ describe('Webhooks API', () => {
     expect(res.status).toBe(422);
   });
 
-  it('POST /api/v1/webhooks/clawbuddy/effectiveness should reject non-array', async () => {
+  it('POST /api/v1/webhooks/nodeskclaw/effectiveness should reject non-array', async () => {
     const body = JSON.stringify({ reports: 'not-array' });
-    const res = await app.request('/api/v1/webhooks/clawbuddy/effectiveness', {
+    const res = await app.request('/api/v1/webhooks/nodeskclaw/effectiveness', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
@@ -37,9 +37,9 @@ describe('Webhooks API', () => {
     expect(res.status).toBe(422);
   });
 
-  it('POST /api/v1/webhooks/clawbuddy/effectiveness should accept empty array', async () => {
+  it('POST /api/v1/webhooks/nodeskclaw/effectiveness should accept empty array', async () => {
     const body = JSON.stringify({ reports: [] });
-    const res = await app.request('/api/v1/webhooks/clawbuddy/effectiveness', {
+    const res = await app.request('/api/v1/webhooks/nodeskclaw/effectiveness', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
@@ -51,8 +51,8 @@ describe('Webhooks API', () => {
 });
 
 describe('Sync API', () => {
-  it('POST /api/v1/sync/clawbuddy should require admin auth', async () => {
-    const res = await app.request('/api/v1/sync/clawbuddy', {
+  it('POST /api/v1/sync/nodeskclaw should require admin auth', async () => {
+    const res = await app.request('/api/v1/sync/nodeskclaw', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
@@ -66,7 +66,7 @@ describe('Sync API', () => {
     const json = await res.json();
     expect(json.data).toHaveProperty('in_progress');
     expect(json.data).toHaveProperty('sources');
-    expect(json.data.sources).toHaveProperty('clawbuddy');
+    expect(json.data.sources).toHaveProperty('nodeskclaw');
     expect(json.data.sources).toHaveProperty('clawhub');
     expect(json.data.sources).toHaveProperty('evomap');
   });

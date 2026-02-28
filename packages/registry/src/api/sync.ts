@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import type { InboundAdapter, SyncResult } from '../adapters/base.js';
-import { ClawBuddyAdapter } from '../adapters/clawbuddy/index.js';
 import { ClawHubAdapter } from '../adapters/clawhub/index.js';
 import { EvoMapAdapter } from '../adapters/evomap/index.js';
+import { NoDeskClawAdapter } from '../adapters/nodeskclaw/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { AppError } from '../middleware/error-handler.js';
 import { success } from '../middleware/response.js';
@@ -10,7 +10,7 @@ import { success } from '../middleware/response.js';
 export const syncRouter = new Hono();
 
 const syncState: Record<string, { inProgress: boolean; lastResult: SyncResult | null }> = {
-  clawbuddy: { inProgress: false, lastResult: null },
+  nodeskclaw: { inProgress: false, lastResult: null },
   clawhub: { inProgress: false, lastResult: null },
   evomap: { inProgress: false, lastResult: null },
 };
@@ -19,7 +19,7 @@ const syncState: Record<string, { inProgress: boolean; lastResult: SyncResult | 
 let lastSyncResult: SyncResult | null = null;
 let syncInProgress = false;
 
-syncRouter.post('/clawbuddy', requireAuth('admin'), async (c) => {
+syncRouter.post('/nodeskclaw', requireAuth('admin'), async (c) => {
   if (syncInProgress) {
     throw new AppError(40900, 'sync_in_progress', '同步正在进行中，请稍后再试', 409);
   }
@@ -29,15 +29,15 @@ syncRouter.post('/clawbuddy', requireAuth('admin'), async (c) => {
   const since = typeof body.since === 'string' ? body.since : undefined;
   const limit = typeof body.limit === 'number' ? body.limit : undefined;
 
-  const clawbuddyDbUrl = process.env.CLAWBUDDY_DATABASE_URL;
-  if (!clawbuddyDbUrl) {
-    throw new AppError(50001, 'config_missing', 'CLAWBUDDY_DATABASE_URL 未配置', 500);
+  const nodeskclawDbUrl = process.env.NODESKCLAW_DATABASE_URL;
+  if (!nodeskclawDbUrl) {
+    throw new AppError(50001, 'config_missing', 'NODESKCLAW_DATABASE_URL 未配置', 500);
   }
 
   syncInProgress = true;
   const startedAt = new Date().toISOString();
 
-  const adapter = new ClawBuddyAdapter({ databaseUrl: clawbuddyDbUrl });
+  const adapter = new NoDeskClawAdapter({ databaseUrl: nodeskclawDbUrl });
 
   try {
     const events = [];
@@ -205,7 +205,7 @@ syncRouter.get('/status', async (c) => {
   return success(c, {
     in_progress: syncInProgress || syncState.clawhub.inProgress || syncState.evomap.inProgress,
     sources: {
-      clawbuddy: {
+      nodeskclaw: {
         in_progress: syncInProgress,
         last_sync: lastSyncResult,
       },

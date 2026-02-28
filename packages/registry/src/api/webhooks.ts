@@ -44,7 +44,7 @@ type GeneCreatedPayload = {
   author?: { type: string; name: string; ref?: string };
 };
 
-webhooksRouter.post('/clawbuddy/gene-created', async (c) => {
+webhooksRouter.post('/nodeskclaw/gene-created', async (c) => {
   const payload: GeneCreatedPayload = await c.req.json();
 
   if (!payload.slug || !payload.manifest) {
@@ -67,7 +67,7 @@ webhooksRouter.post('/clawbuddy/gene-created', async (c) => {
       const gene = await geneService.publishVersion(
         payload.slug,
         payload.manifest,
-        'Created via ClawBuddy webhook',
+        'Created via NoDeskClaw webhook',
       );
       return success(c, { slug: gene.slug, version: gene.version, action: 'version_published' });
     }
@@ -83,7 +83,7 @@ type GenLearnedPayload = {
   agent_self_eval?: number;
 };
 
-webhooksRouter.post('/clawbuddy/gene-learned', async (c) => {
+webhooksRouter.post('/nodeskclaw/gene-learned', async (c) => {
   const payload: GenLearnedPayload = await c.req.json();
 
   if (!payload.slug || !payload.manifest) {
@@ -93,7 +93,7 @@ webhooksRouter.post('/clawbuddy/gene-learned', async (c) => {
   const gene = await geneService.publishVersion(
     payload.slug,
     payload.manifest,
-    `Learned variant via ClawBuddy (eval: ${payload.agent_self_eval ?? 'N/A'})`,
+    `Learned variant via NoDeskClaw (eval: ${payload.agent_self_eval ?? 'N/A'})`,
   );
 
   return success(c, { slug: gene.slug, version: gene.version, action: 'learned' });
@@ -107,7 +107,7 @@ type EffectivenessPayload = {
   }>;
 };
 
-webhooksRouter.post('/clawbuddy/effectiveness', async (c) => {
+webhooksRouter.post('/nodeskclaw/effectiveness', async (c) => {
   const payload: EffectivenessPayload = await c.req.json();
 
   if (!payload.reports || !Array.isArray(payload.reports)) {

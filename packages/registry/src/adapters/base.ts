@@ -31,7 +31,7 @@ export type SyncResult = {
 
 /**
  * InboundAdapter — contract for pulling genes from an external source into
- * GeneHub Registry. Each external ecosystem (ClawBuddy, ClawHub, EvoMap, …)
+ * GeneHub Registry. Each external ecosystem (NoDeskClaw, ClawHub, EvoMap, …)
  * implements this interface so the sync / import layer stays source-agnostic.
  */
 export interface InboundAdapter {
