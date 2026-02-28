@@ -631,9 +631,280 @@ DeskClaw 使用 Cursor Rules（`.cursor/rules/*.mdc`）和 Skills（SKILL.md）�
 
 ---
 
-## 十一、里程碑
+## 十一、AI 能力（OpenCode + MCP）
 
-### M0 - 基础设施（1-2 周）
+GeneHub 内置了一套基于 **OpenCode**（开源终端 AI 框架）和 **MCP**（Model Context Protocol）的 AI 能力体系，用于自动化基因库管理。
+
+### 11.1 架构总览
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                     Gene Curator Agent                           │
+│               （OpenCode + DeepSeek / 其他 LLM）                  │
+│                                                                  │
+│   ┌───────────────────────────────────────────────────────────┐  │
+│   │  system-prompt.md  ←  角色定义 + 巡检流程 + 权限边界       │  │
+│   └───────────────────────────────────────────────────────────┘  │
+│                           │ MCP (stdio)                          │
+│                           ▼                                      │
+│   ┌───────────────────────────────────────────────────────────┐  │
+│   │                   GeneHub MCP Server                      │  │
+│   │                                                           │  │
+│   │   Query:  list_genes / get_gene / search_genes /          │  │
+│   │           find_similar / get_library_stats /               │  │
+│   │           evaluate_in_context                              │  │
+│   │                                                           │  │
+│   │   Genome: list_genomes / get_genome /                     │  │
+│   │           suggest_genome / validate_genome                 │  │
+│   │                                                           │  │
+│   │   Manage: update_gene_category / update_gene_description /│  │
+│   │           update_gene_synergies / merge_genes              │  │
+│   │                                                           │  │
+│   │   Review: post_review / flag_for_deletion / approve_gene  │  │
+│   └───────────────────────────────────────────────────────────┘  │
+│                           │                                      │
+└───────────────────────────┼──────────────────────────────────────┘
+                            │ SQL
+                            ▼
+                    ┌───────────────┐
+                    │  PostgreSQL   │
+                    │  gene_events  │◄── LISTEN/NOTIFY
+                    └───────┬───────┘
+                            │
+                  ┌─────────┴──────────┐
+                  ▼                    ▼
+         ┌──────────────┐    ┌──────────────────┐
+         │ gene-service  │    │ curator/listener │
+         │ emitGeneEvent │    │ 实时事件监听       │
+         └──────────────┘    └──────────────────┘
+```
+
+### 11.2 MCP Server
+
+GeneHub MCP Server 将基因库能力暴露为 17 个标准 MCP 工具，任何支持 MCP 协议的 AI 框架（OpenCode、Claude Code、Cursor 等）都可以接入。
+
+**代码位置**：`packages/registry/src/mcp/`
+
+```
+src/mcp/
+├── server.ts          # MCP Server 定义，注册所有工具
+├── index.ts           # stdio 传输入口
+└── tools/
+    ├── query.ts       # 6 个查询工具
+    ├── genome.ts      # 4 个基因组工具
+    ├── manage.ts      # 4 个管理工具
+    └── review.ts      # 3 个审核工具
+```
+
+**启动方式**：
+
+```bash
+# 开发模式
+pnpm --filter @nodeskai/genehub-registry mcp:dev
+
+# 生产模式（需先 build）
+pnpm --filter @nodeskai/genehub-registry mcp
+```
+
+**MCP 工具一览**：
+
+| 类别 | 工具 | 说明 |
+|------|------|------|
+| 查询 | `list_genes` | 列出基因，按分类/来源/审核状态过滤 |
+| 查询 | `get_gene` | 基因详情 + 已有点评 + 关联关系 |
+| 查询 | `search_genes` | 关键词搜索 |
+| 查询 | `find_similar` | 查找相似/重复候选 |
+| 查询 | `get_library_stats` | 基因库总览统计 |
+| 查询 | `evaluate_in_context` | 上下文评估：在已有库的背景下评价此基因 |
+| 基因组 | `list_genomes` | 列出基因组，按分类和关键词过滤 |
+| 基因组 | `get_genome` | 基因组详情 + 版本历史 |
+| 基因组 | `suggest_genome` | 根据需求描述推荐合适的基因组 |
+| 基因组 | `validate_genome` | 校验基因组合法性（存在性、发布状态、冲突检测） |
+| 管理 | `update_gene_category` | 重分类（需提供理由） |
+| 管理 | `update_gene_description` | 改善描述文本 |
+| 管理 | `update_gene_synergies` | 设置关联关系（synergy/conflict/extends/replaces） |
+| 管理 | `merge_genes` | 合并重复基因 |
+| 审核 | `post_review` | 发布点评（评分 0-10 + 评语） |
+| 审核 | `flag_for_deletion` | 标记待删除（人工确认后才会删除） |
+| 审核 | `approve_gene` | 审核通过 |
+
+### 11.3 Gene Curator（基因库管理员）
+
+Gene Curator 是一个自主运行的 AI Agent，基于 **OpenCode** 框架驱动，通过 MCP 工具与 GeneHub 交互，负责基因库的日常管理。
+
+**配置文件**：`packages/registry/curator/`
+
+```
+curator/
+├── opencode.json      # OpenCode 配置（模型、MCP Server、系统提示词）
+├── system-prompt.md   # Curator 的角色定义和工作规范
+└── listener.ts        # 实时事件监听器（PostgreSQL LISTEN/NOTIFY）
+```
+
+#### 使用 OpenCode 驱动 Curator
+
+**前置条件**：
+
+1. 安装 OpenCode：`npm install -g opencode` 或 `brew install opencode`
+2. 设置 LLM API Key（默认使用 DeepSeek）
+3. 确保 PostgreSQL 正在运行且 GeneHub Registry 已迁移
+
+**OpenCode 配置** (`curator/opencode.json`)：
+
+```json
+{
+  "$schema": "https://opencode.ai/config.schema.json",
+  "provider": "deepseek",
+  "model": "deepseek-chat",
+  "mcpServers": {
+    "genehub": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["dist/mcp/index.js"],
+      "cwd": "..",
+      "env": {
+        "DATABASE_URL": "${DATABASE_URL}"
+      }
+    }
+  },
+  "systemPrompt": "file://system-prompt.md"
+}
+```
+
+配置说明：
+
+| 字段 | 说明 |
+|------|------|
+| `provider` / `model` | LLM 提供商和模型，可替换为 `openai/gpt-4o`、`anthropic/claude-sonnet` 等 |
+| `mcpServers.genehub` | GeneHub MCP Server 的 stdio 传输配置 |
+| `systemPrompt` | 引用同目录的 `system-prompt.md` 作为系统提示词 |
+
+**手动运行 Curator**：
+
+```bash
+cd packages/registry
+
+# 先构建 MCP Server
+pnpm build
+
+# 方式一：交互式对话（调试用）
+cd curator
+DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
+DEEPSEEK_API_KEY="sk-xxx" \
+opencode --config opencode.json
+
+# 方式二：单次任务执行
+DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
+DEEPSEEK_API_KEY="sk-xxx" \
+opencode run --config curator/opencode.json "审核最近新入库的基因"
+
+# 方式三：全面巡检
+opencode run --config curator/opencode.json "执行基因库全面巡检"
+```
+
+**也可以使用其他 MCP 兼容的 AI 框架**：
+
+```bash
+# Claude Code（Anthropic 官方 CLI）
+claude --mcp-config '{"genehub":{"command":"node","args":["dist/mcp/index.js"]}}' \
+  "审核最近新入库的基因"
+
+# 任何 MCP 兼容客户端：只需配置 stdio transport 指向 dist/mcp/index.js
+```
+
+### 11.4 事件驱动架构
+
+基因库的变更事件通过 PostgreSQL 原生的 `LISTEN/NOTIFY` 机制发布，无需额外消息队列。
+
+**事件发布**（`services/gene-events.ts`）：
+
+```sql
+NOTIFY gene_events, '{"type":"gene.created","slug":"xxx","source":"clawhub"}'
+```
+
+**支持的事件类型**：
+
+| 事件 | 触发时机 |
+|------|----------|
+| `gene.created` | 新基因入库 |
+| `gene.updated` | 基因版本发布或元数据更新 |
+| `gene.reviewed` | Curator 发布点评 |
+| `gene.flagged` | 基因被标记待删除 |
+
+**事件监听器**（`curator/listener.ts`）：
+
+监听 `gene_events` 频道，收到 `gene.created` 事件后自动触发 OpenCode 运行 Curator 审核新基因。
+
+```bash
+# 启动事件监听器
+cd packages/registry
+DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
+DEEPSEEK_API_KEY="sk-xxx" \
+tsx curator/listener.ts
+```
+
+### 11.5 联邦搜索
+
+搜索 API 支持同时查询本地 GeneHub 数据库和 ClawHub 外部 API，结果合并后按来源标记返回。
+
+**端点**：`GET /api/v1/genes/search?q=xxx`
+
+**工作流程**：
+
+```
+用户搜索 → 并行查询 ─┬─ 本地 DB (ILIKE)    → 本地结果 (source: local)
+                     └─ ClawHub API (搜索) → 远程结果 (source: clawhub)
+                                            ↓
+                                  去重（本地优先）→ 分数归一化 → 合并排序 → 返回
+```
+
+**设计原则**：
+- ClawHub 结果**不入库**，仅作为外部知识源实时查询
+- ClawHub 超时或失败时优雅降级，只返回本地结果
+- 本地结果天然优先（归一化分数更高）
+- 返回 `sources` 字段标明各来源命中数量
+
+**响应示例**：
+
+```json
+{
+  "code": 0,
+  "data": {
+    "query": "memory",
+    "total": 10,
+    "items": [
+      { "slug": "memory", "name": "记忆管理", "source": "local", "score": 1.0 },
+      { "slug": "elite-longterm-memory", "name": "Elite Longterm Memory", "source": "clawhub", "score": 0.85 }
+    ],
+    "sources": { "local": 6, "clawhub": 4 }
+  }
+}
+```
+
+### 11.6 K8s 部署
+
+**部署清单**：`deploy/k8s/curator.yaml`
+
+包含两个资源：
+
+| 资源 | 类型 | 说明 |
+|------|------|------|
+| `gene-curator` | CronJob | 每 6 小时执行一次全面巡检 |
+| `gene-curator-listener` | Deployment | 常驻进程，监听 `gene_events` 实时触发审核 |
+
+所需 Secrets：
+
+```yaml
+# genehub-secrets
+DATABASE_URL: postgres://...
+DEEPSEEK_API_KEY: sk-xxx
+```
+
+---
+
+## 十二、里程碑
+
+### M0 - 基础设施
 
 - [x] 项目 monorepo 搭建（packages/types + registry + sdk + cli）
 - [x] Gene Manifest 规范定稿（`docs/gene-learning-protocol.md`）+ Zod schema
@@ -641,7 +912,7 @@ DeskClaw 使用 Cursor Rules（`.cursor/rules/*.mdc`）和 Skills（SKILL.md）�
 - [x] Registry API 骨架（CRUD + 搜索 + 统一响应/错误处理）
 - [x] CLI 骨架（install / search / list / publish / init）
 
-### M1 - 核心功能（3-4 周）✅
+### M1 - 核心功能 ✅
 
 - [x] Registry 完整 API（版本管理、依赖解析、兼容校验、认证中间件、效能数据上报）
 - [x] TypeScript SDK（客户端 + OpenClaw Adapter L1 + nanobot Adapter L1 + Generic Adapter）
@@ -650,7 +921,7 @@ DeskClaw 使用 Cursor Rules（`.cursor/rules/*.mdc`）和 Skills（SKILL.md）�
 - [ ] NoDeskClaw 集成（→ M2.1）
 - [x] 官方基因库（7 个高质量基因含 learning objectives + scenarios）
 
-### M2 - 生态对接（5-6 周）
+### M2 - 生态对接
 
 #### M2.1 — NoDeskClaw 集成（最高优先级，M1 遗留）
 
@@ -685,19 +956,25 @@ DeskClaw 使用 Cursor Rules（`.cursor/rules/*.mdc`）和 Skills（SKILL.md）�
 - Python SDK（暂不紧急）
 - npm / pip 分发支持（依赖 Python SDK）
 
-### M3 - 进阶能力（7-8 周）
+### M3 - AI 能力 + 进阶功能 ✅（AI 部分）
 
+- [x] MCP Server（17 个工具：查询 6 + 基因组 4 + 管理 4 + 审核 3）
+- [x] Gene Curator Agent（OpenCode 配置 + 系统提示词 + 事件监听器）
+- [x] 事件驱动架构（PostgreSQL LISTEN/NOTIFY + gene_events）
+- [x] 联邦搜索（本地 DB + ClawHub API 并行查询、去重、分数归一化）
+- [x] 基因审核 API（`gene_reviews` + 人工反馈覆盖）
+- [x] 基因关系模型（`gene_relations`：synergy / conflict / extends / replaces）
+- [x] 基因组版本管理（`genome_versions` + resolve 解析）
+- [x] K8s 部署清单（CronJob 定期巡检 + Deployment 实时监听）
 - [ ] Python SDK
 - [ ] npm / pip 分发支持
-- [ ] 基因市场 Web UI
 - [ ] 基因效能数据聚合与排行
-- [ ] Agent 创造基因自动发布到 GeneHub
 - [ ] 全文搜索升级（Meilisearch）
 - [ ] DeskClaw Adapter（后续扩展）
 
 ---
 
-## 十二、开放问题
+## 十三、开放问题
 
 | # | 问题 | 倾向 | 状态 |
 |---|------|------|------|

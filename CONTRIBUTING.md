@@ -65,6 +65,86 @@ docs(protocol): 补充 nanobot Adapter 映射规则
 - Python：Ruff 格式化和 lint
 - 详细规范见 `AGENTS.md`
 
+## AI 能力开发
+
+### MCP Server
+
+GeneHub 通过 MCP Server 将基因库操作暴露为标准工具，供 OpenCode、Claude Code 等 AI 框架调用。
+
+```bash
+# 启动 MCP Server（开发模式）
+pnpm --filter @nodeskai/genehub-registry mcp:dev
+
+# 生产模式
+pnpm --filter @nodeskai/genehub-registry build
+pnpm --filter @nodeskai/genehub-registry mcp
+```
+
+新增 MCP 工具的步骤：
+
+1. 在 `packages/registry/src/mcp/tools/` 下对应文件中实现工具函数
+2. 在 `packages/registry/src/mcp/server.ts` 中用 `server.tool()` 注册
+3. 确保导入排序正确（Biome 会检查）
+
+### Gene Curator
+
+Gene Curator 是基于 **OpenCode** 的 AI Agent，自动管理基因库。
+
+**本地运行 Curator**：
+
+```bash
+# 前置条件
+# 1. 安装 OpenCode: npm install -g opencode
+# 2. 确保 PostgreSQL + GeneHub Registry 已就绪
+# 3. 设置环境变量
+
+cd packages/registry
+
+# 构建 MCP Server
+pnpm build
+
+# 交互模式
+cd curator
+DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
+DEEPSEEK_API_KEY="sk-xxx" \
+opencode --config opencode.json
+
+# 单次任务模式
+DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
+DEEPSEEK_API_KEY="sk-xxx" \
+opencode run --config opencode.json "审核最近新入库的基因"
+```
+
+**更换 LLM 模型**：
+
+编辑 `curator/opencode.json`，修改 `provider` 和 `model` 字段：
+
+```json
+{
+  "provider": "openai",
+  "model": "gpt-4o"
+}
+```
+
+支持的 provider：`deepseek`、`openai`、`anthropic`、`ollama`（本地模型）等。
+
+**修改 Curator 行为**：
+
+编辑 `curator/system-prompt.md` 调整角色定义、审核标准和巡检流程。
+
+### 事件监听器
+
+Curator 的事件监听器通过 PostgreSQL `LISTEN/NOTIFY` 接收基因变更事件：
+
+```bash
+cd packages/registry
+DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
+DEEPSEEK_API_KEY="sk-xxx" \
+tsx curator/listener.ts
+```
+
+收到 `gene.created` 事件后会自动触发 OpenCode 审核该基因。
+
 ## 贡献基因
 
 如果你想贡献一个新的基因到官方基因库：

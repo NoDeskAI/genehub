@@ -33,6 +33,29 @@ GeneHub 是 NoDeskClaw 生态的核心基因注册中心（Gene Registry），�
 - 渐进式学习能力等级：L0 直接安装 → L1 浅层学习 → L2 深度学习 → L3 自主进化
 - 初期为 **openClaw** 和 **nanobot** 提供 Adapter 接口，后续扩展 DeskClaw 等产品
 
+### AI 基因库管理（OpenCode + MCP）
+
+GeneHub 内置了基于 **MCP（Model Context Protocol）** 的 AI 能力体系：
+
+- **MCP Server**：将基因库操作暴露为 17 个标准工具，任何支持 MCP 的 AI 框架均可接入
+- **Gene Curator**：基于 **OpenCode** 驱动的自主 AI Agent，自动审核、分类、整理基因库
+- **事件驱动**：基因入库/更新时通过 PostgreSQL `LISTEN/NOTIFY` 自动触发 Curator 审核
+- **联邦搜索**：搜索时同时查询本地 DB + ClawHub API，结果合并后按来源标记
+
+```bash
+# 启动 MCP Server（用于 AI 框架对接）
+pnpm --filter @nodeskai/genehub-registry mcp:dev
+
+# 使用 OpenCode 运行 Curator（需要 opencode CLI）
+cd packages/registry/curator
+opencode --config opencode.json
+
+# 单次任务
+opencode run --config opencode.json "审核最近新入库的基因"
+```
+
+详见 [AI 能力架构文档](docs/architecture.md#十一ai-能力opencode--mcp)。
+
 ### 兼容安装
 
 - 原生 CLI：`genehub install <slug>`
@@ -166,6 +189,17 @@ genehub/
 ├── packages/
 │   ├── types/                      # @nodeskai/genehub-types - 共享类型与 Zod schemas
 │   ├── registry/                   # @nodeskai/genehub-registry - Gene Registry Service (Hono + Drizzle)
+│   │   ├── src/
+│   │   │   ├── api/                # REST API 路由
+│   │   │   ├── services/           # 业务逻辑（含联邦搜索）
+│   │   │   ├── mcp/               # MCP Server（17 个 AI 工具）
+│   │   │   │   ├── server.ts      # 工具注册
+│   │   │   │   └── tools/         # query / genome / manage / review
+│   │   │   └── adapters/          # ClawHub / Evomap 适配器
+│   │   └── curator/               # Gene Curator AI Agent
+│   │       ├── opencode.json      # OpenCode 配置
+│   │       ├── system-prompt.md   # Curator 系统提示词
+│   │       └── listener.ts        # 事件监听器
 │   ├── sdk/typescript/             # @nodeskai/genehub-sdk - TypeScript SDK + Adapters
 │   ├── cli/                        # @nodeskai/genehub - 命令行工具 (Commander.js)
 │   └── web/                        # 基因仓库 Web UI (React + Vite + Tailwind)
@@ -173,7 +207,7 @@ genehub/
 │   └── skills/<gene-slug>/
 │       ├── gene.yaml               # Gene Manifest
 │       └── SKILL.md                # 技能内容
-├── deploy/k8s/                     # Kubernetes 部署清单
+├── deploy/k8s/                     # Kubernetes 部署清单（含 Curator CronJob）
 ├── docs/                           # 设计文档
 ├── Dockerfile                      # 多阶段构建 (Registry + Web)
 ├── docker-compose.yml              # PostgreSQL 本地开发
@@ -194,7 +228,7 @@ genehub/
 
 ## 文档
 
-- [架构设计](docs/architecture.md)
+- [架构设计](docs/architecture.md)（含 AI 能力、MCP Server、联邦搜索）
 - [标准学习协议规范](docs/gene-learning-protocol.md)
 
 ## License
