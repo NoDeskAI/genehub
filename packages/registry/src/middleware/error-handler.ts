@@ -52,6 +52,51 @@ export class AppError extends Error {
     );
   }
 
+  static genomeNotFound(slug: string) {
+    return new AppError(
+      ERROR_CODES.GENOME_NOT_FOUND,
+      'genome_not_found',
+      `基因组 ${slug} 不存在`,
+      404,
+    );
+  }
+
+  static genomeSlugExists(slug: string) {
+    return new AppError(
+      ERROR_CODES.GENOME_SLUG_EXISTS,
+      'genome_slug_exists',
+      `基因组 slug ${slug} 已存在`,
+      409,
+    );
+  }
+
+  static genomeVersionConflict(slug: string, version: string) {
+    return new AppError(
+      ERROR_CODES.GENOME_VERSION_CONFLICT,
+      'genome_version_conflict',
+      `基因组 ${slug} 版本 ${version} 已存在`,
+      409,
+    );
+  }
+
+  static genomeVersionNotFound(slug: string, version: string) {
+    return new AppError(
+      ERROR_CODES.GENOME_VERSION_NOT_FOUND,
+      'genome_version_not_found',
+      `基因组 ${slug} 版本 ${version} 不存在`,
+      404,
+    );
+  }
+
+  static genomeValidationFailed(detail: string) {
+    return new AppError(
+      ERROR_CODES.GENOME_VALIDATION_FAILED,
+      'genome_validation_failed',
+      `基因组校验失败: ${detail}`,
+      422,
+    );
+  }
+
   static dependencyResolveFailed(detail: string) {
     return new AppError(
       ERROR_CODES.DEPENDENCY_RESOLVE_FAILED,

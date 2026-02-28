@@ -64,6 +64,8 @@ export const genomes = pgTable(
     version: varchar('version', { length: 16 }).notNull(),
     description: text('description').notNull().default(''),
     short_description: varchar('short_description', { length: 256 }).notNull().default(''),
+    category: varchar('category', { length: 32 }).notNull().default('general'),
+    tags: jsonb('tags').$type<string[]>().notNull().default([]),
     icon: varchar('icon', { length: 64 }),
     genes: jsonb('genes')
       .$type<{ slug: string; version: string; config_override?: Record<string, unknown> }[]>()
@@ -81,7 +83,31 @@ export const genomes = pgTable(
     updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     deleted_at: timestamp('deleted_at', { withTimezone: true }),
   },
-  (table) => [uniqueIndex('genomes_slug_idx').on(table.slug)],
+  (table) => [
+    uniqueIndex('genomes_slug_idx').on(table.slug),
+    index('genomes_category_idx').on(table.category),
+  ],
+);
+
+export const genomeVersions = pgTable(
+  'genome_versions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    genome_id: uuid('genome_id')
+      .notNull()
+      .references(() => genomes.id, { onDelete: 'cascade' }),
+    version: varchar('version', { length: 16 }).notNull(),
+    genes: jsonb('genes')
+      .$type<{ slug: string; version: string; config_override?: Record<string, unknown> }[]>()
+      .notNull(),
+    changelog: text('changelog').notNull().default(''),
+    is_latest: boolean('is_latest').notNull().default(false),
+    published_at: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('genome_versions_genome_id_idx').on(table.genome_id),
+    uniqueIndex('genome_versions_genome_version_idx').on(table.genome_id, table.version),
+  ],
 );
 
 export const geneVersions = pgTable(

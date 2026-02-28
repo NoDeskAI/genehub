@@ -29,6 +29,12 @@ export type Gene = {
   deleted_at: string | null;
 };
 
+export type GenomeGeneRef = {
+  slug: string;
+  version: string;
+  config_override?: Record<string, unknown>;
+};
+
 export type Genome = {
   id: string;
   name: string;
@@ -36,8 +42,10 @@ export type Genome = {
   version: string;
   description: string;
   short_description: string;
+  category: string;
+  tags: string[];
   icon: string | null;
-  genes: { slug: string; version: string; config_override?: Record<string, unknown> }[];
+  genes: GenomeGeneRef[];
   compatibility: string[];
   install_count: number;
   avg_rating: number;
@@ -46,6 +54,30 @@ export type Genome = {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+};
+
+export type GenomeVersion = {
+  id: string;
+  genome_id: string;
+  version: string;
+  genes: GenomeGeneRef[];
+  changelog: string;
+  is_latest: boolean;
+  published_at: string;
+};
+
+export type GenomeResolveResult = {
+  genome: { slug: string; name: string; version: string };
+  genes: {
+    slug: string;
+    version: string;
+    manifest: unknown;
+    config_override?: Record<string, unknown>;
+    resolved_from: 'direct' | 'dependency';
+  }[];
+  compatibility: string[];
+  conflicts: string[];
+  warnings: string[];
 };
 
 export type GeneVersion = {

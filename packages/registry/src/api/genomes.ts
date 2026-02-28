@@ -1,37 +1,78 @@
-import { ERROR_CODES } from '@nodeskai/genehub-types';
-import { and, eq, isNull } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { db, schema } from '../db/index.js';
-import { AppError } from '../middleware/error-handler.js';
-import { success } from '../middleware/response.js';
-
-const { genomes } = schema;
+import { requireAuth } from '../middleware/auth.js';
+import { paginated, success } from '../middleware/response.js';
+import * as genomeService from '../services/genome-service.js';
 
 export const genomesRouter = new Hono();
 
 genomesRouter.get('/', async (c) => {
-  const items = await db
-    .select()
-    .from(genomes)
-    .where(and(isNull(genomes.deleted_at), eq(genomes.is_published, true)));
-  return success(c, items);
+  const query: genomeService.GenomeListQuery = {
+    q: c.req.query('q'),
+    category: c.req.query('category'),
+    sort: c.req.query('sort'),
+    page: Number(c.req.query('page')) || 1,
+    page_size: Number(c.req.query('page_size')) || 20,
+  };
+
+  const result = await genomeService.listGenomes(query);
+  return paginated(c, result.items, result.total, result.page, result.pageSize);
 });
 
 genomesRouter.get('/:slug', async (c) => {
   const slug = c.req.param('slug');
-  const result = await db
-    .select()
-    .from(genomes)
-    .where(and(eq(genomes.slug, slug), isNull(genomes.deleted_at)));
+  const genome = await genomeService.getGenomeBySlug(slug);
+  return success(c, genome);
+});
 
-  if (result.length === 0) {
-    throw new AppError(
-      ERROR_CODES.GENOME_NOT_FOUND,
-      'genome_not_found',
-      `基因组 ${slug} 不存在`,
-      404,
-    );
-  }
+genomesRouter.get('/:slug/resolve', async (c) => {
+  const slug = c.req.param('slug');
+  const version = c.req.query('version');
+  const product = c.req.query('product');
+  const result = await genomeService.resolveGenome(slug, version, product);
+  return success(c, result);
+});
 
-  return success(c, result[0]);
+genomesRouter.get('/:slug/versions', async (c) => {
+  const slug = c.req.param('slug');
+  const versions = await genomeService.getGenomeVersions(slug);
+  return success(c, versions);
+});
+
+genomesRouter.get('/:slug/versions/:version', async (c) => {
+  const slug = c.req.param('slug');
+  const version = c.req.param('version');
+  const ver = await genomeService.getGenomeVersion(slug, version);
+  return success(c, ver);
+});
+
+genomesRouter.post('/', requireAuth('publisher'), async (c) => {
+  const body = await c.req.json();
+  const genome = await genomeService.createGenome(body);
+  return success(c, genome);
+});
+
+genomesRouter.post('/:slug/versions', requireAuth('publisher'), async (c) => {
+  const slug = c.req.param('slug');
+  const body = await c.req.json();
+  const genome = await genomeService.publishVersion(slug, body);
+  return success(c, genome);
+});
+
+genomesRouter.put('/:slug', requireAuth('publisher'), async (c) => {
+  const slug = c.req.param('slug');
+  const body = await c.req.json();
+  const genome = await genomeService.updateGenome(slug, body);
+  return success(c, genome);
+});
+
+genomesRouter.delete('/:slug', requireAuth('admin'), async (c) => {
+  const slug = c.req.param('slug');
+  const genome = await genomeService.deleteGenome(slug);
+  return success(c, genome);
+});
+
+genomesRouter.post('/:slug/installed', async (c) => {
+  const slug = c.req.param('slug');
+  await genomeService.incrementInstallCount(slug);
+  return success(c, { slug, recorded: true });
 });

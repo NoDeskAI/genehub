@@ -1,4 +1,4 @@
-import type { Gene, GeneVersion, Genome } from './gene.js';
+import type { Gene, GeneVersion, Genome, GenomeResolveResult, GenomeVersion } from './gene.js';
 
 export type ApiResponse<T = unknown> = {
   code: number;
@@ -35,7 +35,38 @@ export type GeneListResponse = ApiResponse<PaginatedData<Gene>>;
 export type GeneDetailResponse = ApiResponse<Gene>;
 export type GeneManifestResponse = ApiResponse<Gene['manifest']>;
 export type GeneVersionsResponse = ApiResponse<GeneVersion[]>;
+export type GenomeListParams = {
+  q?: string;
+  category?: string;
+  sort?: 'newest' | 'popular' | 'rating';
+  page?: number;
+  page_size?: number;
+};
+
+export type GenomeListResponse = ApiResponse<PaginatedData<Genome>>;
 export type GenomeDetailResponse = ApiResponse<Genome>;
+export type GenomeVersionsResponse = ApiResponse<GenomeVersion[]>;
+export type GenomeResolveResponse = ApiResponse<GenomeResolveResult>;
+
+export type CreateGenomeRequest = {
+  name: string;
+  slug: string;
+  version: string;
+  description?: string;
+  short_description?: string;
+  category?: string;
+  tags?: string[];
+  icon?: string;
+  genes: { slug: string; version: string; config_override?: Record<string, unknown> }[];
+  compatibility?: string[];
+  author?: { type: string; id?: string; name: string };
+};
+
+export type PublishGenomeVersionRequest = {
+  version: string;
+  genes: { slug: string; version: string; config_override?: Record<string, unknown> }[];
+  changelog?: string;
+};
 
 export type CreateGeneRequest = {
   manifest: Gene['manifest'];
@@ -82,6 +113,10 @@ export const ERROR_CODES = {
   GENE_MANIFEST_INVALID: 20004,
   GENE_VERSION_NOT_FOUND: 20005,
   GENOME_NOT_FOUND: 30001,
+  GENOME_SLUG_EXISTS: 30002,
+  GENOME_VERSION_CONFLICT: 30003,
+  GENOME_VALIDATION_FAILED: 30004,
+  GENOME_VERSION_NOT_FOUND: 30005,
   DEPENDENCY_RESOLVE_FAILED: 40001,
   COMPATIBILITY_MISMATCH: 40002,
   LEARNING_TASK_TIMEOUT: 50001,
