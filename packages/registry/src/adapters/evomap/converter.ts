@@ -206,9 +206,7 @@ function humanizeCapsuleId(id: string): string {
   if (/^\d+$/.test(ts)) {
     return `Capsule ${ts}`;
   }
-  return ts
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return ts.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function truncate(s: string, max: number): string {
@@ -218,9 +216,7 @@ function truncate(s: string, max: number): string {
 function buildGeneDescription(gene: GepGene): string {
   const parts = [
     `GEP ${gene.category} gene.`,
-    gene.preconditions.length > 0
-      ? `Preconditions: ${gene.preconditions.join('; ')}.`
-      : '',
+    gene.preconditions.length > 0 ? `Preconditions: ${gene.preconditions.join('; ')}.` : '',
     `Matches signals: ${gene.signals_match.join(', ')}.`,
   ];
   return parts.filter(Boolean).join(' ');

@@ -1,21 +1,21 @@
 export {
-  EvoMapClient,
+  type AgentCapabilityProfile,
   EvoMapApiError,
+  type EvoMapCapsulesResponse,
+  EvoMapClient,
   type EvoMapClientOptions,
-  type GepGene,
+  type EvoMapFeedbackPayload,
+  type EvoMapGenesResponse,
+  type EvoMapRecommendResponse,
   type GepCapsule,
   type GepEvent,
-  type EvoMapGenesResponse,
-  type EvoMapCapsulesResponse,
-  type AgentCapabilityProfile,
+  type GepGene,
   type RecommendationItem,
-  type EvoMapRecommendResponse,
-  type EvoMapFeedbackPayload,
 } from './client.js';
 
 export {
-  convertGepGene,
   convertGepCapsule,
+  convertGepGene,
   convertRecommendation,
   extractEvoMapMetadata,
 } from './converter.js';

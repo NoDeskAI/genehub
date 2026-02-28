@@ -4,10 +4,10 @@ import { db, schema } from '../../db/index.js';
 import type { InboundAdapter, SyncEvent, SyncOptions } from '../base.js';
 import { ClawHubClient, type ClawHubClientOptions, type ClawHubSkillListItem } from './client.js';
 import {
+  type ClawHubSkillPayload,
   convertClawHubSkill,
   extractClawHubMetadata,
   isSkillSafe,
-  type ClawHubSkillPayload,
 } from './converter.js';
 
 const { genes, geneVersions } = schema;
@@ -160,10 +160,7 @@ export class ClawHubAdapter implements InboundAdapter {
   ): Promise<SyncEvent> {
     const compatibility = manifest.compatibility.map((c) => c.product);
 
-    await db
-      .update(geneVersions)
-      .set({ is_latest: false })
-      .where(eq(geneVersions.gene_id, geneId));
+    await db.update(geneVersions).set({ is_latest: false }).where(eq(geneVersions.gene_id, geneId));
 
     await db.insert(geneVersions).values({
       gene_id: geneId,

@@ -1,9 +1,9 @@
 import { createHmac } from 'node:crypto';
-import { describe, expect, it, beforeAll } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { app } from '../../app.js';
 
-function sign(body: string, secret: string): string {
-  return 'sha256=' + createHmac('sha256', secret).update(body).digest('hex');
+function _sign(body: string, secret: string): string {
+  return `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
 }
 
 describe('Webhooks API', () => {

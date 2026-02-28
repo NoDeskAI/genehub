@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Hono } from 'hono';
-import { success } from '../middleware/response.js';
 import { AppError } from '../middleware/error-handler.js';
+import { success } from '../middleware/response.js';
 import * as geneService from '../services/gene-service.js';
 
 const WEBHOOK_SECRET = process.env.GENEHUB_WEBHOOK_SECRET ?? '';

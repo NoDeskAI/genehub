@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClawHubSkillListItem } from '../clawhub/client.js';
 
 /**
@@ -36,9 +36,9 @@ vi.mock('drizzle-orm', () => ({
   eq: vi.fn((_col: unknown, val: unknown) => val),
 }));
 
+import { convertClawHubSkill } from '../clawhub/converter.js';
 // After mocking, import the module under test
 import { ClawHubAdapter } from '../clawhub/sync.js';
-import { convertClawHubSkill } from '../clawhub/converter.js';
 
 describe('ClawHubAdapter', () => {
   it('has source "clawhub" and displayName "ClawHub"', () => {
@@ -205,7 +205,15 @@ describe('ClawHubAdapter.sync', () => {
       .mockReturnValueOnce(jsonResponse(listPage))
       .mockReturnValueOnce(
         jsonResponse({
-          skill: { slug: 'a', displayName: 'A', summary: '', tags: {}, stats: {}, createdAt: 0, updatedAt: 0 },
+          skill: {
+            slug: 'a',
+            displayName: 'A',
+            summary: '',
+            tags: {},
+            stats: {},
+            createdAt: 0,
+            updatedAt: 0,
+          },
           latestVersion: { version: '1.0.0', createdAt: 0, changelog: '' },
           owner: null,
         }),
@@ -233,9 +241,7 @@ describe('ClawHubAdapter.sync', () => {
       nextCursor: null,
     };
 
-    fetchSpy
-      .mockReturnValueOnce(jsonResponse(listPage))
-      .mockReturnValueOnce(jsonResponse({}, 500));
+    fetchSpy.mockReturnValueOnce(jsonResponse(listPage)).mockReturnValueOnce(jsonResponse({}, 500));
 
     const adapter = new ClawHubAdapter({ baseUrl: 'http://localhost' });
     const events = [];

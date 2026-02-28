@@ -1,9 +1,5 @@
 import type { GeneManifest } from '@nodeskai/genehub-types';
-import type {
-  ClawHubSkillDetail,
-  ClawHubSkillVersion,
-  SecurityStatus,
-} from './client.js';
+import type { ClawHubSkillDetail, ClawHubSkillVersion, SecurityStatus } from './client.js';
 
 /**
  * Combined payload that the converter expects — assembled by the sync layer
@@ -154,7 +150,7 @@ function normalizeSlug(raw: string): string {
 }
 
 function truncate(s: string, max: number): string {
-  return s.length <= max ? s : s.slice(0, max - 1) + '…';
+  return s.length <= max ? s : `${s.slice(0, max - 1)}…`;
 }
 
 function inferCategory(meta: SkillMeta): GeneManifest['category'] {

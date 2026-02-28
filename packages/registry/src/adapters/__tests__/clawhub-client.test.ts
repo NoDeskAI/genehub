@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ClawHubClient, ClawHubApiError } from '../clawhub/client.js';
+import { ClawHubApiError, ClawHubClient } from '../clawhub/client.js';
 
 const MOCK_BASE = 'https://test-clawhub.local';
 
@@ -58,9 +58,7 @@ describe('ClawHubClient', () => {
     it('iterates through multiple pages', async () => {
       const page1 = { items: [{ slug: 'a' }], nextCursor: 'p2' };
       const page2 = { items: [{ slug: 'b' }], nextCursor: null };
-      fetchSpy
-        .mockReturnValueOnce(jsonResponse(page1))
-        .mockReturnValueOnce(jsonResponse(page2));
+      fetchSpy.mockReturnValueOnce(jsonResponse(page1)).mockReturnValueOnce(jsonResponse(page2));
 
       const client = makeClient();
       const pages: unknown[][] = [];
@@ -188,7 +186,7 @@ describe('ClawHubClient', () => {
       const client = makeClient({ token: 'my-secret' });
       await client.listSkills();
       const opts = fetchSpy.mock.calls[0][1] as RequestInit;
-      expect((opts.headers as Record<string, string>)['Authorization']).toBe('Bearer my-secret');
+      expect((opts.headers as Record<string, string>).Authorization).toBe('Bearer my-secret');
     });
 
     it('omits Authorization header when no token', async () => {
@@ -196,7 +194,7 @@ describe('ClawHubClient', () => {
       const client = makeClient();
       await client.listSkills();
       const opts = fetchSpy.mock.calls[0][1] as RequestInit;
-      expect((opts.headers as Record<string, string>)['Authorization']).toBeUndefined();
+      expect((opts.headers as Record<string, string>).Authorization).toBeUndefined();
     });
   });
 });

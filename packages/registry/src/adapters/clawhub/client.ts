@@ -118,7 +118,7 @@ export class ClawHubClient {
       'Accept-Encoding': 'identity',
     };
     if (options.token) {
-      this.headers['Authorization'] = `Bearer ${options.token}`;
+      this.headers.Authorization = `Bearer ${options.token}`;
     }
   }
 
@@ -245,10 +245,16 @@ function extractFileFromZip(buf: Buffer): string {
     const fileName = buf.toString('utf-8', offset + 30, offset + 30 + nameLen);
     const dataStart = offset + 30 + nameLen + extraLen;
 
-    if (/SKILL\.md$/i.test(fileName) || /instructions\.md$/i.test(fileName) || /\.md$/i.test(fileName)) {
+    if (
+      /SKILL\.md$/i.test(fileName) ||
+      /instructions\.md$/i.test(fileName) ||
+      /\.md$/i.test(fileName)
+    ) {
       const raw = buf.subarray(dataStart, dataStart + compressedSize);
       if (method === 8) {
-        return inflateRawSync(raw, { maxOutputLength: uncompressedSize || 10 * 1024 * 1024 }).toString('utf-8');
+        return inflateRawSync(raw, {
+          maxOutputLength: uncompressedSize || 10 * 1024 * 1024,
+        }).toString('utf-8');
       }
       return raw.toString('utf-8');
     }
@@ -272,4 +278,3 @@ export class ClawHubApiError extends Error {
     this.name = 'ClawHubApiError';
   }
 }
-

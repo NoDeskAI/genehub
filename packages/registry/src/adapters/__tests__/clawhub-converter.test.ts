@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import type { ClawHubSkillVersion } from '../clawhub/client.js';
 import {
+  type ClawHubSkillPayload,
   convertClawHubSkill,
   extractClawHubMetadata,
   isSkillSafe,
-  type ClawHubSkillPayload,
 } from '../clawhub/converter.js';
-import type { ClawHubSkillVersion } from '../clawhub/client.js';
 
 function makePayload(overrides: Partial<ClawHubSkillPayload> = {}): ClawHubSkillPayload {
   return {
@@ -42,6 +42,12 @@ function makePayload(overrides: Partial<ClawHubSkillPayload> = {}): ClawHubSkill
     instructionsContent: '# My Skill\nDo great things.',
     ...overrides,
   };
+}
+
+function getSkill(p: ClawHubSkillPayload) {
+  const s = p.detail.skill;
+  if (!s) throw new Error('skill is null in test fixture');
+  return s;
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +165,7 @@ describe('convertClawHubSkill', () => {
 
   it('handles null summary gracefully', () => {
     const p = makePayload();
-    p.detail.skill!.summary = null;
+    getSkill(p).summary = null;
     const result = convertClawHubSkill(p);
     expect(result.description).toBe('');
     expect(result.short_description).toBe('');
@@ -167,7 +173,7 @@ describe('convertClawHubSkill', () => {
 
   it('truncates long summary for short_description', () => {
     const p = makePayload();
-    p.detail.skill!.summary = 'x'.repeat(300);
+    getSkill(p).summary = 'x'.repeat(300);
     const result = convertClawHubSkill(p);
     expect(result.short_description.length).toBeLessThanOrEqual(256);
   });
@@ -181,7 +187,7 @@ describe('convertClawHubSkill', () => {
 
   it('normalizes slug with special characters', () => {
     const p = makePayload();
-    p.detail.skill!.slug = 'My_Weird.Skill Name!';
+    getSkill(p).slug = 'My_Weird.Skill Name!';
     const result = convertClawHubSkill(p);
     expect(result.slug).toMatch(/^[a-z0-9-]+$/);
     expect(result.slug).not.toMatch(/--/);
@@ -199,7 +205,7 @@ describe('convertClawHubSkill', () => {
 
   it('infers tags as ["tool"] when install metadata is present', () => {
     const p = makePayload();
-    p.detail.skill!.tags = {
+    getSkill(p).tags = {
       install: [{ id: 'node', kind: 'node', package: 'some-pkg' }],
     };
     const result = convertClawHubSkill(p);
@@ -208,7 +214,7 @@ describe('convertClawHubSkill', () => {
 
   it('infers tags as ["tool"] when requires.bins is present', () => {
     const p = makePayload();
-    p.detail.skill!.tags = {
+    getSkill(p).tags = {
       requires: { bins: ['docker'] },
     };
     const result = convertClawHubSkill(p);
@@ -217,7 +223,7 @@ describe('convertClawHubSkill', () => {
 
   it('maps requires into config.openclaw', () => {
     const p = makePayload();
-    p.detail.skill!.tags = {
+    getSkill(p).tags = {
       requires: { bins: ['git'], env: ['GITHUB_TOKEN'] },
     };
     const result = convertClawHubSkill(p);
@@ -234,7 +240,7 @@ describe('convertClawHubSkill', () => {
 
   it('converts dependencies from metadata', () => {
     const p = makePayload();
-    p.detail.skill!.tags = {
+    getSkill(p).tags = {
       dependencies: [
         { name: 'some-dep', type: 'npm', version: '>=2.0.0' },
         { name: 'another', type: 'pip' },
@@ -270,7 +276,7 @@ describe('extractClawHubMetadata', () => {
 
   it('defaults stats when not present', () => {
     const p = makePayload();
-    p.detail.skill!.stats = {};
+    getSkill(p).stats = {};
     const meta = extractClawHubMetadata(p);
     expect(meta.install_count).toBe(0);
     expect(meta.avg_rating).toBe(0);

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GepGene, RecommendationItem } from '../evomap/client.js';
 
 vi.mock('../../db/index.js', () => ({
@@ -29,8 +29,8 @@ vi.mock('drizzle-orm', () => ({
   eq: vi.fn((_col: unknown, val: unknown) => val),
 }));
 
-import { EvoMapAdapter } from '../evomap/sync.js';
 import { convertRecommendation } from '../evomap/converter.js';
+import { EvoMapAdapter } from '../evomap/sync.js';
 
 function makeGene(id = 'gene_gep_test'): GepGene {
   return {

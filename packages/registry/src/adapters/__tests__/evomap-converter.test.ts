@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import type { GepCapsule, GepGene, RecommendationItem } from '../evomap/client.js';
 import {
-  convertGepGene,
   convertGepCapsule,
+  convertGepGene,
   convertRecommendation,
   extractEvoMapMetadata,
 } from '../evomap/converter.js';
-import type { GepGene, GepCapsule, RecommendationItem } from '../evomap/client.js';
 
 // ---------------------------------------------------------------------------
 // Fixtures

@@ -3,15 +3,12 @@ import { eq } from 'drizzle-orm';
 import { db, schema } from '../../db/index.js';
 import type { InboundAdapter, SyncEvent, SyncOptions } from '../base.js';
 import {
-  EvoMapClient,
   type AgentCapabilityProfile,
+  EvoMapClient,
   type EvoMapClientOptions,
   type RecommendationItem,
 } from './client.js';
-import {
-  convertRecommendation,
-  extractEvoMapMetadata,
-} from './converter.js';
+import { convertRecommendation, extractEvoMapMetadata } from './converter.js';
 
 const { genes, geneVersions } = schema;
 
@@ -128,10 +125,7 @@ export class EvoMapAdapter implements InboundAdapter {
   ): Promise<SyncEvent> {
     const compatibility = manifest.compatibility.map((c) => c.product);
 
-    await db
-      .update(geneVersions)
-      .set({ is_latest: false })
-      .where(eq(geneVersions.gene_id, geneId));
+    await db.update(geneVersions).set({ is_latest: false }).where(eq(geneVersions.gene_id, geneId));
 
     await db.insert(geneVersions).values({
       gene_id: geneId,

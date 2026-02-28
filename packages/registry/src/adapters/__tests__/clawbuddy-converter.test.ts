@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  type ClawBuddyGeneRow,
   convertClawBuddyGene,
   extractGeneMetadata,
-  type ClawBuddyGeneRow,
 } from '../clawbuddy/converter.js';
 
 function makeRow(overrides: Partial<ClawBuddyGeneRow> = {}): ClawBuddyGeneRow {

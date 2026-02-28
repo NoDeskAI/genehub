@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { EvoMapClient, EvoMapApiError } from '../evomap/client.js';
+import { EvoMapApiError, EvoMapClient } from '../evomap/client.js';
 
 const MOCK_BASE = 'https://test-evomap.local';
 
@@ -134,9 +134,9 @@ describe('EvoMapClient', () => {
     it('throws EvoMapApiError on non-200 POST', async () => {
       fetchSpy.mockReturnValueOnce(jsonResponse({}, 403));
       const client = makeClient();
-      await expect(
-        client.recommend({ product: 'test', installed_genes: [] }),
-      ).rejects.toThrow(EvoMapApiError);
+      await expect(client.recommend({ product: 'test', installed_genes: [] })).rejects.toThrow(
+        EvoMapApiError,
+      );
     });
 
     it('includes status code in error', async () => {

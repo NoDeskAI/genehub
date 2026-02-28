@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
-import { requireAuth } from '../middleware/auth.js';
-import { success } from '../middleware/response.js';
-import { AppError } from '../middleware/error-handler.js';
+import type { InboundAdapter, SyncResult } from '../adapters/base.js';
 import { ClawBuddyAdapter } from '../adapters/clawbuddy/index.js';
 import { ClawHubAdapter } from '../adapters/clawhub/index.js';
 import { EvoMapAdapter } from '../adapters/evomap/index.js';
-import type { InboundAdapter, SyncResult } from '../adapters/base.js';
+import { requireAuth } from '../middleware/auth.js';
+import { AppError } from '../middleware/error-handler.js';
+import { success } from '../middleware/response.js';
 
 export const syncRouter = new Hono();
 
