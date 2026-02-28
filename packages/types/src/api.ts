@@ -68,6 +68,33 @@ export type PublishGenomeVersionRequest = {
   changelog?: string;
 };
 
+export type FederatedSearchParams = {
+  q: string;
+  category?: string;
+  limit?: number;
+};
+
+export type FederatedGeneItem = {
+  slug: string;
+  name: string;
+  description: string | null;
+  version: string | null;
+  category: string | null;
+  tags: string[];
+  source: 'local' | 'clawhub';
+  score: number;
+  install_count: number | null;
+  avg_rating: number | null;
+  clawhub_display_name?: string;
+};
+
+export type FederatedSearchResponse = ApiResponse<{
+  query: string;
+  total: number;
+  items: FederatedGeneItem[];
+  sources: { local: number; clawhub: number };
+}>;
+
 export type CreateGeneRequest = {
   manifest: Gene['manifest'];
   source?: string;

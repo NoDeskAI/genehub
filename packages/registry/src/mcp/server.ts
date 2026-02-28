@@ -1,6 +1,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import {
+  getGenome,
+  listGenomes as listGenomesMcp,
+  suggestGenome,
+  validateGenome,
+} from './tools/genome.js';
+import {
   mergeGenes,
   updateGeneCategory,
   updateGeneDescription,
@@ -88,6 +94,56 @@ export function createMcpServer() {
     { slug: z.string().describe('基因 slug') },
     async (args) => {
       const result = await evaluateInContext(args);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  // --- Genome tools ---
+
+  server.tool(
+    'list_genomes',
+    '列出基因组，支持按分类和关键词过滤',
+    {
+      category: z.string().optional().describe('按分类过滤'),
+      q: z.string().optional().describe('搜索关键词'),
+      page: z.number().optional().describe('页码'),
+      page_size: z.number().optional().describe('每页数量'),
+    },
+    async (args) => {
+      const result = await listGenomesMcp(args);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'get_genome',
+    '获取基因组完整详情，包括版本历史',
+    { slug: z.string().describe('基因组 slug') },
+    async (args) => {
+      const result = await getGenome(args);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'suggest_genome',
+    '根据需求描述推荐合适的基因组',
+    {
+      needs: z.string().describe('需求描述，例如"全栈 TypeScript 项目" 或 "React Native 移动应用"'),
+      product: z.string().optional().describe('目标产品/平台'),
+    },
+    async (args) => {
+      const result = await suggestGenome(args);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'validate_genome',
+    '校验一组基因能否组成合法的基因组：检查基因存在性、发布状态、冲突关系',
+    { gene_slugs: z.array(z.string()).describe('待校验的基因 slug 列表') },
+    async (args) => {
+      const result = await validateGenome(args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     },
   );

@@ -1,8 +1,21 @@
 import { Hono } from 'hono';
 import { paginated, success } from '../middleware/response.js';
+import { federatedSearch } from '../services/federated-search.js';
 import * as geneService from '../services/gene-service.js';
 
 export const genesRouter = new Hono();
+
+genesRouter.get('/search', async (c) => {
+  const q = c.req.query('q') ?? '';
+  if (!q.trim())
+    return success(c, { query: '', total: 0, items: [], sources: { local: 0, clawhub: 0 } });
+
+  const result = await federatedSearch(q, {
+    category: c.req.query('category'),
+    limit: Number(c.req.query('limit')) || 20,
+  });
+  return success(c, result);
+});
 
 genesRouter.get('/', async (c) => {
   const query: geneService.GeneListQuery = {
