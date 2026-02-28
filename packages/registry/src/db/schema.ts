@@ -42,6 +42,9 @@ export const genes = pgTable(
     avg_rating: real('avg_rating').notNull().default(0),
     effectiveness_score: real('effectiveness_score').notNull().default(0),
     review_status: varchar('review_status', { length: 16 }).notNull().default('draft'),
+    ai_score: real('ai_score'),
+    ai_verdict: varchar('ai_verdict', { length: 24 }),
+    ai_enriched: boolean('ai_enriched').notNull().default(false),
     is_published: boolean('is_published').notNull().default(false),
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -107,6 +110,52 @@ export const genomeVersions = pgTable(
   (table) => [
     index('genome_versions_genome_id_idx').on(table.genome_id),
     uniqueIndex('genome_versions_genome_version_idx').on(table.genome_id, table.version),
+  ],
+);
+
+export const geneReviews = pgTable(
+  'gene_reviews',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    gene_id: uuid('gene_id')
+      .notNull()
+      .references(() => genes.id, { onDelete: 'cascade' }),
+    reviewer: varchar('reviewer', { length: 64 }).notNull().default('curator-agent'),
+    score: real('score'),
+    verdict: varchar('verdict', { length: 24 }),
+    comments: jsonb('comments').$type<string[]>().notNull().default([]),
+    changes_made: jsonb('changes_made').$type<Record<string, unknown>>(),
+    feedback: varchar('feedback', { length: 32 }),
+    model: varchar('model', { length: 64 }),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('gene_reviews_gene_id_idx').on(table.gene_id)],
+);
+
+export const geneRelations = pgTable(
+  'gene_relations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    source_gene_id: uuid('source_gene_id')
+      .notNull()
+      .references(() => genes.id),
+    target_gene_id: uuid('target_gene_id')
+      .notNull()
+      .references(() => genes.id),
+    relation_type: varchar('relation_type', { length: 24 }).notNull(),
+    strength: real('strength').notNull().default(0.5),
+    reason: text('reason'),
+    created_by: varchar('created_by', { length: 64 }).notNull().default('curator-agent'),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('gene_relations_source_idx').on(table.source_gene_id),
+    index('gene_relations_target_idx').on(table.target_gene_id),
+    uniqueIndex('gene_relations_pair_idx').on(
+      table.source_gene_id,
+      table.target_gene_id,
+      table.relation_type,
+    ),
   ],
 );
 

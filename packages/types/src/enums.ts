@@ -18,7 +18,7 @@ export type GeneTag = z.infer<typeof GeneTag>;
 export const GeneSource = z.enum(['official', 'clawhub', 'evomap', 'community', 'agent']);
 export type GeneSource = z.infer<typeof GeneSource>;
 
-export const ReviewStatus = z.enum(['draft', 'pending', 'approved', 'rejected']);
+export const ReviewStatus = z.enum(['draft', 'pending', 'approved', 'rejected', 'flagged']);
 export type ReviewStatus = z.infer<typeof ReviewStatus>;
 
 export const ProductId = z.enum(['openclaw', 'nanobot', 'deskclaw', 'generic']);

@@ -8,6 +8,7 @@ import { logger } from 'hono/logger';
 import { genesRouter } from './api/genes.js';
 import { genomesRouter } from './api/genomes.js';
 import { resolveRouter } from './api/resolve.js';
+import { reviewsRouter } from './api/reviews.js';
 import { syncRouter } from './api/sync.js';
 import { webhooksRouter } from './api/webhooks.js';
 import { errorHandler } from './middleware/error-handler.js';
@@ -30,6 +31,7 @@ app.get('/api/info', (c) =>
 );
 
 app.route('/api/v1/genes', genesRouter);
+app.route('/api/v1/genes', reviewsRouter);
 app.route('/api/v1/genomes', genomesRouter);
 app.route('/api/v1/resolve', resolveRouter);
 app.route('/api/v1/sync', syncRouter);

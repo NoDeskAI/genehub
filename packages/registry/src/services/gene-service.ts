@@ -3,6 +3,7 @@ import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import semver from 'semver';
 import { db, schema } from '../db/index.js';
 import { AppError } from '../middleware/error-handler.js';
+import { emitGeneEvent } from './gene-events.js';
 
 const { genes, geneVersions } = schema;
 
@@ -180,6 +181,8 @@ export async function createGene(manifestRaw: unknown) {
     is_latest: true,
   });
 
+  await emitGeneEvent('gene.created', manifest.slug, gene.source);
+
   return gene;
 }
 
@@ -249,6 +252,10 @@ export async function publishVersion(slug: string, manifestRaw: unknown, changel
     .where(eq(genes.id, gene.id))
     .returning();
 
+  await emitGeneEvent('gene.updated', slug, updated.source, {
+    version: manifest.version,
+  });
+
   return updated;
 }
 
@@ -270,6 +277,11 @@ export async function updateGene(slug: string, updates: Record<string, unknown>)
   }
 
   const [updated] = await db.update(genes).set(setValues).where(eq(genes.id, gene.id)).returning();
+
+  await emitGeneEvent('gene.updated', slug, updated.source, {
+    changed_fields: Object.keys(setValues).filter((k) => k !== 'updated_at'),
+  });
+
   return updated;
 }
 

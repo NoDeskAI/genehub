@@ -23,6 +23,9 @@ export type Gene = {
   avg_rating: number;
   effectiveness_score: number;
   review_status: ReviewStatus;
+  ai_score: number | null;
+  ai_verdict: string | null;
+  ai_enriched: boolean;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -78,6 +81,30 @@ export type GenomeResolveResult = {
   compatibility: string[];
   conflicts: string[];
   warnings: string[];
+};
+
+export type GeneReview = {
+  id: string;
+  gene_id: string;
+  reviewer: string;
+  score: number | null;
+  verdict: string | null;
+  comments: string[];
+  changes_made: Record<string, unknown> | null;
+  feedback: string | null;
+  model: string | null;
+  created_at: string;
+};
+
+export type GeneRelation = {
+  id: string;
+  source_gene_id: string;
+  target_gene_id: string;
+  relation_type: 'synergy' | 'conflict' | 'extends' | 'replaces';
+  strength: number;
+  reason: string | null;
+  created_by: string;
+  created_at: string;
 };
 
 export type GeneVersion = {

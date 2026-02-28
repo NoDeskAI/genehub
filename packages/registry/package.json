@@ -9,6 +9,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsup",
     "start": "node dist/index.js",
+    "mcp": "node dist/mcp/index.js",
+    "mcp:dev": "tsx src/mcp/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
@@ -17,8 +19,9 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@nodeskai/genehub-types": "workspace:*",
     "@hono/node-server": "^1.13",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@nodeskai/genehub-types": "workspace:*",
     "drizzle-orm": "^0.38",
     "hono": "^4.6",
     "postgres": "^3.4",

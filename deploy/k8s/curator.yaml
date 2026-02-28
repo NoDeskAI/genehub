@@ -1,0 +1,88 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gene-curator
+  namespace: nodeskclaw-system
+spec:
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1800
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: curator
+              image: ghcr.io/nodeskai/genehub-curator:latest
+              command:
+                - opencode
+                - run
+                - --config
+                - /app/curator/opencode.json
+                - "执行基因库全面巡检"
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: genehub-secrets
+                      key: DATABASE_URL
+                - name: DEEPSEEK_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: genehub-secrets
+                      key: DEEPSEEK_API_KEY
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gene-curator-listener
+  namespace: nodeskclaw-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gene-curator-listener
+  template:
+    metadata:
+      labels:
+        app: gene-curator-listener
+    spec:
+      containers:
+        - name: listener
+          image: ghcr.io/nodeskai/genehub-curator:latest
+          command:
+            - tsx
+            - /app/curator/listener.ts
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: genehub-secrets
+                  key: DATABASE_URL
+            - name: CURATOR_CMD
+              value: opencode
+            - name: CURATOR_CONFIG
+              value: /app/curator/opencode.json
+            - name: DEEPSEEK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: genehub-secrets
+                  key: DEEPSEEK_API_KEY
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
