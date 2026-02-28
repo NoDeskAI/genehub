@@ -46,15 +46,15 @@ jobs:
       - run: pnpm build
 
       - name: Publish @nodeskai/genehub-types
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --tag latest
         working-directory: packages/types
 
       - name: Publish @nodeskai/genehub-sdk
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --tag latest
         working-directory: packages/sdk/typescript
 
       - name: Publish @nodeskai/genehub (CLI)
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --tag latest
         working-directory: packages/cli
 
   deploy-k8s:
