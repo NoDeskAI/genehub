@@ -33,7 +33,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/NoDeskAI/genehub.git",
+    "url": "git+https://github.com/NoDeskAI/genehub.git",
     "directory": "packages/sdk/typescript"
   },
   "homepage": "https://github.com/NoDeskAI/genehub",
