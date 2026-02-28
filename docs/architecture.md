@@ -209,6 +209,34 @@ npx genehub install <gene-slug>   # npm 生态兼容
 pip install genehub-<gene-slug>   # Python 生态兼容
 ```
 
+#### 多 Agent 办公室单元（Office Unit）
+
+GeneHub 基因与基因组可被用于塑造多 Agent 协作中的角色人格与行为底色。一种典型设计是「办公室单元」：四类角色（执行 Act、规划 Plan、知识/检索 Knowledge、审核/权限 Judge）分别对应基因组 agile-executor（灵敏）、visionary-planner（远见）、以及后续的渊博、威严。下图描述四角色与信息流关系；详细基因清单与关联见 [.cursor/plans/多agent基因组设计_2260e583.plan.md](.cursor/plans/多agent基因组设计_2260e583.plan.md)。
+
+```mermaid
+graph TD
+    subgraph implemented [本次实现]
+        Agile["灵敏 Agile / Act"]
+        Foresight["远见 Foresight / Plan"]
+    end
+
+    subgraph planned [后续实现]
+        Erudite["渊博 Erudite / Knowledge"]
+        Authority["威严 Authority / Judge"]
+    end
+
+    Foresight -->|"委派任务/指令"| Agile
+    Agile -->|"汇报进展/状态"| Foresight
+    Foresight -.->|"请求知识/参考"| Erudite
+    Erudite -.->|"提供参考/资源"| Foresight
+    Agile -.->|"按需请求知识"| Erudite
+    Agile -.->|"请求权限/提交结果"| Authority
+    Authority -.->|"发放或回收权限、验收"| Agile
+    Foresight -.->|"计划与约束对齐"| Authority
+```
+
+两基因组（灵敏、远见）的基因按 Identity / Behavioral / Method 分层，并通过协作接口（如 delegation-clarity 与 task-discipline、status-transparency 与 adaptive-command）对接；与已有基因（如 analytical-thinking、communication-style）为 synergy 推荐关系。详见计划文档「五、基因之间的关联」。
+
 ---
 
 ## 三、数据模型
