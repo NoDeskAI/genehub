@@ -5,4 +5,4 @@ dist
 .env.*
 deploy/k8s/kubeconfig-*.yaml
 .pnpm-store
-ClawBuddy/
+/nodeskclaw/
