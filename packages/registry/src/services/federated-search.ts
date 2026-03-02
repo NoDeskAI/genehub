@@ -1,8 +1,9 @@
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { ClawHubClient, type ClawHubSearchResult } from '../adapters/clawhub/client.js';
 import { db, schema } from '../db/index.js';
+import { emitGeneEvent } from './gene-events.js';
 
-const { genes } = schema;
+const { genes, geneVersions } = schema;
 
 export type FederatedSource = 'local' | 'clawhub';
 
@@ -135,10 +136,99 @@ export async function federatedSearch(
   const localCount = merged.filter((g) => g.source === 'local').length;
   const clawhubCount = merged.filter((g) => g.source === 'clawhub').length;
 
+  const externalItems = merged.filter((g) => g.source === 'clawhub');
+  if (externalItems.length > 0) {
+    syncExternalResults(externalItems).catch((err) => {
+      console.error('[federated-search] background sync failed:', err);
+    });
+  }
+
   return {
     query,
     total: merged.length,
     items: merged,
     sources: { local: localCount, clawhub: clawhubCount },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Background sync: insert ClawHub results as pending genes for AI review
+// ---------------------------------------------------------------------------
+
+async function syncExternalResults(items: FederatedGeneItem[]) {
+  const slugs = items.map((i) => i.slug);
+
+  const existing = await db
+    .select({ slug: genes.slug })
+    .from(genes)
+    .where(inArray(genes.slug, slugs));
+
+  const existingSlugs = new Set(existing.map((r) => r.slug));
+  const newItems = items.filter((i) => !existingSlugs.has(i.slug));
+  if (newItems.length === 0) return;
+
+  for (const item of newItems) {
+    try {
+      const manifest = buildMinimalManifest(item);
+      const [gene] = await db
+        .insert(genes)
+        .values({
+          name: item.name,
+          slug: item.slug,
+          version: item.version ?? '0.0.0',
+          description: item.description ?? '',
+          short_description: (item.description ?? '').slice(0, 256),
+          category: item.category ?? 'development',
+          tags: item.tags.length > 0 ? item.tags : ['ability'],
+          manifest,
+          compatibility: [],
+          dependencies: [],
+          synergies: [],
+          author: { type: 'human', name: item.clawhub_display_name ?? item.name },
+          source: 'clawhub',
+          source_ref: `https://clawhub.ai/skills/${item.slug}`,
+          install_count: item.install_count ?? 0,
+          avg_rating: item.avg_rating ?? 0,
+          review_status: 'pending',
+          is_published: false,
+        })
+        .onConflictDoNothing()
+        .returning();
+
+      if (gene) {
+        await db.insert(geneVersions).values({
+          gene_id: gene.id,
+          version: gene.version,
+          manifest,
+          changelog: 'Auto-imported from federated search',
+          is_latest: true,
+        });
+        await emitGeneEvent('gene.created', item.slug, 'clawhub');
+      }
+    } catch (err) {
+      console.error(`[federated-search] Failed to sync ${item.slug}:`, err);
+    }
+  }
+}
+
+function buildMinimalManifest(item: FederatedGeneItem) {
+  return {
+    slug: item.slug,
+    name: item.name,
+    version: item.version ?? '0.0.0',
+    description: item.description ?? '',
+    short_description: (item.description ?? '').slice(0, 256),
+    category: item.category ?? 'development',
+    tags: item.tags.length > 0 ? item.tags : ['ability'],
+    compatibility: [],
+    dependencies: [],
+    synergies: [],
+    skill: {
+      name: item.name,
+      always: false,
+      content: item.description ?? '',
+    },
+    rules: [],
+    mcp_servers: [],
   };
 }

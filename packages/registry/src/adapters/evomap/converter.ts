@@ -173,8 +173,8 @@ export function extractEvoMapMetadata(item: RecommendationItem) {
     install_count: 0,
     avg_rating: 0,
     effectiveness_score: item.score,
-    review_status: 'approved' as const,
-    is_published: true,
+    review_status: 'pending' as const,
+    is_published: false,
   };
 }
 

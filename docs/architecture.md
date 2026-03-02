@@ -130,13 +130,13 @@ GeneHub = 基因注册中心（Registry）+ 标准学习协议（Protocol）+ �
 
 #### Inbound Adapters（外部基因适配层）
 
-外部基因生态对接。**ClawHub / EvoMap 已从定期同步改为联邦搜索（实时查询，不入库）**。
+外部基因生态对接。**ClawHub / EvoMap 已从定期同步改为联邦搜索（实时查询 + 后台入库待审核）**。
 
 | 适配器 | 数据源 | 协议 | 当前模式 |
 |--------|--------|------|---------|
-| ClawHub Adapter | ClawHub 基因市场 | REST API | **联邦搜索**（实时查询，不入库） |
-| Evomap Adapter | Evomap 进化推荐引擎 | REST API | **联邦搜索**（实时查询，不入库） |
-| NoDeskClaw Adapter | NoDeskClaw 内部数据 | 直连 DB | 批量导入（保留） |
+| ClawHub Adapter | ClawHub 基因市场 | REST API | **联邦搜索**（实时展示 + 后台入库为 pending，等待 AI 审核） |
+| Evomap Adapter | Evomap 进化推荐引擎 | REST API | **联邦搜索**（同上） |
+| NoDeskClaw Adapter | NoDeskClaw 内部数据 | 直连 DB | 批量导入（白名单，直接 approved） |
 | Git Repo Importer | GitHub / GitLab 仓库 | Git Clone + gene.yaml 解析 | 导入 |
 
 #### Outbound Adapters（产品适配层）
@@ -324,14 +324,14 @@ NoDeskClaw 的 `genes` 表将作为 GeneHub 的客户端缓存，定期与 GeneH
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/genes/search?q=xxx` | 联邦搜索（本地 + ClawHub 实时查询，不入库） |
+| GET | `/genes/search?q=xxx` | 联邦搜索（本地 + ClawHub 实时查询，外部结果后台入库为 pending 待 AI 审核） |
 | POST | `/import/git` | 从 Git 仓库导入基因 |
 
 #### ~~外部基因同步~~（已弃用）
 
-> **弃用说明**：定期同步接口已弃用，改用联邦搜索。外部基因源（ClawHub / EvoMap）不再入库，
-> 而是通过 `GET /api/v1/genes/search` 作为实时外部知识源查询。
-> 仅保留 NoDeskClaw 同步用于历史数据批量导入。
+> **弃用说明**：定期同步接口已弃用，改用联邦搜索。外部基因源通过联邦搜索实时查询并后台
+> 入库为 `pending` 状态，由 AI Curator 审核通过后发布。
+> 仅保留 NoDeskClaw 同步用于历史数据批量导入（白名单，直接 approved）。
 > 接口将于 2026-06-01 下线。
 
 | 方法 | 路径 | 说明 |
@@ -861,12 +861,18 @@ tsx listener.ts
                      └─ ClawHub API (搜索) → 远程结果 (source: clawhub)
                                             ↓
                                   去重（本地优先）→ 分数归一化 → 合并排序 → 返回
+                                            ↓ (后台 fire-and-forget)
+                                  ClawHub 新结果 → 入库为 pending → 发 gene.created 事件
+                                                                    → Curator AI 审核
 ```
 
 **设计原则**：
-- ClawHub 结果**不入库**，仅作为外部知识源实时查询
+- ClawHub 结果**立即展示**，用户无需等待入库
+- 后台自动将新的外部结果入库为 `pending` + `is_published: false`，触发 AI 审核
+- 审核通过后 `approved` + `is_published: true`，后续搜索将作为本地结果命中
+- 入库时通过 slug 去重，已存在的不重复插入
 - ClawHub 超时或失败时优雅降级，只返回本地结果
-- 本地结果天然优先（归一化分数更高）
+- NoDeskClaw 同步为白名单，直接 `approved` 入库
 - 返回 `sources` 字段标明各来源命中数量
 
 **响应示例**：

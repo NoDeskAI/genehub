@@ -100,8 +100,8 @@ export function extractClawHubMetadata(payload: ClawHubSkillPayload) {
     install_count: typeof stats.installs === 'number' ? stats.installs : 0,
     avg_rating: typeof stats.stars === 'number' ? stats.stars : 0,
     effectiveness_score: 0,
-    review_status: 'approved' as const,
-    is_published: true,
+    review_status: 'pending' as const,
+    is_published: false,
   };
 }
 
