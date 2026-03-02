@@ -34,15 +34,15 @@ function triggerCurator(prompt: string) {
 
   execFile(
     CURATOR_CMD,
-    ['run', '--model', 'minimax/MiniMax-M2.5', prompt],
-    { cwd: CURATOR_CWD, env: { ...process.env } },
+    ['run', prompt],
+    { cwd: CURATOR_CWD, env: { ...process.env }, timeout: 120_000 },
     (err, stdout, stderr) => {
       if (err) {
-        console.error('[curator-listener] Curator execution failed:', err.message);
+        console.error('[curator-listener] Curator failed:', err.message);
+        if (stderr) console.error('[curator-listener] stderr:', stderr.slice(0, 500));
         return;
       }
-      if (stdout) console.log('[curator-listener] Curator output:', stdout.slice(0, 500));
-      if (stderr) console.error('[curator-listener] Curator stderr:', stderr.slice(0, 500));
+      console.log('[curator-listener] Curator done:', (stdout || '').slice(0, 1000));
     },
   );
 }

@@ -43,8 +43,8 @@ spec:
                   cpu: 100m
                   memory: 256Mi
                 limits:
-                  cpu: 500m
-                  memory: 512Mi
+                  cpu: "1"
+                  memory: 1Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -76,6 +76,8 @@ spec:
                 secretKeyRef:
                   name: genehub-app-secret
                   key: DATABASE_URL
+            - name: OPENCODE_BIN_PATH
+              value: /usr/local/lib/node_modules/opencode-ai/node_modules/opencode-linux-x64-musl/bin/opencode
             - name: CURATOR_CMD
               value: opencode
             - name: MINIMAX_API_KEY
@@ -90,8 +92,8 @@ spec:
                   key: GENEHUB_ADMIN_TOKEN
           resources:
             requests:
-              cpu: 50m
-              memory: 128Mi
-            limits:
-              cpu: 200m
+              cpu: 100m
               memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
