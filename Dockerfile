@@ -30,7 +30,7 @@ RUN pnpm --filter @nodeskai/genehub-types build \
 FROM ${NODE_IMAGE}
 WORKDIR /app
 
-COPY --from=build /app/packages/registry/dist/index.js ./dist/index.js
+COPY --from=build /app/packages/registry/dist/ ./dist/
 COPY --from=build /app/packages/web/dist ./public
 
 ENV NODE_ENV=production

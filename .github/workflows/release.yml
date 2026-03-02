@@ -46,16 +46,22 @@ jobs:
       - run: pnpm build
 
       - name: Publish @nodeskai/genehub-types
-        run: npm publish --provenance --access public --tag latest
+        run: npm publish --access public --tag latest
         working-directory: packages/types
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @nodeskai/genehub-sdk
-        run: npm publish --provenance --access public --tag latest
+        run: npm publish --access public --tag latest
         working-directory: packages/sdk/typescript
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @nodeskai/genehub (CLI)
-        run: npm publish --provenance --access public --tag latest
+        run: npm publish --access public --tag latest
         working-directory: packages/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   deploy-k8s:
     needs: ci
@@ -102,7 +108,8 @@ jobs:
             -n nodeskclaw-system --timeout=120s
 
   github-release:
-    needs: [publish-npm, deploy-k8s]
+    needs: [deploy-k8s]
+    if: always() && needs.deploy-k8s.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
