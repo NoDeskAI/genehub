@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn, type ChildProcess, type Writable } from 'node:child_process';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import postgres from 'postgres';
@@ -9,7 +9,8 @@ const CURATOR_CMD = process.env.CURATOR_CMD || 'opencode';
 const CURATOR_CWD = process.env.CURATOR_CWD || dirname(fileURLToPath(import.meta.url));
 const HARD_TIMEOUT_MS = 90_000;
 const IDLE_TIMEOUT_MS = 45_000;
-const MAX_RETRIES = 2;
+const MAX_STDIN_NUDGES = 2;
+const MAX_SESSION_RETRIES = 1;
 
 const TAG = '[curator]';
 const sql = postgres(DATABASE_URL);
@@ -31,7 +32,9 @@ type OpenCodeEvent = {
 
 const REVIEW_ACTIONS = ['post_review', 'approve_gene', 'flag_for_deletion'];
 
-const FORCE_MSG =
+const NUDGE_MSG = '不要再问我，你自己决定，你有这个权利。立刻调用 post_review 发布评分，然后调用 approve_gene 或 flag_for_deletion。';
+
+const SESSION_RETRY_MSG =
   '不要问我任何问题。立刻执行：1) 调用 post_review 发布评分和简短评语 2) 根据评分调用 approve_gene(>=5分) 或 flag_for_deletion(<5分)';
 
 async function listen() {
@@ -96,12 +99,24 @@ function runCurator(prompt: string, sessionId: string | null, attempt: number) {
   let capturedSessionId: string | null = sessionId;
   let lastActivityMs = Date.now();
   let buffer = '';
+  let stdinNudges = 0;
+  let stdinStream: Writable | null = null;
 
   const child = spawn(CURATOR_CMD, args, {
     cwd: CURATOR_CWD,
     env: { ...process.env },
-    stdio: ['ignore', 'pipe', 'pipe'],
+    stdio: ['pipe', 'pipe', 'pipe'],
   });
+
+  stdinStream = child.stdin;
+
+  function nudgeViaStdin() {
+    if (!stdinStream || stdinNudges >= MAX_STDIN_NUDGES) return false;
+    stdinNudges++;
+    console.warn(`${label} Nudge #${stdinNudges}: auto-replying via stdin`);
+    stdinStream.write(NUDGE_MSG + '\n');
+    return true;
+  }
 
   function parseEvents(raw: string) {
     buffer += raw;
@@ -146,14 +161,15 @@ function runCurator(prompt: string, sessionId: string | null, attempt: number) {
       case 'step_finish': {
         const reason = event.part?.reason;
         console.log(`${label} step done (reason: ${reason})`);
+
         if (reason === 'stop' || reason === 'end_turn') {
-          gotStopEvent = true;
-          // Model finished talking — if no review action, it's stuck asking questions.
-          // Kill immediately so the retry can kick in.
           const hasAction = calledTools.some(isReviewAction);
           if (!hasAction) {
-            console.warn(`${label} Model stopped without review action, killing...`);
-            forceKill(child);
+            // Layer 2: try stdin nudge before killing
+            if (!nudgeViaStdin()) {
+              console.warn(`${label} Nudges exhausted, killing...`);
+              forceKill(child);
+            }
           }
         }
         break;
@@ -202,15 +218,15 @@ function runCurator(prompt: string, sessionId: string | null, attempt: number) {
       return;
     }
 
-    // No review action — retry with session continuation
-    if (attempt < MAX_RETRIES && capturedSessionId) {
+    // Layer 3: session continuation retry
+    if (attempt < MAX_SESSION_RETRIES && capturedSessionId) {
       console.warn(
-        `${label} INCOMPLETE (code=${code}, tools=[${toolList}]) — retrying with session ${capturedSessionId}`,
+        `${label} INCOMPLETE (code=${code}, tools=[${toolList}]) — session retry with ${capturedSessionId}`,
       );
-      runCurator(FORCE_MSG, capturedSessionId, attempt + 1);
+      runCurator(SESSION_RETRY_MSG, capturedSessionId, attempt + 1);
     } else {
       console.error(
-        `${label} FAILED after ${attempt + 1} attempts (code=${code}, tools=[${toolList}])`,
+        `${label} FAILED after ${attempt + 1} attempts, ${stdinNudges} nudges (code=${code}, tools=[${toolList}])`,
       );
       processing = false;
       processNext();
