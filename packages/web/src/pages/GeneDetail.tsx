@@ -1,7 +1,27 @@
+import {
+  Bot,
+  Calendar,
+  ChevronRight,
+  Copy,
+  Check,
+  Download,
+  ExternalLink,
+  Layers,
+  Star,
+  Tag,
+  User,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { type Gene, type GeneVersion, getGene, getGeneVersions } from '../api/client';
-import { ICON_MAP } from '../components/GeneCard';
+import { type Gene, type GeneVersion, getGene, getGeneVersions } from '@/api/client';
+import { CATEGORY_COLORS, getReviewStatusConfig } from '@/lib/status';
+import LucideIcon from '@/components/LucideIcon';
+import ReviewList from '@/components/ReviewList';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -17,9 +37,10 @@ function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="text-xs px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 transition"
+      className="text-xs px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 transition flex items-center gap-1"
     >
-      {copied ? '✓ 已复制' : '复制'}
+      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+      {copied ? '已复制' : '复制'}
     </button>
   );
 }
@@ -49,6 +70,50 @@ function InstallBlock({ slug }: { slug: string }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function VersionHistory({ versions }: { versions: GeneVersion[] }) {
+  if (versions.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Layers className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+        <p className="text-muted">暂无版本记录</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {versions.map((v) => (
+        <div
+          key={v.id}
+          className="flex items-start justify-between border border-border rounded-xl px-5 py-4"
+        >
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-sm font-medium text-gray-900">v{v.version}</span>
+              {v.is_latest && (
+                <Badge variant="success" className="text-[10px] px-1.5 py-0">latest</Badge>
+              )}
+            </div>
+            {v.changelog && <p className="text-sm text-muted mt-1">{v.changelog}</p>}
+          </div>
+          <time className="text-xs text-muted whitespace-nowrap">
+            {new Date(v.published_at).toLocaleDateString('zh-CN')}
+          </time>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SidebarItem({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex justify-between items-start text-sm">
+      <span className="text-muted shrink-0">{label}</span>
+      <span className="text-gray-700 text-right">{children}</span>
     </div>
   );
 }
@@ -84,10 +149,16 @@ export default function GeneDetail() {
   if (!gene) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/3" />
-          <div className="h-4 bg-gray-100 rounded w-2/3" />
-          <div className="h-64 bg-gray-100 rounded" />
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-4">
+            <Skeleton className="h-10 w-1/3" />
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
         </div>
       </div>
     );
@@ -96,26 +167,41 @@ export default function GeneDetail() {
   const manifest = gene.manifest as Record<string, unknown>;
   const learning = manifest.learning as { level?: string; objectives?: string[] } | undefined;
   const skill = manifest.skill as { description?: string } | undefined;
+  const mcpServers = manifest.mcpServers as Record<string, unknown> | undefined;
+  const rules = manifest.rules as string[] | undefined;
+  const statusConfig = getReviewStatusConfig(gene.review_status);
+  const catColor = CATEGORY_COLORS[gene.category] || 'bg-gray-50 text-gray-700';
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Breadcrumb */}
-      <div className="text-sm text-muted mb-6">
-        <Link to="/browse" className="hover:text-gray-900 transition">
-          浏览
+      <nav className="flex items-center gap-1 text-sm text-muted mb-6">
+        <Link to="/browse" className="hover:text-gray-900 transition">浏览</Link>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <Link to={`/browse?category=${gene.category}`} className="hover:text-gray-900 transition">
+          {gene.category}
         </Link>
-        <span className="mx-2">/</span>
+        <ChevronRight className="w-3.5 h-3.5" />
         <span className="text-gray-900">{gene.name}</span>
-      </div>
+      </nav>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Main */}
+        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Header */}
           <div className="flex items-start gap-4">
-            <span className="text-4xl">{(gene.icon && ICON_MAP[gene.icon]) || '🧬'}</span>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{gene.name}</h1>
+            <LucideIcon name={gene.icon} className="w-9 h-9 text-primary" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-bold text-gray-900">{gene.name}</h1>
+                <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
+                {gene.ai_score != null && (
+                  <Badge variant="info" className="gap-1">
+                    <Bot className="w-3 h-3" />
+                    AI {gene.ai_score.toFixed(1)}
+                  </Badge>
+                )}
+              </div>
               <p className="text-muted text-sm mt-1">
                 {gene.slug} · v{gene.version}
               </p>
@@ -123,195 +209,254 @@ export default function GeneDetail() {
             </div>
           </div>
 
-          {/* Description */}
-          <div className="bg-surface rounded-xl border border-border p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">描述</h2>
-            <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{gene.description}</p>
-          </div>
+          {/* Tabs */}
+          <Tabs defaultValue="overview">
+            <TabsList>
+              <TabsTrigger value="overview">概述</TabsTrigger>
+              <TabsTrigger value="reviews">评审记录</TabsTrigger>
+              <TabsTrigger value="versions">版本历史</TabsTrigger>
+            </TabsList>
 
-          {/* Skill */}
-          {skill?.description && (
-            <div className="bg-surface rounded-xl border border-border p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">技能说明</h2>
-              <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
-                {skill.description}
-              </p>
-            </div>
-          )}
+            <TabsContent value="overview" className="space-y-6">
+              {/* Description */}
+              <Card>
+                <CardContent className="pt-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3">描述</h2>
+                  <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
+                    {gene.description}
+                  </p>
+                </CardContent>
+              </Card>
 
-          {/* Learning */}
-          {learning && (
-            <div className="bg-surface rounded-xl border border-border p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">学习配置</h2>
-              {learning.level && (
-                <div className="mb-3">
-                  <span className="text-sm font-medium text-gray-700">学习等级：</span>
-                  <span className="ml-2 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-sm font-medium">
-                    {learning.level}
-                  </span>
-                </div>
+              {/* Skill */}
+              {skill?.description && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">技能说明</h2>
+                    <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
+                      {skill.description}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
-              {learning.objectives && learning.objectives.length > 0 && (
-                <div>
-                  <span className="text-sm font-medium text-gray-700 block mb-2">学习目标：</span>
-                  <ul className="space-y-1">
-                    {learning.objectives.map((obj) => (
-                      <li key={obj} className="text-sm text-gray-600 flex items-start gap-2">
-                        <span className="text-primary mt-0.5">▸</span>
-                        {obj}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+
+              {/* Rules */}
+              {rules && rules.length > 0 && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">规则</h2>
+                    <ul className="space-y-1.5">
+                      {rules.map((rule, i) => (
+                        <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
+                          <span className="text-primary mt-0.5 shrink-0">▸</span>
+                          {rule}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
               )}
-            </div>
-          )}
 
-          {/* Install */}
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">安装</h2>
-            <InstallBlock slug={gene.slug} />
-          </div>
-
-          {/* Versions */}
-          {versions.length > 0 && (
-            <div className="bg-surface rounded-xl border border-border p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">版本历史</h2>
-              <div className="space-y-3">
-                {versions.map((v) => (
-                  <div
-                    key={v.id}
-                    className="flex items-start justify-between border-b border-border last:border-0 pb-3 last:pb-0"
-                  >
-                    <div>
-                      <span className="font-mono text-sm font-medium text-gray-900">
-                        v{v.version}
-                      </span>
-                      {v.is_latest && (
-                        <span className="ml-2 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
-                          latest
-                        </span>
-                      )}
-                      {v.changelog && <p className="text-sm text-gray-500 mt-1">{v.changelog}</p>}
+              {/* MCP Servers */}
+              {mcpServers && Object.keys(mcpServers).length > 0 && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">MCP Servers</h2>
+                    <div className="space-y-2">
+                      {Object.entries(mcpServers).map(([name, config]) => (
+                        <div key={name} className="bg-gray-50 rounded-lg px-4 py-3">
+                          <span className="font-mono text-sm font-medium text-gray-900">{name}</span>
+                          <pre className="text-xs text-muted mt-1 overflow-x-auto">
+                            {JSON.stringify(config, null, 2)}
+                          </pre>
+                        </div>
+                      ))}
                     </div>
-                    <time className="text-xs text-muted whitespace-nowrap">
-                      {new Date(v.published_at).toLocaleDateString('zh-CN')}
-                    </time>
-                  </div>
-                ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Learning */}
+              {learning && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">学习配置</h2>
+                    {learning.level && (
+                      <div className="mb-3">
+                        <span className="text-sm font-medium text-gray-700">学习等级：</span>
+                        <Badge variant="info" className="ml-2">{learning.level}</Badge>
+                      </div>
+                    )}
+                    {learning.objectives && learning.objectives.length > 0 && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-700 block mb-2">学习目标：</span>
+                        <ul className="space-y-1">
+                          {learning.objectives.map((obj) => (
+                            <li key={obj} className="text-sm text-gray-600 flex items-start gap-2">
+                              <span className="text-primary mt-0.5">▸</span>
+                              {obj}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Install */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3">安装</h2>
+                <InstallBlock slug={gene.slug} />
               </div>
-            </div>
-          )}
+            </TabsContent>
+
+            <TabsContent value="reviews">
+              {slug && <ReviewList slug={slug} />}
+            </TabsContent>
+
+            <TabsContent value="versions">
+              <VersionHistory versions={versions} />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Meta */}
-          <div className="bg-surface rounded-xl border border-border p-5 space-y-4 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted">分类</span>
-              <Link
-                to={`/browse?category=${gene.category}`}
-                className="text-primary hover:underline"
-              >
-                {gene.category}
-              </Link>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted">来源</span>
-              <span className="text-gray-700">{gene.source}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted">作者</span>
-              <span className="text-gray-700">{gene.author?.name || '未知'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted">安装次数</span>
-              <span className="text-gray-700">{gene.install_count}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted">平均评分</span>
-              <span className="text-gray-700">
-                {gene.avg_rating > 0 ? gene.avg_rating.toFixed(1) : '暂无'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted">发布时间</span>
-              <span className="text-gray-700">
-                {new Date(gene.created_at).toLocaleDateString('zh-CN')}
-              </span>
-            </div>
-          </div>
+          <Card>
+            <CardContent className="pt-5 space-y-3">
+              <SidebarItem label="分类">
+                <Link
+                  to={`/browse?category=${gene.category}`}
+                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${catColor} hover:opacity-80`}
+                >
+                  {gene.category}
+                </Link>
+              </SidebarItem>
+              <Separator />
+              <SidebarItem label="来源">
+                {gene.source}
+                {gene.source_ref && (
+                  <a href={gene.source_ref} target="_blank" rel="noreferrer" className="ml-1 inline-block align-middle">
+                    <ExternalLink className="w-3 h-3 text-muted" />
+                  </a>
+                )}
+              </SidebarItem>
+              <SidebarItem label="作者">
+                <span className="flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  {gene.author?.name || '未知'}
+                </span>
+              </SidebarItem>
+              <Separator />
+              <SidebarItem label="安装次数">
+                <span className="flex items-center gap-1">
+                  <Download className="w-3 h-3" />
+                  {gene.install_count}
+                </span>
+              </SidebarItem>
+              <SidebarItem label="用户评分">
+                {gene.avg_rating > 0 ? (
+                  <span className="flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    {gene.avg_rating.toFixed(1)}
+                  </span>
+                ) : (
+                  '暂无'
+                )}
+              </SidebarItem>
+              {gene.ai_score != null && (
+                <SidebarItem label="AI 评分">
+                  <span className="flex items-center gap-1 text-indigo-600 font-medium">
+                    <Bot className="w-3 h-3" />
+                    {gene.ai_score.toFixed(1)}
+                  </span>
+                </SidebarItem>
+              )}
+              {gene.effectiveness_score > 0 && (
+                <SidebarItem label="有效性">
+                  {gene.effectiveness_score.toFixed(1)}
+                </SidebarItem>
+              )}
+              <Separator />
+              <SidebarItem label="发布时间">
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {new Date(gene.created_at).toLocaleDateString('zh-CN')}
+                </span>
+              </SidebarItem>
+            </CardContent>
+          </Card>
 
           {/* Tags */}
           {gene.tags.length > 0 && (
-            <div className="bg-surface rounded-xl border border-border p-5">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">标签</h3>
-              <div className="flex flex-wrap gap-2">
-                {gene.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <Card>
+              <CardContent className="pt-5">
+                <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5" />
+                  标签
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {gene.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Compatibility */}
           {gene.compatibility.length > 0 && (
-            <div className="bg-surface rounded-xl border border-border p-5">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">兼容产品</h3>
-              <div className="flex flex-wrap gap-2">
-                {gene.compatibility.map((p) => (
-                  <span
-                    key={p}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 font-medium"
-                  >
-                    {p}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <Card>
+              <CardContent className="pt-5">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">兼容产品</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {gene.compatibility.map((p) => (
+                    <Badge key={p} variant="info">{p}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Dependencies */}
           {gene.dependencies.length > 0 && (
-            <div className="bg-surface rounded-xl border border-border p-5">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">依赖</h3>
-              <div className="space-y-2">
-                {gene.dependencies.map((dep) => (
-                  <Link
-                    key={dep.slug}
-                    to={`/genes/${dep.slug}`}
-                    className="flex justify-between text-sm hover:bg-gray-50 rounded px-2 py-1 -mx-2 transition"
-                  >
-                    <span className="text-primary">{dep.slug}</span>
-                    <span className="text-muted">{dep.version}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <Card>
+              <CardContent className="pt-5">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">依赖</h3>
+                <div className="space-y-1.5">
+                  {gene.dependencies.map((dep) => (
+                    <Link
+                      key={dep.slug}
+                      to={`/genes/${dep.slug}`}
+                      className="flex justify-between text-sm hover:bg-gray-50 rounded px-2 py-1 -mx-2 transition"
+                    >
+                      <span className="text-primary">{dep.slug}</span>
+                      <span className="text-muted">{dep.version}</span>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Synergies */}
           {gene.synergies.length > 0 && (
-            <div className="bg-surface rounded-xl border border-border p-5">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">协同基因</h3>
-              <div className="flex flex-wrap gap-2">
-                {gene.synergies.map((s) => (
-                  <Link
-                    key={s}
-                    to={`/genes/${s}`}
-                    className="text-xs px-2 py-1 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 transition"
-                  >
-                    {s}
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <Card>
+              <CardContent className="pt-5">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">协同基因</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {gene.synergies.map((s) => (
+                    <Link key={s} to={`/genes/${s}`}>
+                      <Badge variant="outline" className="hover:bg-gray-50 cursor-pointer">
+                        {s}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
