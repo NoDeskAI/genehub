@@ -12,6 +12,41 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 
+export const publishers = pgTable(
+  'publishers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    github_id: integer('github_id').notNull(),
+    github_login: varchar('github_login', { length: 64 }).notNull(),
+    github_name: varchar('github_name', { length: 128 }).notNull().default(''),
+    github_avatar_url: text('github_avatar_url').notNull().default(''),
+    github_profile_url: text('github_profile_url').notNull().default(''),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    last_login_at: timestamp('last_login_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('publishers_github_id_idx').on(table.github_id)],
+);
+
+export const apiKeys = pgTable(
+  'api_keys',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    publisher_id: uuid('publisher_id')
+      .notNull()
+      .references(() => publishers.id, { onDelete: 'cascade' }),
+    token_prefix: varchar('token_prefix', { length: 16 }).notNull(),
+    token_hash: varchar('token_hash', { length: 64 }).notNull(),
+    name: varchar('name', { length: 128 }).notNull().default('Default'),
+    last_used_at: timestamp('last_used_at', { withTimezone: true }),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    revoked_at: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('api_keys_publisher_id_idx').on(table.publisher_id),
+    uniqueIndex('api_keys_token_hash_idx').on(table.token_hash),
+  ],
+);
+
 export const genes = pgTable(
   'genes',
   {
@@ -33,6 +68,7 @@ export const genes = pgTable(
       .notNull()
       .default([]),
     synergies: jsonb('synergies').$type<string[]>().notNull().default([]),
+    publisher_id: uuid('publisher_id').references(() => publishers.id),
     parent_gene_id: uuid('parent_gene_id'),
     author: jsonb('author')
       .$type<{ type: string; id?: string; name: string }>()

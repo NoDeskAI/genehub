@@ -15,7 +15,7 @@ export type GeneCategory = z.infer<typeof GeneCategory>;
 export const GeneTag = z.enum(['ability', 'personality', 'knowledge', 'tool']);
 export type GeneTag = z.infer<typeof GeneTag>;
 
-export const GeneSource = z.enum(['official', 'clawhub', 'evomap', 'community', 'agent']);
+export const GeneSource = z.enum(['official', 'clawhub', 'evomap', 'community', 'agent', 'github']);
 export type GeneSource = z.infer<typeof GeneSource>;
 
 export const ReviewStatus = z.enum(['draft', 'pending', 'approved', 'rejected', 'flagged']);

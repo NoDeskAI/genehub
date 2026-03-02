@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { requireAuth } from '../middleware/auth.js';
 import { paginated, success } from '../middleware/response.js';
 import { federatedSearch } from '../services/federated-search.js';
 import * as geneService from '../services/gene-service.js';
@@ -58,27 +59,32 @@ genesRouter.get('/:slug/versions/:version', async (c) => {
   return success(c, ver);
 });
 
-genesRouter.post('/', async (c) => {
+genesRouter.post('/', requireAuth('publisher'), async (c) => {
   const body = await c.req.json();
-  const gene = await geneService.createGene(body.manifest ?? body);
+  const publisherCtx = {
+    publisherId: c.get('publisherId') as string | undefined,
+    githubLogin: c.get('githubLogin') as string | undefined,
+    isAdmin: (c.get('authRole') as string) === 'admin',
+  };
+  const gene = await geneService.createGene(body.manifest ?? body, publisherCtx);
   return success(c, gene);
 });
 
-genesRouter.post('/:slug/versions', async (c) => {
+genesRouter.post('/:slug/versions', requireAuth('publisher'), async (c) => {
   const slug = c.req.param('slug');
   const body = await c.req.json();
   const gene = await geneService.publishVersion(slug, body.manifest ?? body, body.changelog);
   return success(c, gene);
 });
 
-genesRouter.put('/:slug', async (c) => {
+genesRouter.put('/:slug', requireAuth('publisher'), async (c) => {
   const slug = c.req.param('slug');
   const body = await c.req.json();
   const gene = await geneService.updateGene(slug, body);
   return success(c, gene);
 });
 
-genesRouter.delete('/:slug', async (c) => {
+genesRouter.delete('/:slug', requireAuth('admin'), async (c) => {
   const slug = c.req.param('slug');
   const gene = await geneService.deleteGene(slug);
   return success(c, gene);

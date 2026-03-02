@@ -26,10 +26,32 @@ export type Gene = {
   ai_score: number | null;
   ai_verdict: string | null;
   ai_enriched: boolean;
+  publisher_id: string | null;
   is_published: boolean;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+};
+
+export type Publisher = {
+  id: string;
+  github_id: number;
+  github_login: string;
+  github_name: string;
+  github_avatar_url: string;
+  github_profile_url: string;
+  created_at: string;
+  last_login_at: string;
+};
+
+export type ApiKey = {
+  id: string;
+  publisher_id: string;
+  token_prefix: string;
+  name: string;
+  last_used_at: string | null;
+  created_at: string;
+  revoked_at: string | null;
 };
 
 export type GenomeGeneRef = {

@@ -336,11 +336,25 @@ export default function GeneDetail() {
               </SidebarItem>
               <Separator />
               <SidebarItem label="来源">
-                {gene.source}
-                {gene.source_ref && (
-                  <a href={gene.source_ref} target="_blank" rel="noreferrer" className="ml-1 inline-block align-middle">
-                    <ExternalLink className="w-3 h-3 text-muted" />
+                {gene.source === 'github' && gene.source_ref ? (
+                  <a
+                    href={`https://github.com/${gene.source_ref}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                  >
+                    @{gene.source_ref}
+                    <ExternalLink className="w-3 h-3" />
                   </a>
+                ) : (
+                  <>
+                    {gene.source}
+                    {gene.source_ref && (
+                      <a href={gene.source_ref} target="_blank" rel="noreferrer" className="ml-1 inline-block align-middle">
+                        <ExternalLink className="w-3 h-3 text-muted" />
+                      </a>
+                    )}
+                  </>
                 )}
               </SidebarItem>
               <SidebarItem label="作者">

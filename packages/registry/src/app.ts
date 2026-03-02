@@ -5,8 +5,10 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { authRouter } from './api/auth.js';
 import { genesRouter } from './api/genes.js';
 import { genomesRouter } from './api/genomes.js';
+import { keysRouter } from './api/keys.js';
 import { resolveRouter } from './api/resolve.js';
 import { reviewsRouter } from './api/reviews.js';
 import { syncRouter } from './api/sync.js';
@@ -59,9 +61,11 @@ app.all('/mcp', async (c) => {
   return handleMcpRequest(c.req.raw);
 });
 
+app.route('/auth', authRouter);
 app.route('/api/v1/genes', genesRouter);
 app.route('/api/v1/genes', reviewsRouter);
 app.route('/api/v1/genomes', genomesRouter);
+app.route('/api/v1/keys', keysRouter);
 app.route('/api/v1/resolve', resolveRouter);
 app.route('/api/v1/sync', syncRouter);
 app.route('/api/v1/webhooks', webhooksRouter);

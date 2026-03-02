@@ -36,10 +36,23 @@ genehub config get
 GENEHUB_REGISTRY_URL=http://localhost:3000 GENEHUB_TOKEN=dev genehub publish ./my-gene
 ```
 
+## 认证
+
+使用 GitHub OAuth 登录，自动创建 API Key：
+
+```bash
+genehub auth login      # 打开浏览器完成 GitHub 登录，自动保存 token
+genehub auth status     # 查看当前登录状态
+genehub auth logout     # 退出登录（清除本地 token）
+```
+
 ## 命令
 
 | 命令 | 说明 |
 |---|---|
+| `genehub auth login` | GitHub OAuth 登录 |
+| `genehub auth status` | 查看登录状态 |
+| `genehub auth logout` | 退出登录 |
 | `genehub search [keyword]` | 搜索基因库 |
 | `genehub install <slug>` | 安装基因到当前 Agent 环境 |
 | `genehub uninstall <slug>` | 卸载基因 |
@@ -58,6 +71,7 @@ packages/cli/
 │   ├── config.ts         # 配置管理（文件 + 环境变量）
 │   ├── output.ts         # 格式化输出工具
 │   └── commands/
+│       ├── auth.ts       # GitHub OAuth 登录
 │       ├── config.ts     # config set / get
 │       ├── init.ts       # 初始化基因项目
 │       ├── install.ts    # 安装基因

@@ -190,8 +190,9 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | category | string(32) | 领域分类 |
 | tags | JSON | 标签数组（能力 / 性格 / 知识 / 工具） |
 | icon | string(32) | 图标名 |
-| source | enum | `official` / `clawhub` / `evomap` / `community` / `agent` |
-| source_ref | string | 外部来源引用（ClawHub URL / Evomap ID） |
+| source | enum | `official` / `clawhub` / `evomap` / `community` / `agent` / `github` |
+| source_ref | string | 外部来源引用（ClawHub URL / Evomap ID / GitHub login） |
+| publisher_id | FK nullable | 发布者（见 3.3 节） |
 | manifest | JSON | **标准基因清单**（见第四章） |
 | compatibility | JSON | 兼容产品列表 `["openclaw", "nanobot"]`（初期仅支持这两个产品） |
 | dependencies | JSON | 依赖基因 `[{"slug": "xxx", "version": ">=1.0"}]` |
@@ -257,6 +258,67 @@ GeneHub 统管：基因元数据、版本、manifest、搜索、兼容性
 ```
 
 NoDeskClaw 的 `genes` 表将作为 GeneHub 的客户端缓存，定期与 GeneHub Registry 同步。新基因由 GeneHub 统一管理，NoDeskClaw 通过 API 拉取。
+
+### 3.3 认证与发布者
+
+#### Publisher（发布者）
+
+通过 GitHub OAuth 登录后自动创建，不维护用户资料，仅缓存 GitHub 身份：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| github_id | integer | GitHub user ID，唯一 |
+| github_login | string(64) | GitHub 用户名 |
+| github_name | string(128) | 显示名 |
+| github_avatar_url | text | 头像 URL |
+| github_profile_url | text | Profile 链接（来源跳转用） |
+| created_at | datetime | |
+| last_login_at | datetime | |
+
+#### ApiKey（API 密钥）
+
+一个 Publisher 可创建多个 Key，用于 CLI/SDK 认证：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| publisher_id | FK | 所属发布者 |
+| token_prefix | string(16) | 前缀用于展示（如 `ghb_abc1****`） |
+| token_hash | string(64) | SHA-256 hash，不存明文 |
+| name | string(128) | 用户命名（如 "My Laptop"） |
+| last_used_at | datetime | |
+| created_at | datetime | |
+| revoked_at | datetime | 非空表示已撤销 |
+
+#### Gene 表变更
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| publisher_id | FK nullable | 发布者（nullable 兼容历史数据） |
+| source | enum | 新增 `github` 值，用户发布时设为 `github` |
+| source_ref | string | 用户发布时设为 GitHub login |
+
+#### 认证流程
+
+```
+GitHub OAuth                   API Key
+┌──────────────────────┐       ┌─────────────────────────┐
+│ Web: Login with GitHub │       │ CLI/SDK: Bearer ghb_xxx  │
+│ -> /auth/github        │       │ -> 查 api_keys 表         │
+│ -> GitHub OAuth flow   │       │ -> hash 比对              │
+│ -> upsert publisher    │       │ -> 关联 publisher         │
+│ -> JWT httpOnly cookie │       │ -> 设置 authRole          │
+└──────────────────────┘       └─────────────────────────┘
+```
+
+认证优先级：
+1. Bearer Token -> 查 `api_keys` 表，角色 `publisher`
+2. Session Cookie -> 解析 JWT，角色 `publisher`
+3. `GENEHUB_ADMIN_TOKEN` 环境变量 -> 角色 `admin`
+4. 无认证 -> 角色 `public`
+
+所需环境变量：`GITHUB_CLIENT_ID`、`GITHUB_CLIENT_SECRET`、`GENEHUB_JWT_SECRET`
 
 ---
 

@@ -15,6 +15,13 @@
       "when": 1772273630416,
       "tag": "0001_broad_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772450588438,
+      "tag": "0002_lowly_gideon",
+      "breakpoints": true
     }
   ]
 }

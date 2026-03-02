@@ -129,7 +129,13 @@ export async function getGeneVersion(slug: string, version: string) {
   return result[0];
 }
 
-export async function createGene(manifestRaw: unknown) {
+export type PublisherContext = {
+  publisherId?: string;
+  githubLogin?: string;
+  isAdmin?: boolean;
+};
+
+export async function createGene(manifestRaw: unknown, publisherCtx?: PublisherContext) {
   const parsed = GeneManifestSchema.safeParse(manifestRaw);
   if (!parsed.success) {
     const detail = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
@@ -152,6 +158,13 @@ export async function createGene(manifestRaw: unknown) {
 
   const compatibility = manifest.compatibility.map((c) => c.product);
 
+  const isGithubPublisher = publisherCtx?.publisherId && publisherCtx.githubLogin;
+  const source = isGithubPublisher ? 'github' : 'official';
+  const sourceRef = isGithubPublisher ? publisherCtx.githubLogin : null;
+  const author = isGithubPublisher
+    ? { type: 'human' as const, name: publisherCtx.githubLogin ?? '' }
+    : (manifest.author ?? { type: 'human' as const, name: '' });
+
   const [gene] = await db
     .insert(genes)
     .values({
@@ -163,11 +176,14 @@ export async function createGene(manifestRaw: unknown) {
       category: manifest.category,
       tags: manifest.tags,
       icon: manifest.icon ?? null,
+      source,
+      source_ref: sourceRef,
+      publisher_id: publisherCtx?.publisherId ?? null,
       manifest,
       compatibility,
       dependencies: manifest.dependencies,
       synergies: manifest.synergies,
-      author: manifest.author ?? { type: 'human', name: '' },
+      author,
       review_status: 'pending',
       is_published: false,
     })

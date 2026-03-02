@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { authCommand } from './commands/auth.js';
 import { configCommand } from './commands/config.js';
 import { initCommand } from './commands/init.js';
 import { installCommand } from './commands/install.js';
@@ -12,6 +13,7 @@ const program = new Command();
 
 program.name('genehub').description('GeneHub CLI - AI 员工基因管理工具').version('0.1.0');
 
+program.addCommand(authCommand);
 program.addCommand(installCommand);
 program.addCommand(uninstallCommand);
 program.addCommand(searchCommand);
