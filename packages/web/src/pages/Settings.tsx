@@ -1,17 +1,11 @@
 import { Copy, Key, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  type ApiKeyItem,
-  type CreateKeyResult,
-  createKey,
-  listKeys,
-  revokeKey,
-} from '../api/auth';
-import { useAuth } from '../hooks/useAuth';
+import { type ApiKeyItem, type CreateKeyResult, createKey, listKeys, revokeKey } from '../api/auth';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Settings() {
   const { user, isLoading } = useAuth();
@@ -139,7 +133,10 @@ export default function Settings() {
           </CardHeader>
           <CardContent className="divide-y">
             {activeKeys.map((k) => (
-              <div key={k.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+              <div
+                key={k.id}
+                className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+              >
                 <div>
                   <p className="font-medium text-sm">{k.name}</p>
                   <p className="text-xs text-muted">

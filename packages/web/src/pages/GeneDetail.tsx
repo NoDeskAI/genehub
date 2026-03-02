@@ -1,9 +1,9 @@
 import {
   Bot,
   Calendar,
+  Check,
   ChevronRight,
   Copy,
-  Check,
   Download,
   ExternalLink,
   Layers,
@@ -14,7 +14,6 @@ import {
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { type Gene, type GeneVersion, getGene, getGeneVersions } from '@/api/client';
-import { CATEGORY_COLORS, getReviewStatusConfig } from '@/lib/status';
 import LucideIcon from '@/components/LucideIcon';
 import ReviewList from '@/components/ReviewList';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +21,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CATEGORY_COLORS, getReviewStatusConfig } from '@/lib/status';
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -95,7 +95,9 @@ function VersionHistory({ versions }: { versions: GeneVersion[] }) {
             <div className="flex items-center gap-2">
               <span className="font-mono text-sm font-medium text-gray-900">v{v.version}</span>
               {v.is_latest && (
-                <Badge variant="success" className="text-[10px] px-1.5 py-0">latest</Badge>
+                <Badge variant="success" className="text-[10px] px-1.5 py-0">
+                  latest
+                </Badge>
               )}
             </div>
             {v.changelog && <p className="text-sm text-muted mt-1">{v.changelog}</p>}
@@ -176,7 +178,9 @@ export default function GeneDetail() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1 text-sm text-muted mb-6">
-        <Link to="/browse" className="hover:text-gray-900 transition">浏览</Link>
+        <Link to="/browse" className="hover:text-gray-900 transition">
+          浏览
+        </Link>
         <ChevronRight className="w-3.5 h-3.5" />
         <Link to={`/browse?category=${gene.category}`} className="hover:text-gray-900 transition">
           {gene.category}
@@ -249,7 +253,9 @@ export default function GeneDetail() {
                       {rules.map((rule) => (
                         <div key={rule.name} className="bg-gray-50 rounded-lg px-4 py-3">
                           <span className="text-sm font-medium text-gray-900">{rule.name}</span>
-                          <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{rule.content}</p>
+                          <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">
+                            {rule.content}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -265,7 +271,9 @@ export default function GeneDetail() {
                     <div className="space-y-2">
                       {Object.entries(mcpServers).map(([name, config]) => (
                         <div key={name} className="bg-gray-50 rounded-lg px-4 py-3">
-                          <span className="font-mono text-sm font-medium text-gray-900">{name}</span>
+                          <span className="font-mono text-sm font-medium text-gray-900">
+                            {name}
+                          </span>
                           <pre className="text-xs text-muted mt-1 overflow-x-auto">
                             {JSON.stringify(config, null, 2)}
                           </pre>
@@ -284,12 +292,16 @@ export default function GeneDetail() {
                     {learning.level && (
                       <div className="mb-3">
                         <span className="text-sm font-medium text-gray-700">学习等级：</span>
-                        <Badge variant="info" className="ml-2">{learning.level}</Badge>
+                        <Badge variant="info" className="ml-2">
+                          {learning.level}
+                        </Badge>
                       </div>
                     )}
                     {learning.objectives && learning.objectives.length > 0 && (
                       <div>
-                        <span className="text-sm font-medium text-gray-700 block mb-2">学习目标：</span>
+                        <span className="text-sm font-medium text-gray-700 block mb-2">
+                          学习目标：
+                        </span>
                         <ul className="space-y-1">
                           {learning.objectives.map((obj) => (
                             <li key={obj} className="text-sm text-gray-600 flex items-start gap-2">
@@ -311,9 +323,7 @@ export default function GeneDetail() {
               </div>
             </TabsContent>
 
-            <TabsContent value="reviews">
-              {slug && <ReviewList slug={slug} />}
-            </TabsContent>
+            <TabsContent value="reviews">{slug && <ReviewList slug={slug} />}</TabsContent>
 
             <TabsContent value="versions">
               <VersionHistory versions={versions} />
@@ -350,7 +360,12 @@ export default function GeneDetail() {
                   <>
                     {gene.source}
                     {gene.source_ref && (
-                      <a href={gene.source_ref} target="_blank" rel="noreferrer" className="ml-1 inline-block align-middle">
+                      <a
+                        href={gene.source_ref}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ml-1 inline-block align-middle"
+                      >
                         <ExternalLink className="w-3 h-3 text-muted" />
                       </a>
                     )}
@@ -389,9 +404,7 @@ export default function GeneDetail() {
                 </SidebarItem>
               )}
               {gene.effectiveness_score > 0 && (
-                <SidebarItem label="有效性">
-                  {gene.effectiveness_score.toFixed(1)}
-                </SidebarItem>
+                <SidebarItem label="有效性">{gene.effectiveness_score.toFixed(1)}</SidebarItem>
               )}
               <Separator />
               <SidebarItem label="发布时间">
@@ -413,7 +426,9 @@ export default function GeneDetail() {
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
                   {gene.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
                   ))}
                 </div>
               </CardContent>
@@ -427,7 +442,9 @@ export default function GeneDetail() {
                 <h3 className="text-sm font-medium text-gray-900 mb-3">兼容产品</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {gene.compatibility.map((p) => (
-                    <Badge key={p} variant="info">{p}</Badge>
+                    <Badge key={p} variant="info">
+                      {p}
+                    </Badge>
                   ))}
                 </div>
               </CardContent>

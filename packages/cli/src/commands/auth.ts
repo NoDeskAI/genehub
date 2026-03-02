@@ -106,9 +106,7 @@ function waitForCallback(port: number): Promise<{ token: string; login: string }
       }
 
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(
-        `<h2>Login successful</h2><p>@${login ?? 'unknown'} - you can close this tab.</p>`,
-      );
+      res.end(`<h2>Login successful</h2><p>@${login ?? 'unknown'} - you can close this tab.</p>`);
 
       clearTimeout(timeout);
       server.close();

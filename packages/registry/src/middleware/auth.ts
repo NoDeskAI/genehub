@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
+import { eq } from 'drizzle-orm';
 import type { Context, Next } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { verify } from 'hono/jwt';
-import { eq } from 'drizzle-orm';
 import { db, schema } from '../db/index.js';
 import { AppError } from './error-handler.js';
 

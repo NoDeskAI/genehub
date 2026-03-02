@@ -46,7 +46,10 @@ export default function GeneCard({ gene }: { gene: Gene }) {
 
           <div className="flex items-center gap-2.5 text-xs text-muted shrink-0 ml-2">
             {gene.ai_score != null && (
-              <span className="flex items-center gap-0.5 text-indigo-600 font-medium" title="AI 评分">
+              <span
+                className="flex items-center gap-0.5 text-indigo-600 font-medium"
+                title="AI 评分"
+              >
                 <Bot className="w-3 h-3" />
                 {gene.ai_score.toFixed(1)}
               </span>

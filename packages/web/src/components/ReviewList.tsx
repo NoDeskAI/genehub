@@ -1,6 +1,6 @@
 import { Bot, MessageSquare, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { type GeneReview, type PagedData, getGeneReviews } from '@/api/client';
+import { type GeneReview, getGeneReviews, type PagedData } from '@/api/client';
 import { getReviewStatusConfig } from '@/lib/status';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
@@ -51,9 +51,7 @@ export default function ReviewList({ slug }: { slug: string }) {
               <div className="flex items-center gap-2">
                 <Bot className="w-4 h-4 text-indigo-500" />
                 <span className="text-sm font-medium text-gray-900">{review.reviewer}</span>
-                {review.model && (
-                  <span className="text-xs text-muted">({review.model})</span>
-                )}
+                {review.model && <span className="text-xs text-muted">({review.model})</span>}
               </div>
               <div className="flex items-center gap-2">
                 {review.score != null && (
@@ -79,6 +77,7 @@ export default function ReviewList({ slug }: { slug: string }) {
             {review.comments.length > 0 && (
               <ul className="space-y-1.5">
                 {review.comments.map((comment, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: comments are plain strings without stable keys
                   <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
                     <span className="text-primary mt-0.5 shrink-0">-</span>
                     <span>{comment}</span>

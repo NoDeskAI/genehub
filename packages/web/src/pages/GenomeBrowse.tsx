@@ -1,3 +1,4 @@
+import { Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { type Genome, listGenomes } from '@/api/client';
@@ -5,7 +6,6 @@ import GenomeCard from '@/components/GenomeCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search } from 'lucide-react';
 
 const SORT_OPTIONS = [
   { value: 'newest', label: '最新' },
@@ -88,7 +88,9 @@ export default function GenomeBrowse() {
           className="px-3 py-2 rounded-lg border border-border text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
         >
           {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
           ))}
         </select>
       </div>
@@ -97,6 +99,7 @@ export default function GenomeBrowse() {
       {loading ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholders
             <div key={i} className="rounded-xl border border-border p-5">
               <Skeleton className="h-5 w-1/2 mb-3" />
               <Skeleton className="h-4 w-full mb-2" />

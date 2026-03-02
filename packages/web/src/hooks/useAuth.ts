@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { type AuthUser, getMe, logout as apiLogout } from '../api/auth';
+import { type AuthUser, logout as apiLogout, getMe } from '../api/auth';
 
 type AuthState = {
   user: AuthUser | null;

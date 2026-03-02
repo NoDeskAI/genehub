@@ -224,10 +224,7 @@ async function updateExistingGene(geneId: string, item: FederatedGeneItem) {
   const manifest = buildMinimalManifest(item);
   const version = item.version ?? '0.0.0';
 
-  await db
-    .update(geneVersions)
-    .set({ is_latest: false })
-    .where(eq(geneVersions.gene_id, geneId));
+  await db.update(geneVersions).set({ is_latest: false }).where(eq(geneVersions.gene_id, geneId));
 
   await db.insert(geneVersions).values({
     gene_id: geneId,

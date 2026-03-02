@@ -25,9 +25,7 @@ export default function FederatedSearchCard({ item }: { item: FederatedGeneItem 
         </div>
       </div>
 
-      <p className="text-sm text-muted mb-4 line-clamp-2">
-        {item.description || '暂无描述'}
-      </p>
+      <p className="text-sm text-muted mb-4 line-clamp-2">{item.description || '暂无描述'}</p>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">

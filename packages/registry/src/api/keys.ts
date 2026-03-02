@@ -1,10 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { Hono } from 'hono';
 import { and, eq } from 'drizzle-orm';
+import { Hono } from 'hono';
 import { db, schema } from '../db/index.js';
 import { requireAuth } from '../middleware/auth.js';
-import { success } from '../middleware/response.js';
 import { AppError } from '../middleware/error-handler.js';
+import { success } from '../middleware/response.js';
 
 const { apiKeys } = schema;
 
@@ -66,10 +66,7 @@ keysRouter.delete('/:id', async (c) => {
 
   if (existing[0].revoked_at) return success(c, { message: '已撤销' });
 
-  await db
-    .update(apiKeys)
-    .set({ revoked_at: new Date() })
-    .where(eq(apiKeys.id, keyId));
+  await db.update(apiKeys).set({ revoked_at: new Date() }).where(eq(apiKeys.id, keyId));
 
   return success(c, { message: 'ok' });
 });

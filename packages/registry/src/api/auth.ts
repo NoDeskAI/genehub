@@ -1,11 +1,11 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { Hono } from 'hono';
-import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
-import { sign, verify } from 'hono/jwt';
 import { eq } from 'drizzle-orm';
+import { Hono } from 'hono';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { sign, verify } from 'hono/jwt';
 import { db, schema } from '../db/index.js';
-import { success } from '../middleware/response.js';
 import { AppError } from '../middleware/error-handler.js';
+import { success } from '../middleware/response.js';
 
 const { publishers, apiKeys } = schema;
 
@@ -25,7 +25,12 @@ authRouter.get('/github', (c) => {
 
   setCookie(c, 'oauth_state', state, { httpOnly: true, maxAge: 600, path: '/', sameSite: 'Lax' });
   if (callbackUrl) {
-    setCookie(c, 'cli_callback', callbackUrl, { httpOnly: true, maxAge: 600, path: '/', sameSite: 'Lax' });
+    setCookie(c, 'cli_callback', callbackUrl, {
+      httpOnly: true,
+      maxAge: 600,
+      path: '/',
+      sameSite: 'Lax',
+    });
   }
 
   const params = new URLSearchParams({
@@ -64,12 +69,9 @@ authRouter.get('/github/callback', async (c) => {
     html_url: string;
   };
 
-  const existing = await db
-    .select()
-    .from(publishers)
-    .where(eq(publishers.github_id, ghUser.id));
+  const existing = await db.select().from(publishers).where(eq(publishers.github_id, ghUser.id));
 
-  let publisher: typeof existing[0];
+  let publisher: (typeof existing)[0];
 
   if (existing.length > 0) {
     const [updated] = await db

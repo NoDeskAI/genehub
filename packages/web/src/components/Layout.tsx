@@ -2,8 +2,8 @@ import { Dna, Github, Key, Layers, LogOut, Menu, Search, X } from 'lucide-react'
 import { useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 const NAV_LINKS = [
   { to: '/browse', label: '基因', icon: Dna },
@@ -97,7 +97,9 @@ export default function Layout() {
                     />
                     <div className="absolute right-0 mt-2 w-48 bg-surface border border-border rounded-lg shadow-lg z-50 py-1">
                       <div className="px-3 py-2 border-b border-border">
-                        <p className="text-sm font-medium">{user.github_name || user.github_login}</p>
+                        <p className="text-sm font-medium">
+                          {user.github_name || user.github_login}
+                        </p>
                         <p className="text-xs text-muted">@{user.github_login}</p>
                       </div>
                       <Link

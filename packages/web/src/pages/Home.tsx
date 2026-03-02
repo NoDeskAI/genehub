@@ -56,9 +56,7 @@ export default function Home() {
       {/* Hero */}
       <section className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white">
         <div className="max-w-6xl mx-auto px-4 py-20 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
-            AI 员工的基因库
-          </h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">AI 员工的基因库</h1>
           <p className="text-lg text-white/80 max-w-2xl mx-auto mb-8">
             发现、安装、分享 AI Agent 的能力基因。让你的 AI 员工持续进化。
           </p>
@@ -116,7 +114,10 @@ export default function Home() {
       <section className="max-w-6xl mx-auto px-4 pb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">热门基因</h2>
-          <Link to="/browse?sort=popular" className="text-sm text-primary hover:underline flex items-center gap-1">
+          <Link
+            to="/browse?sort=popular"
+            className="text-sm text-primary hover:underline flex items-center gap-1"
+          >
             查看全部 <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -148,7 +149,10 @@ export default function Home() {
                 <CheckCircle className="w-5 h-5 text-emerald-600" />
                 最新审核通过
               </h2>
-              <Link to="/browse?sort=newest" className="text-sm text-primary hover:underline flex items-center gap-1">
+              <Link
+                to="/browse?sort=newest"
+                className="text-sm text-primary hover:underline flex items-center gap-1"
+              >
                 查看全部 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -174,7 +178,11 @@ export default function Home() {
             <Button asChild>
               <Link to="/browse">浏览基因</Link>
             </Button>
-            <Button variant="outline" className="text-white border-gray-600 hover:bg-gray-800" asChild>
+            <Button
+              variant="outline"
+              className="text-white border-gray-600 hover:bg-gray-800"
+              asChild
+            >
               <Link to="/genomes">浏览基因组</Link>
             </Button>
           </div>

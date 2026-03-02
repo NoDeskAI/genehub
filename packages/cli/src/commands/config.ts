@@ -46,6 +46,8 @@ configCommand
       const regSrc = sourceLabel(getConfigSource('registry'));
       const tokSrc = sourceLabel(getConfigSource('token'));
       output.info(`registry = ${config.registryUrl}${regSrc}`);
-      output.info(`token    = ${config.token ? `${config.token.slice(0, 8)}***` : '(未设置)'}${tokSrc}`);
+      output.info(
+        `token    = ${config.token ? `${config.token.slice(0, 8)}***` : '(未设置)'}${tokSrc}`,
+      );
     }
   });

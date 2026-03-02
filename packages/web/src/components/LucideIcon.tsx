@@ -1,6 +1,6 @@
-import type { ComponentProps } from 'react';
-import { DynamicIcon, type IconName } from 'lucide-react/dynamic';
 import { Dna } from 'lucide-react';
+import { DynamicIcon, type IconName } from 'lucide-react/dynamic';
+import type { ComponentProps } from 'react';
 
 type LucideIconProps = {
   name: string | null | undefined;
@@ -12,11 +12,5 @@ export default function LucideIcon({ name, fallback, ...props }: LucideIconProps
     return <Dna {...props} />;
   }
 
-  return (
-    <DynamicIcon
-      name={name as IconName}
-      fallback={() => <Dna {...props} />}
-      {...props}
-    />
-  );
+  return <DynamicIcon name={name as IconName} fallback={() => <Dna {...props} />} {...props} />;
 }

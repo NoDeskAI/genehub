@@ -1,12 +1,7 @@
 import { Globe, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  type FederatedGeneItem,
-  type Gene,
-  federatedSearch,
-  listGenes,
-} from '@/api/client';
+import { type FederatedGeneItem, federatedSearch, type Gene, listGenes } from '@/api/client';
 import CategoryNav from '@/components/CategoryNav';
 import FederatedSearchCard from '@/components/FederatedSearchCard';
 import GeneCard from '@/components/GeneCard';
@@ -117,9 +112,7 @@ export default function Browse() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">
-          {q ? `搜索: "${q}"` : '浏览基因'}
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">{q ? `搜索: "${q}"` : '浏览基因'}</h1>
         <p className="text-muted text-sm">
           {total} 个基因
           {showFederated && (
@@ -164,7 +157,9 @@ export default function Browse() {
               className="px-3 py-2 rounded-lg border border-border text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               {TAG_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
             <select
@@ -173,7 +168,9 @@ export default function Browse() {
               className="px-3 py-2 rounded-lg border border-border text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               {COMPAT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
             <select
@@ -182,7 +179,9 @@ export default function Browse() {
               className="px-3 py-2 rounded-lg border border-border text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
           </div>
@@ -193,12 +192,20 @@ export default function Browse() {
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted">筛选条件:</span>
             {tag && (
-              <Badge variant="secondary" className="gap-1 cursor-pointer" onClick={() => updateParam('tag', '')}>
+              <Badge
+                variant="secondary"
+                className="gap-1 cursor-pointer"
+                onClick={() => updateParam('tag', '')}
+              >
                 标签: {tag} ×
               </Badge>
             )}
             {compatibility && (
-              <Badge variant="secondary" className="gap-1 cursor-pointer" onClick={() => updateParam('compatibility', '')}>
+              <Badge
+                variant="secondary"
+                className="gap-1 cursor-pointer"
+                onClick={() => updateParam('compatibility', '')}
+              >
                 平台: {compatibility} ×
               </Badge>
             )}
@@ -210,6 +217,7 @@ export default function Browse() {
       {loading ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholders
             <div key={i} className="rounded-xl border border-border p-5">
               <Skeleton className="h-5 w-1/2 mb-3" />
               <Skeleton className="h-4 w-full mb-2" />

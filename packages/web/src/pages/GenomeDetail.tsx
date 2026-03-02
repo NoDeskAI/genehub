@@ -1,13 +1,4 @@
-import {
-  Calendar,
-  Check,
-  ChevronRight,
-  Copy,
-  Download,
-  Layers,
-  Star,
-  User,
-} from 'lucide-react';
+import { Calendar, Check, ChevronRight, Copy, Download, Layers, Star, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { type Genome, getGenome } from '@/api/client';
@@ -84,7 +75,9 @@ export default function GenomeDetail() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1 text-sm text-muted mb-6">
-        <Link to="/genomes" className="hover:text-gray-900 transition">基因组</Link>
+        <Link to="/genomes" className="hover:text-gray-900 transition">
+          基因组
+        </Link>
         <ChevronRight className="w-3.5 h-3.5" />
         <span className="text-gray-900">{genome.name}</span>
       </nav>
@@ -132,7 +125,9 @@ export default function GenomeDetail() {
                       <span>🧬</span>
                       <span className="text-sm font-medium text-primary">{g.slug}</span>
                     </div>
-                    <Badge variant="outline" className="text-xs">{g.version}</Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {g.version}
+                    </Badge>
                   </Link>
                 ))}
               </div>
@@ -220,7 +215,9 @@ export default function GenomeDetail() {
                 <h3 className="text-sm font-medium text-gray-900 mb-3">标签</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {genome.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
                   ))}
                 </div>
               </CardContent>
@@ -234,7 +231,9 @@ export default function GenomeDetail() {
                 <h3 className="text-sm font-medium text-gray-900 mb-3">兼容产品</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {genome.compatibility.map((p) => (
-                    <Badge key={p} variant="info">{p}</Badge>
+                    <Badge key={p} variant="info">
+                      {p}
+                    </Badge>
                   ))}
                 </div>
               </CardContent>
