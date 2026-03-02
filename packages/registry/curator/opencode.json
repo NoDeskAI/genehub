@@ -27,9 +27,5 @@
       }
     }
   },
-  "agent": {
-    "build": {
-      "prompt": "file://system-prompt.md"
-    }
-  }
+  "agent": {}
 }
