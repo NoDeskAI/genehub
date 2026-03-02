@@ -4,7 +4,7 @@ import { db, schema } from '../db/index.js';
 import { AppError } from '../middleware/error-handler.js';
 import { resolve as resolveGene } from './dependency-resolver.js';
 
-const { genomes, genomeVersions, genes } = schema;
+const { genomes, genomeVersions, genes, geneRelations } = schema;
 
 export type GenomeListQuery = {
   q?: string;
@@ -375,14 +375,50 @@ export async function resolveGenome(
       ? allCompatibility.reduce((acc, cur) => acc.filter((p) => cur.includes(p)))
       : [];
 
-  // Conflict detection placeholder — will integrate with gene_relations table later
-  const conflicts: string[] = [];
+  const resolvedSlugs = resolvedGenes.map((g) => g.slug);
+  const conflicts = await detectConflicts(resolvedSlugs);
 
   return {
     genome: { slug: genome.slug, name: genome.name, version: genome.version },
     genes: resolvedGenes,
     compatibility,
-    conflicts,
+    conflicts: conflicts.map((c) => c.description),
     warnings: allWarnings,
   };
+}
+
+async function detectConflicts(slugs: string[]) {
+  if (slugs.length < 2) return [];
+
+  const geneRows = await db
+    .select({ id: genes.id, slug: genes.slug })
+    .from(genes)
+    .where(inArray(genes.slug, slugs));
+
+  const idToSlug = new Map(geneRows.map((g) => [g.id, g.slug]));
+  const geneIds = geneRows.map((g) => g.id);
+  if (geneIds.length < 2) return [];
+
+  const rows = await db
+    .select({
+      source_gene_id: geneRelations.source_gene_id,
+      target_gene_id: geneRelations.target_gene_id,
+      reason: geneRelations.reason,
+      strength: geneRelations.strength,
+    })
+    .from(geneRelations)
+    .where(
+      and(
+        eq(geneRelations.relation_type, 'conflict'),
+        inArray(geneRelations.source_gene_id, geneIds),
+        inArray(geneRelations.target_gene_id, geneIds),
+      ),
+    );
+
+  return rows.map((r) => {
+    const src = idToSlug.get(r.source_gene_id) ?? r.source_gene_id;
+    const tgt = idToSlug.get(r.target_gene_id) ?? r.target_gene_id;
+    const reason = r.reason ? `: ${r.reason}` : '';
+    return { source: src, target: tgt, description: `${src} ↔ ${tgt} 存在冲突${reason}` };
+  });
 }

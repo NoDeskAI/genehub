@@ -927,29 +927,31 @@ DEEPSEEK_API_KEY: sk-xxx
 
 将 GeneHub 与 NoDeskClaw 打通，使 NoDeskClaw 的基因市场以 GeneHub 为后端。
 
-- [ ] NoDeskClaw 现有基因数据批量导入 GeneHub（Phase 1）
-- [ ] NoDeskClaw 基因市场 API 代理转发到 GeneHub Registry（Phase 2）
-- [ ] NoDeskClaw 学习引擎接入 GeneHub 标准学习协议（Phase 3）
-- [ ] NoDeskClaw `genes` 表降级为本地缓存，GeneHub 为数据主源（Phase 4）
+- [x] GeneHub 侧基础设施：Webhook 端点、NoDeskClaw Adapter（Client + Converter + Sync）、批量导入脚本
+- [x] K8s 部署清单配置 `NODESKCLAW_DATABASE_URL` / `GENEHUB_WEBHOOK_SECRET`
+- [ ] NoDeskClaw 基因市场 API 代理转发到 GeneHub Registry（Phase 2，需改 NoDeskClaw 代码）
+- [ ] NoDeskClaw 学习引擎接入 GeneHub 标准学习协议（Phase 3，需改 NoDeskClaw 代码）
+- [ ] NoDeskClaw `genes` 表降级为本地缓存，GeneHub 为数据主源（Phase 4，需改 NoDeskClaw 代码）
 
-#### M2.2 — ClawHub Adapter（高优先级）
+#### M2.2 — ClawHub Adapter ✅
 
-从 ClawHub（clawhub.ai，OpenClaw 官方技能市场，3,286 个技能）拉取社区技能到 GeneHub。
+从 ClawHub（clawhub.ai，OpenClaw 官方技能市场）拉取社区技能到 GeneHub。
 
-- [ ] ClawHub API 客户端（搜索 / 获取技能详情 / 下载技能包）
-- [ ] 格式转换：ClawHub `SKILL.md` frontmatter → GeneHub `gene.yaml` Manifest
-- [ ] 定时同步 / 手动触发同步（`POST /sync/clawhub`）
-- [ ] 来源溯源：`source=clawhub` + `source_ref` 指向 ClawHub 原始 URL
-- [ ] 安全审查：过滤 ClawHavoc 事件后被标记的恶意技能
+- [x] ClawHub API 客户端（搜索 / 获取技能详情 / 下载技能包）
+- [x] 格式转换：ClawHub `SKILL.md` frontmatter → GeneHub `gene.yaml` Manifest
+- [x] 定时同步 / 手动触发同步（`POST /sync/clawhub`）
+- [x] 来源溯源：`source=clawhub` + `source_ref` 指向 ClawHub 原始 URL
+- [x] 安全审查：过滤 ClawHavoc 事件后被标记的恶意技能
+- [x] 联邦搜索：实时查询 ClawHub API，不入库，按来源标记
 
-#### M2.3 — Evomap Adapter（中优先级）
+#### M2.3 — Evomap Adapter ✅
 
 对接 EvoMap（evomap.ai，AI 自进化基础设施）的 GEP 协议，获取进化推荐。
 
-- [ ] GEP 协议数据结构映射：EvoMap Gene/Capsule/Event → GeneHub Gene Manifest
-- [ ] Evolver 推荐接口对接：提交 Agent 能力画像 → 获取推荐基因组合
-- [ ] 进化信号集成：将 GeneHub 的效能数据回传给 EvoMap 用于进化分析
-- [ ] `POST /sync/evomap`：请求 Evomap 推荐并导入推荐基因
+- [x] GEP 协议数据结构映射：EvoMap Gene/Capsule/Event → GeneHub Gene Manifest
+- [x] Evolver 推荐接口对接：提交 Agent 能力画像 → 获取推荐基因组合
+- [x] 进化信号集成：将 GeneHub 的效能数据回传给 EvoMap 用于进化分析
+- [x] `POST /sync/evomap`：请求 Evomap 推荐并导入推荐基因
 
 #### M2.4 — 推迟到 M3
 

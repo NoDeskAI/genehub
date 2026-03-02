@@ -46,15 +46,19 @@ GeneHub 内置了基于 **MCP（Model Context Protocol）** 的 AI 能力体系�
 # 启动 MCP Server（用于 AI 框架对接）
 pnpm --filter @nodeskai/genehub-registry mcp:dev
 
-# 使用 OpenCode 运行 Curator（需要 opencode CLI）
+# 使用 OpenCode 运行 Curator（需要 opencode CLI + MiniMax API Key）
 cd packages/registry/curator
+export MINIMAX_API_KEY="你的 MiniMax API Key"
+export DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub"
+
+# 交互模式
 opencode --config opencode.json
 
 # 单次任务
 opencode run --config opencode.json "审核最近新入库的基因"
 ```
 
-详见 [AI 能力架构文档](docs/architecture.md#十一ai-能力opencode--mcp)。
+详见 [AI 能力使用指南](CONTRIBUTING.md#gene-curator) 和 [架构文档](docs/architecture.md#十一ai-能力opencode--mcp)。
 
 ### 兼容安装
 

@@ -6,6 +6,9 @@ metadata:
 type: Opaque
 stringData:
   DATABASE_URL: "postgres://genehub:<CHANGE_ME>@genehub-postgres:5432/genehub"
+  NODESKCLAW_DATABASE_URL: "postgres://nodeskclaw:<CHANGE_ME>@nodeskclaw-postgres:5432/nodeskclaw"
+  GENEHUB_WEBHOOK_SECRET: "<CHANGE_ME>"
+  GENEHUB_ADMIN_TOKEN: "ghb_admin_<CHANGE_ME>"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -42,6 +45,21 @@ spec:
                 secretKeyRef:
                   name: genehub-app-secret
                   key: DATABASE_URL
+            - name: NODESKCLAW_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: genehub-app-secret
+                  key: NODESKCLAW_DATABASE_URL
+            - name: GENEHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: genehub-app-secret
+                  key: GENEHUB_WEBHOOK_SECRET
+            - name: GENEHUB_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: genehub-app-secret
+                  key: GENEHUB_ADMIN_TOKEN
           resources:
             requests:
               cpu: 100m

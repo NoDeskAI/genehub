@@ -1,17 +1,35 @@
 {
-  "$schema": "https://opencode.ai/config.schema.json",
-  "provider": "deepseek",
-  "model": "deepseek-chat",
-  "mcpServers": {
-    "genehub": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["dist/mcp/index.js"],
-      "cwd": "..",
-      "env": {
-        "DATABASE_URL": "${DATABASE_URL}"
+  "$schema": "https://opencode.ai/config.json",
+  "model": "minimax/MiniMax-M2.5",
+  "provider": {
+    "minimax": {
+      "npm": "@ai-sdk/anthropic",
+      "options": {
+        "baseURL": "https://api.minimaxi.com/anthropic/v1"
+      },
+      "env": ["MINIMAX_API_KEY"],
+      "models": {
+        "MiniMax-M2.5": {
+          "name": "MiniMax-M2.5"
+        },
+        "MiniMax-M2.5-lightning": {
+          "name": "MiniMax-M2.5-lightning"
+        }
       }
     }
   },
-  "systemPrompt": "file://system-prompt.md"
+  "mcp": {
+    "genehub": {
+      "type": "local",
+      "command": ["node", "../dist/mcp/index.js"],
+      "environment": {
+        "DATABASE_URL": "postgres://genehub:genehub@localhost:5432/genehub"
+      }
+    }
+  },
+  "agent": {
+    "build": {
+      "prompt": "file://system-prompt.md"
+    }
+  }
 }

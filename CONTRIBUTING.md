@@ -88,62 +88,99 @@ pnpm --filter @nodeskai/genehub-registry mcp
 
 ### Gene Curator
 
-Gene Curator 是基于 **OpenCode** 的 AI Agent，自动管理基因库。
+Gene Curator 是基于 **OpenCode** 的 AI Agent，自动管理基因库。默认使用 **MiniMax M2.5** 模型。
 
-**本地运行 Curator**：
+#### 前置条件
+
+1. 安装 OpenCode CLI：`npm install -g opencode`
+2. 获取 MiniMax API Key：到 [MiniMax 开放平台](https://platform.minimaxi.com/) 注册并创建 API Key
+3. 确保 PostgreSQL 已运行，GeneHub Registry 已构建
+
+#### 快速启动
 
 ```bash
-# 前置条件
-# 1. 安装 OpenCode: npm install -g opencode
-# 2. 确保 PostgreSQL + GeneHub Registry 已就绪
-# 3. 设置环境变量
-
+# 1. 构建 MCP Server（Curator 依赖它与基因库交互）
 cd packages/registry
-
-# 构建 MCP Server
 pnpm build
 
-# 交互模式
+# 2. 设置环境变量
+export DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub"
+export MINIMAX_API_KEY="你的 MiniMax API Key"
+
+# 3. 进入 Curator 目录
 cd curator
-DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
-DEEPSEEK_API_KEY="sk-xxx" \
+
+# 4a. 交互模式 —— 开启一个 AI 对话，手动下达任务
 opencode --config opencode.json
 
-# 单次任务模式
-DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
-DEEPSEEK_API_KEY="sk-xxx" \
+# 4b. 单次任务模式 —— 执行一个具体指令后退出
 opencode run --config opencode.json "审核最近新入库的基因"
 ```
 
-**更换 LLM 模型**：
+#### 常用 Curator 任务示例
 
-编辑 `curator/opencode.json`，修改 `provider` 和 `model` 字段：
+```bash
+# 审核待处理的基因
+opencode run --config opencode.json "审核所有 review_status=pending 的基因"
+
+# 整理基因分类
+opencode run --config opencode.json "检查所有基因的分类是否正确，修正错误分类"
+
+# 查找重复基因
+opencode run --config opencode.json "查找基因库中的重复基因并合并"
+
+# 定期巡检（推荐每日执行）
+opencode run --config opencode.json "执行基因库巡检流程"
+
+# 生成基因库报告
+opencode run --config opencode.json "统计基因库当前状态并输出报告"
+```
+
+#### 更换 LLM 模型
+
+编辑 `curator/opencode.json` 的 `model` 字段。当前配置的两个 MiniMax 模型：
+
+| 模型 | 说明 | 适用场景 |
+|------|------|---------|
+| `minimax/MiniMax-M2.5` | 高质量模型（默认） | 复杂审核、分类决策 |
+| `minimax/MiniMax-M2.5-lightning` | 快速模型 | 批量处理、简单任务 |
+
+切换到 lightning 模型：
 
 ```json
 {
-  "provider": "openai",
-  "model": "gpt-4o"
+  "model": "minimax/MiniMax-M2.5-lightning"
 }
 ```
 
-支持的 provider：`deepseek`、`openai`、`anthropic`、`ollama`（本地模型）等。
+也可以添加其他 provider（如 OpenAI、Anthropic），参见 [OpenCode 配置文档](https://opencode.ai/docs/config)。
 
-**修改 Curator 行为**：
+#### 修改 Curator 行为
 
 编辑 `curator/system-prompt.md` 调整角色定义、审核标准和巡检流程。
 
 ### 事件监听器
 
-Curator 的事件监听器通过 PostgreSQL `LISTEN/NOTIFY` 接收基因变更事件：
+Curator 的事件监听器通过 PostgreSQL `LISTEN/NOTIFY` 接收基因变更事件，实现基因入库后自动审核。
 
 ```bash
 cd packages/registry
 DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
-DEEPSEEK_API_KEY="sk-xxx" \
+MINIMAX_API_KEY="你的 MiniMax API Key" \
 tsx curator/listener.ts
 ```
 
 收到 `gene.created` 事件后会自动触发 OpenCode 审核该基因。
+
+#### K8s 生产部署
+
+生产环境中，Curator 以 **CronJob**（定时巡检）和 **Deployment**（事件监听）两种模式部署：
+
+```bash
+# 部署清单位于 deploy/k8s/curator.yaml
+# 需要在 K8s Secret 中配置 MINIMAX_API_KEY
+kubectl apply -f deploy/k8s/curator.yaml
+```
 
 ## 贡献基因
 

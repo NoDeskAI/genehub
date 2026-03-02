@@ -13,6 +13,7 @@
     "mcp:dev": "tsx src/mcp/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "import:nodeskclaw": "tsx src/scripts/import-nodeskclaw.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed.ts",
