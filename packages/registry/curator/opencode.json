@@ -21,7 +21,7 @@
   "mcp": {
     "genehub": {
       "type": "local",
-      "command": ["node", "../dist/mcp/index.js"],
+      "command": ["npx", "tsx", "../src/mcp/index.ts"],
       "environment": {
         "DATABASE_URL": "postgres://genehub:genehub@localhost:5432/genehub"
       }
