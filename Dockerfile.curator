@@ -11,7 +11,7 @@ RUN apk add --no-cache git gcompat && \
 WORKDIR /app/curator
 
 COPY packages/registry/curator/opencode-k8s.json ./opencode.json
-COPY packages/registry/curator/system-prompt.md  ./system-prompt.md
+COPY packages/registry/curator/AGENTS.md         ./AGENTS.md
 COPY packages/registry/curator/listener.ts       ./listener.ts
 
 # postgres driver for the listener (LISTEN/NOTIFY)
