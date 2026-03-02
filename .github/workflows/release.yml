@@ -8,6 +8,7 @@ on:
 env:
   CR_REGISTRY: nodesk-center-cn-beijing.cr.volces.com
   CR_IMAGE: nodesk-center-cn-beijing.cr.volces.com/base-image/genehub
+  CR_IMAGE_CURATOR: nodesk-center-cn-beijing.cr.volces.com/base-image/genehub-curator
 
 jobs:
   ci:
@@ -79,7 +80,7 @@ jobs:
           username: ${{ secrets.CR_USERNAME }}
           password: ${{ secrets.CR_PASSWORD }}
 
-      - name: Build and push Docker image
+      - name: Build and push GeneHub image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -89,6 +90,18 @@ jobs:
           tags: |
             ${{ env.CR_IMAGE }}:${{ env.IMAGE_TAG }}
             ${{ env.CR_IMAGE }}:latest
+
+      - name: Build and push Curator image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.curator
+          push: true
+          platforms: linux/amd64
+          build-args: NODE_IMAGE=node:22-alpine
+          tags: |
+            ${{ env.CR_IMAGE_CURATOR }}:${{ env.IMAGE_TAG }}
+            ${{ env.CR_IMAGE_CURATOR }}:latest
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
@@ -100,12 +113,28 @@ jobs:
           mkdir -p ~/.kube
           echo "$KUBECONFIG_DATA" | base64 -d > ~/.kube/config
 
+          # Deploy GeneHub main app
           kubectl set image deployment/genehub \
             genehub=${{ env.CR_IMAGE }}:${{ env.IMAGE_TAG }} \
             -n nodeskclaw-system
 
           kubectl rollout status deployment/genehub \
             -n nodeskclaw-system --timeout=120s
+
+          # Deploy Curator (CronJob + Listener)
+          kubectl apply -f deploy/k8s/curator.yaml
+
+          # Update Curator images
+          kubectl set image cronjob/gene-curator \
+            curator=${{ env.CR_IMAGE_CURATOR }}:${{ env.IMAGE_TAG }} \
+            -n nodeskclaw-system || true
+
+          kubectl set image deployment/gene-curator-listener \
+            listener=${{ env.CR_IMAGE_CURATOR }}:${{ env.IMAGE_TAG }} \
+            -n nodeskclaw-system || true
+
+          kubectl rollout status deployment/gene-curator-listener \
+            -n nodeskclaw-system --timeout=120s || true
 
   github-release:
     needs: [deploy-k8s]

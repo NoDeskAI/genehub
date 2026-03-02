@@ -15,26 +15,29 @@ spec:
       template:
         spec:
           restartPolicy: Never
+          imagePullSecrets:
+            - name: cr-nodesk-center-cn-beijing
           containers:
             - name: curator
-              image: ghcr.io/nodeskai/genehub-curator:latest
+              image: nodesk-center-cn-beijing.cr.volces.com/base-image/genehub-curator:latest
+              workingDir: /app/curator
               command:
                 - opencode
                 - run
-                - --config
-                - /app/curator/opencode.json
+                - --model
+                - minimax/MiniMax-M2.5
                 - "执行基因库全面巡检"
               env:
-                - name: DATABASE_URL
-                  valueFrom:
-                    secretKeyRef:
-                      name: genehub-secrets
-                      key: DATABASE_URL
                 - name: MINIMAX_API_KEY
                   valueFrom:
                     secretKeyRef:
-                      name: genehub-secrets
+                      name: genehub-app-secret
                       key: MINIMAX_API_KEY
+                - name: GENEHUB_ADMIN_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: genehub-app-secret
+                      key: GENEHUB_ADMIN_TOKEN
               resources:
                 requests:
                   cpu: 100m
@@ -58,27 +61,33 @@ spec:
       labels:
         app: gene-curator-listener
     spec:
+      imagePullSecrets:
+        - name: cr-nodesk-center-cn-beijing
       containers:
         - name: listener
-          image: ghcr.io/nodeskai/genehub-curator:latest
+          image: nodesk-center-cn-beijing.cr.volces.com/base-image/genehub-curator:latest
+          workingDir: /app/curator
           command:
             - tsx
-            - /app/curator/listener.ts
+            - listener.ts
           env:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: genehub-secrets
+                  name: genehub-app-secret
                   key: DATABASE_URL
             - name: CURATOR_CMD
               value: opencode
-            - name: CURATOR_CONFIG
-              value: /app/curator/opencode.json
             - name: MINIMAX_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: genehub-secrets
+                  name: genehub-app-secret
                   key: MINIMAX_API_KEY
+            - name: GENEHUB_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: genehub-app-secret
+                  key: GENEHUB_ADMIN_TOKEN
           resources:
             requests:
               cpu: 50m

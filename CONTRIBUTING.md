@@ -104,36 +104,37 @@ cd packages/registry
 pnpm build
 
 # 2. 设置环境变量
-export DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub"
 export MINIMAX_API_KEY="你的 MiniMax API Key"
 
-# 3. 进入 Curator 目录
+# 3. 进入 Curator 目录（opencode 自动读取当前目录的 opencode.json）
 cd curator
 
 # 4a. 交互模式 —— 开启一个 AI 对话，手动下达任务
-opencode --config opencode.json
+opencode
 
 # 4b. 单次任务模式 —— 执行一个具体指令后退出
-opencode run --config opencode.json "审核最近新入库的基因"
+opencode run "审核最近新入库的基因"
 ```
 
 #### 常用 Curator 任务示例
 
 ```bash
+cd packages/registry/curator
+
 # 审核待处理的基因
-opencode run --config opencode.json "审核所有 review_status=pending 的基因"
+opencode run "审核所有 review_status=pending 的基因"
 
 # 整理基因分类
-opencode run --config opencode.json "检查所有基因的分类是否正确，修正错误分类"
+opencode run "检查所有基因的分类是否正确，修正错误分类"
 
 # 查找重复基因
-opencode run --config opencode.json "查找基因库中的重复基因并合并"
+opencode run "查找基因库中的重复基因并合并"
 
 # 定期巡检（推荐每日执行）
-opencode run --config opencode.json "执行基因库巡检流程"
+opencode run "执行基因库巡检流程"
 
 # 生成基因库报告
-opencode run --config opencode.json "统计基因库当前状态并输出报告"
+opencode run "统计基因库当前状态并输出报告"
 ```
 
 #### 更换 LLM 模型
@@ -164,23 +165,33 @@ opencode run --config opencode.json "统计基因库当前状态并输出报告"
 Curator 的事件监听器通过 PostgreSQL `LISTEN/NOTIFY` 接收基因变更事件，实现基因入库后自动审核。
 
 ```bash
-cd packages/registry
-DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
-MINIMAX_API_KEY="你的 MiniMax API Key" \
-tsx curator/listener.ts
+cd packages/registry/curator
+MINIMAX_API_KEY="你的 MiniMax API Key" tsx listener.ts
 ```
 
 收到 `gene.created` 事件后会自动触发 OpenCode 审核该基因。
 
 #### K8s 生产部署
 
-生产环境中，Curator 以 **CronJob**（定时巡检）和 **Deployment**（事件监听）两种模式部署：
+生产环境中 Curator 有独立镜像 (`Dockerfile.curator`)，通过 **Streamable HTTP** 连接 GeneHub MCP Server：
+
+```
+Curator Pod ──(POST http://genehub/mcp)──→ GeneHub Pod (Hono + MCP)
+```
+
+部署包含两种模式：
+
+| 资源 | 类型 | 说明 |
+|------|------|------|
+| `gene-curator` | CronJob | 每 6 小时全面巡检 |
+| `gene-curator-listener` | Deployment | 常驻监听 `gene_events` |
 
 ```bash
-# 部署清单位于 deploy/k8s/curator.yaml
-# 需要在 K8s Secret 中配置 MINIMAX_API_KEY
+# CI/CD 自动部署（release.yml），也可手动：
 kubectl apply -f deploy/k8s/curator.yaml
 ```
+
+需要在 `genehub-app-secret` 中配置 `MINIMAX_API_KEY` 和 `GENEHUB_ADMIN_TOKEN`。
 
 ## 贡献基因
 

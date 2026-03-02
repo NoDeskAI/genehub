@@ -11,6 +11,7 @@ import { resolveRouter } from './api/resolve.js';
 import { reviewsRouter } from './api/reviews.js';
 import { syncRouter } from './api/sync.js';
 import { webhooksRouter } from './api/webhooks.js';
+import { handleMcpRequest } from './mcp/http.js';
 import { errorHandler } from './middleware/error-handler.js';
 
 export const app = new Hono();
@@ -29,6 +30,19 @@ app.get('/api/info', (c) =>
     docs: 'https://github.com/NoDeskAI/genehub',
   }),
 );
+
+// MCP Streamable HTTP endpoint — token-gated for Curator / authorized clients
+const MCP_TOKEN = process.env.GENEHUB_ADMIN_TOKEN;
+
+app.all('/mcp', async (c) => {
+  if (MCP_TOKEN) {
+    const auth = c.req.header('Authorization');
+    if (auth !== `Bearer ${MCP_TOKEN}`) {
+      return c.json({ error: 'unauthorized' }, 401);
+    }
+  }
+  return handleMcpRequest(c.req.raw);
+});
 
 app.route('/api/v1/genes', genesRouter);
 app.route('/api/v1/genes', reviewsRouter);

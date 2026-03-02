@@ -9,6 +9,7 @@ stringData:
   NODESKCLAW_DATABASE_URL: "postgres://nodeskclaw:<CHANGE_ME>@nodeskclaw-postgres:5432/nodeskclaw"
   GENEHUB_WEBHOOK_SECRET: "<CHANGE_ME>"
   GENEHUB_ADMIN_TOKEN: "ghb_admin_<CHANGE_ME>"
+  MINIMAX_API_KEY: "<CHANGE_ME>"
 ---
 apiVersion: apps/v1
 kind: Deployment

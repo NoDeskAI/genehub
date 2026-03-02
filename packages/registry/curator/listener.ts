@@ -1,10 +1,12 @@
 import { execFile } from 'node:child_process';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import postgres from 'postgres';
 
 const DATABASE_URL =
   process.env.DATABASE_URL || 'postgres://genehub:genehub@localhost:5432/genehub';
 const CURATOR_CMD = process.env.CURATOR_CMD || 'opencode';
-const CURATOR_CONFIG = process.env.CURATOR_CONFIG || './opencode.json';
+const CURATOR_CWD = process.env.CURATOR_CWD || dirname(fileURLToPath(import.meta.url));
 
 const sql = postgres(DATABASE_URL);
 
@@ -30,14 +32,19 @@ async function listen() {
 function triggerCurator(prompt: string) {
   console.log(`[curator-listener] Triggering curator: ${prompt}`);
 
-  execFile(CURATOR_CMD, ['run', '--config', CURATOR_CONFIG, prompt], (err, stdout, stderr) => {
-    if (err) {
-      console.error('[curator-listener] Curator execution failed:', err.message);
-      return;
-    }
-    if (stdout) console.log('[curator-listener] Curator output:', stdout.slice(0, 500));
-    if (stderr) console.error('[curator-listener] Curator stderr:', stderr.slice(0, 500));
-  });
+  execFile(
+    CURATOR_CMD,
+    ['run', '--model', 'minimax/MiniMax-M2.5', prompt],
+    { cwd: CURATOR_CWD, env: { ...process.env } },
+    (err, stdout, stderr) => {
+      if (err) {
+        console.error('[curator-listener] Curator execution failed:', err.message);
+        return;
+      }
+      if (stdout) console.log('[curator-listener] Curator output:', stdout.slice(0, 500));
+      if (stderr) console.error('[curator-listener] Curator stderr:', stderr.slice(0, 500));
+    },
+  );
 }
 
 listen().catch((err) => {

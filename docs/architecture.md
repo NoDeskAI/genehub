@@ -130,13 +130,14 @@ GeneHub = 基因注册中心（Registry）+ 标准学习协议（Protocol）+ �
 
 #### Inbound Adapters（外部基因适配层）
 
-从外部生态拉取基因到 GeneHub：
+外部基因生态对接。**ClawHub / EvoMap 已从定期同步改为联邦搜索（实时查询，不入库）**。
 
-| 适配器 | 数据源 | 协议 |
-|--------|--------|------|
-| ClawHub Adapter | ClawHub 基因市场 | REST API / Webhook |
-| Evomap Adapter | Evomap 进化推荐引擎 | REST API |
-| Git Repo Importer | GitHub / GitLab 仓库 | Git Clone + gene.yaml 解析 |
+| 适配器 | 数据源 | 协议 | 当前模式 |
+|--------|--------|------|---------|
+| ClawHub Adapter | ClawHub 基因市场 | REST API | **联邦搜索**（实时查询，不入库） |
+| Evomap Adapter | Evomap 进化推荐引擎 | REST API | **联邦搜索**（实时查询，不入库） |
+| NoDeskClaw Adapter | NoDeskClaw 内部数据 | 直连 DB | 批量导入（保留） |
+| Git Repo Importer | GitHub / GitLab 仓库 | Git Clone + gene.yaml 解析 | 导入 |
 
 #### Outbound Adapters（产品适配层）
 
@@ -319,13 +320,24 @@ NoDeskClaw 的 `genes` 表将作为 GeneHub 的客户端缓存，定期与 GeneH
 |------|------|------|
 | POST | `/resolve` | 批量解析依赖，返回安装计划 |
 
-#### 外部基因同步
+#### 联邦搜索
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/sync/clawhub` | 触发 ClawHub 同步 |
-| POST | `/sync/evomap` | 请求 Evomap 推荐 |
+| GET | `/genes/search?q=xxx` | 联邦搜索（本地 + ClawHub 实时查询，不入库） |
 | POST | `/import/git` | 从 Git 仓库导入基因 |
+
+#### ~~外部基因同步~~（已弃用）
+
+> **弃用说明**：定期同步接口已弃用，改用联邦搜索。外部基因源（ClawHub / EvoMap）不再入库，
+> 而是通过 `GET /api/v1/genes/search` 作为实时外部知识源查询。
+> 仅保留 NoDeskClaw 同步用于历史数据批量导入。
+> 接口将于 2026-06-01 下线。
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| ~~POST~~ | ~~`/sync/clawhub`~~ | ~~触发 ClawHub 同步~~ → 改用联邦搜索 |
+| ~~POST~~ | ~~`/sync/evomap`~~ | ~~请求 Evomap 推荐~~ → 改用联邦搜索 |
 
 ### 6.2 统一响应格式
 
@@ -470,30 +482,30 @@ GeneHub Registry                     NoDeskClaw
 > 技术栈：TanStack Start + Convex + OpenAI embeddings 向量搜索。
 > GitHub：openclaw/clawhub（3,131 stars）
 
-#### 交互流程
+#### 交互流程（联邦搜索，当前方案）
+
+```
+用户搜索 q="memory"
+        │
+        ▼
+   GeneHub API (GET /genes/search)
+        │
+        ├─── 本地 DB (ILIKE)         → 本地结果 (source: local)
+        │
+        └─── ClawHub API (实时搜索)   → 远程结果 (source: clawhub)
+                                       ↓
+                             去重（本地优先）→ 分数归一化 → 合并排序 → 返回
+```
+
+ClawHub 结果**不入库**，仅作为外部知识源实时查询。ClawHub 超时或失败时优雅降级，只返回本地结果。
+
+#### ~~交互流程（定期同步，已弃用）~~
+
+> 以下为旧的定期同步方案，已弃用。保留文档供参考。
 
 ```
 ClawHub (clawhub.ai)            GeneHub
-     │                              │
-     │  1. 搜索：向量语义搜索        │
-     │ ◄────────────────────────────│
-     │                              │
-     │  2. 获取技能详情 + SKILL.md    │
-     │ ◄────────────────────────────│
-     │                              │
-     │  3. 下载技能包（zip）          │
-     │ ◄────────────────────────────│
-     │                              │
-     │  4. 转换格式                  │
-     │     SKILL.md frontmatter     │
-     │     → gene.yaml manifest     │
-     │                      ────────│
-     │                      │       │
-     │                      ▼       │
-     │  5. 存入 GeneHub              │
-     │     source=clawhub           │
-     │     source_ref=clawhub URL   │
-     │                              │
+     │  1. 搜索 → 2. 详情 → 3. 下载 → 4. 转换 → 5. 存入（已弃用）
 ```
 
 #### ClawHub 技能格式
@@ -638,30 +650,34 @@ GeneHub 内置了一套基于 **OpenCode**（开源终端 AI 框架）和 **MCP*
 ### 11.1 架构总览
 
 ```
+                    ┌──────────────────────────────────────┐
+                    │     Gene Curator (K8s Pod)            │
+                    │     OpenCode + MiniMax LLM            │
+                    │                                      │
+                    │  ┌────────────────────────────────┐  │
+                    │  │ system-prompt.md               │  │
+                    │  │ 角色定义 + 巡检流程 + 权限边界   │  │
+                    │  └────────────────────────────────┘  │
+                    └──────────────┬───────────────────────┘
+                                   │ MCP (Streamable HTTP)
+                                   │ POST http://genehub/mcp
+                                   ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                     Gene Curator Agent                           │
-│               （OpenCode + DeepSeek / 其他 LLM）                  │
+│                    GeneHub Registry (K8s Pod)                     │
 │                                                                  │
-│   ┌───────────────────────────────────────────────────────────┐  │
-│   │  system-prompt.md  ←  角色定义 + 巡检流程 + 权限边界       │  │
-│   └───────────────────────────────────────────────────────────┘  │
-│                           │ MCP (stdio)                          │
-│                           ▼                                      │
-│   ┌───────────────────────────────────────────────────────────┐  │
-│   │                   GeneHub MCP Server                      │  │
-│   │                                                           │  │
-│   │   Query:  list_genes / get_gene / search_genes /          │  │
-│   │           find_similar / get_library_stats /               │  │
-│   │           evaluate_in_context                              │  │
-│   │                                                           │  │
-│   │   Genome: list_genomes / get_genome /                     │  │
-│   │           suggest_genome / validate_genome                 │  │
-│   │                                                           │  │
-│   │   Manage: update_gene_category / update_gene_description /│  │
-│   │           update_gene_synergies / merge_genes              │  │
-│   │                                                           │  │
-│   │   Review: post_review / flag_for_deletion / approve_gene  │  │
-│   └───────────────────────────────────────────────────────────┘  │
+│   Hono HTTP Server (:3000)                                       │
+│   ├── /api/v1/genes    REST API                                  │
+│   ├── /api/v1/genomes  REST API                                  │
+│   └── /mcp             MCP Streamable HTTP (token-gated)         │
+│                                                                  │
+│   MCP 17 Tools:                                                  │
+│     Query:  list_genes / get_gene / search_genes /               │
+│             find_similar / get_library_stats / evaluate_in_context│
+│     Genome: list_genomes / get_genome /                          │
+│             suggest_genome / validate_genome                      │
+│     Manage: update_gene_category / update_gene_description /     │
+│             update_gene_synergies / merge_genes                   │
+│     Review: post_review / flag_for_deletion / approve_gene       │
 │                           │                                      │
 └───────────────────────────┼──────────────────────────────────────┘
                             │ SQL
@@ -688,7 +704,8 @@ GeneHub MCP Server 将基因库能力暴露为 17 个标准 MCP 工具，任何�
 ```
 src/mcp/
 ├── server.ts          # MCP Server 定义，注册所有工具
-├── index.ts           # stdio 传输入口
+├── http.ts            # Streamable HTTP 传输（挂载到 Hono /mcp）
+├── index.ts           # stdio 传输入口（本地开发 / CLI）
 └── tools/
     ├── query.ts       # 6 个查询工具
     ├── genome.ts      # 4 个基因组工具
@@ -696,14 +713,21 @@ src/mcp/
     └── review.ts      # 3 个审核工具
 ```
 
+**传输方式**：
+
+| 传输 | 端点 | 使用场景 |
+|------|------|---------|
+| **Streamable HTTP** | `POST /mcp` | K8s 内 Curator Agent、外部 MCP 客户端（需 Bearer Token） |
+| stdio | `node dist/mcp/index.js` | 本地开发、CLI 调试 |
+
 **启动方式**：
 
 ```bash
-# 开发模式
+# 开发模式（stdio）
 pnpm --filter @nodeskai/genehub-registry mcp:dev
 
-# 生产模式（需先 build）
-pnpm --filter @nodeskai/genehub-registry mcp
+# 生产模式 — HTTP 传输随主应用自动启动
+# Curator 通过 http://genehub/mcp 连接，无需单独启动 MCP Server
 ```
 
 **MCP 工具一览**：
@@ -736,7 +760,9 @@ Gene Curator 是一个自主运行的 AI Agent，基于 **OpenCode** 框架驱�
 
 ```
 curator/
-├── opencode.json      # OpenCode 配置（模型、MCP Server、系统提示词）
+├── opencode.json      # 本地开发配置（MCP stdio）
+├── opencode-k8s.json  # K8s 生产配置（MCP Streamable HTTP → http://genehub/mcp）
+├── opencode-prod.json # 本地连线上配置（kubectl exec）
 ├── system-prompt.md   # Curator 的角色定义和工作规范
 └── listener.ts        # 实时事件监听器（PostgreSQL LISTEN/NOTIFY）
 ```
@@ -746,40 +772,18 @@ curator/
 **前置条件**：
 
 1. 安装 OpenCode：`npm install -g opencode` 或 `brew install opencode`
-2. 设置 LLM API Key（默认使用 DeepSeek）
+2. 设置 LLM API Key：`export MINIMAX_API_KEY="sk-xxx"`
 3. 确保 PostgreSQL 正在运行且 GeneHub Registry 已迁移
 
-**OpenCode 配置** (`curator/opencode.json`)：
+**OpenCode 配置**：
 
-```json
-{
-  "$schema": "https://opencode.ai/config.schema.json",
-  "provider": "deepseek",
-  "model": "deepseek-chat",
-  "mcpServers": {
-    "genehub": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["dist/mcp/index.js"],
-      "cwd": "..",
-      "env": {
-        "DATABASE_URL": "${DATABASE_URL}"
-      }
-    }
-  },
-  "systemPrompt": "file://system-prompt.md"
-}
-```
+| 配置文件 | MCP 传输 | 使用场景 |
+|---------|---------|---------|
+| `opencode.json` | stdio (local) | 本地开发，MCP 直连本地 DB |
+| `opencode-k8s.json` | Streamable HTTP (remote) | K8s 部署，连接 `http://genehub/mcp` |
+| `opencode-prod.json` | kubectl exec | 本地调试线上环境 |
 
-配置说明：
-
-| 字段 | 说明 |
-|------|------|
-| `provider` / `model` | LLM 提供商和模型，可替换为 `openai/gpt-4o`、`anthropic/claude-sonnet` 等 |
-| `mcpServers.genehub` | GeneHub MCP Server 的 stdio 传输配置 |
-| `systemPrompt` | 引用同目录的 `system-prompt.md` 作为系统提示词 |
-
-**手动运行 Curator**：
+**手动运行 Curator（本地）**：
 
 ```bash
 cd packages/registry
@@ -789,27 +793,28 @@ pnpm build
 
 # 方式一：交互式对话（调试用）
 cd curator
-DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
-DEEPSEEK_API_KEY="sk-xxx" \
-opencode --config opencode.json
+MINIMAX_API_KEY="sk-xxx" opencode
 
 # 方式二：单次任务执行
-DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
-DEEPSEEK_API_KEY="sk-xxx" \
-opencode run --config curator/opencode.json "审核最近新入库的基因"
+cd curator
+MINIMAX_API_KEY="sk-xxx" opencode run "审核最近新入库的基因"
 
 # 方式三：全面巡检
-opencode run --config curator/opencode.json "执行基因库全面巡检"
+MINIMAX_API_KEY="sk-xxx" opencode run "执行基因库全面巡检"
 ```
+
+> **注意**：`opencode` 自动读取当前目录的 `opencode.json`，无需 `--config` 参数。
 
 **也可以使用其他 MCP 兼容的 AI 框架**：
 
 ```bash
-# Claude Code（Anthropic 官方 CLI）
+# 方式一：通过 HTTP（推荐，GeneHub 运行中即可用）
+# 任何 MCP 客户端连接 http://localhost:3000/mcp 即可
+
+# 方式二：通过 stdio（本地开发）
+# Claude Code
 claude --mcp-config '{"genehub":{"command":"node","args":["dist/mcp/index.js"]}}' \
   "审核最近新入库的基因"
-
-# 任何 MCP 兼容客户端：只需配置 stdio transport 指向 dist/mcp/index.js
 ```
 
 ### 11.4 事件驱动架构
@@ -836,11 +841,11 @@ NOTIFY gene_events, '{"type":"gene.created","slug":"xxx","source":"clawhub"}'
 监听 `gene_events` 频道，收到 `gene.created` 事件后自动触发 OpenCode 运行 Curator 审核新基因。
 
 ```bash
-# 启动事件监听器
-cd packages/registry
+# 启动事件监听器（本地开发）
+cd packages/registry/curator
 DATABASE_URL="postgres://genehub:genehub@localhost:5432/genehub" \
-DEEPSEEK_API_KEY="sk-xxx" \
-tsx curator/listener.ts
+MINIMAX_API_KEY="sk-xxx" \
+tsx listener.ts
 ```
 
 ### 11.5 联邦搜索
@@ -883,22 +888,31 @@ tsx curator/listener.ts
 
 ### 11.6 K8s 部署
 
-**部署清单**：`deploy/k8s/curator.yaml`
+**镜像**：
 
-包含两个资源：
+| 镜像 | Dockerfile | 内容 |
+|------|-----------|------|
+| `genehub` | `Dockerfile` | Registry + MCP HTTP Server + Web UI |
+| `genehub-curator` | `Dockerfile.curator` | OpenCode CLI + tsx + Curator 配置 |
+
+**Curator 部署清单**：`deploy/k8s/curator.yaml`
 
 | 资源 | 类型 | 说明 |
 |------|------|------|
 | `gene-curator` | CronJob | 每 6 小时执行一次全面巡检 |
 | `gene-curator-listener` | Deployment | 常驻进程，监听 `gene_events` 实时触发审核 |
 
-所需 Secrets：
+**MCP 通信**：Curator Pod 通过 `POST http://genehub/mcp`（ClusterIP Service）连接 GeneHub MCP Server，使用 `GENEHUB_ADMIN_TOKEN` Bearer 认证。
+
+**所需 Secrets**（统一使用 `genehub-app-secret`）：
 
 ```yaml
-# genehub-secrets
 DATABASE_URL: postgres://...
-DEEPSEEK_API_KEY: sk-xxx
+GENEHUB_ADMIN_TOKEN: ghb_admin_xxx
+MINIMAX_API_KEY: sk-xxx
 ```
+
+**CI/CD**：`release.yml` 自动构建两个镜像、推送到 Volcengine CR、部署 GeneHub + Curator。
 
 ---
 
@@ -939,10 +953,10 @@ DEEPSEEK_API_KEY: sk-xxx
 
 - [x] ClawHub API 客户端（搜索 / 获取技能详情 / 下载技能包）
 - [x] 格式转换：ClawHub `SKILL.md` frontmatter → GeneHub `gene.yaml` Manifest
-- [x] 定时同步 / 手动触发同步（`POST /sync/clawhub`）
+- [x] ~~定时同步 / 手动触发同步（`POST /sync/clawhub`）~~ → **已弃用**，改用联邦搜索
 - [x] 来源溯源：`source=clawhub` + `source_ref` 指向 ClawHub 原始 URL
 - [x] 安全审查：过滤 ClawHavoc 事件后被标记的恶意技能
-- [x] 联邦搜索：实时查询 ClawHub API，不入库，按来源标记
+- [x] **联邦搜索（当前方案）**：实时查询 ClawHub API，不入库，按来源标记
 
 #### M2.3 — Evomap Adapter ✅
 
@@ -951,7 +965,7 @@ DEEPSEEK_API_KEY: sk-xxx
 - [x] GEP 协议数据结构映射：EvoMap Gene/Capsule/Event → GeneHub Gene Manifest
 - [x] Evolver 推荐接口对接：提交 Agent 能力画像 → 获取推荐基因组合
 - [x] 进化信号集成：将 GeneHub 的效能数据回传给 EvoMap 用于进化分析
-- [x] `POST /sync/evomap`：请求 Evomap 推荐并导入推荐基因
+- [x] ~~`POST /sync/evomap`：请求 Evomap 推荐并导入推荐基因~~ → **已弃用**，改用联邦搜索
 
 #### M2.4 — 推迟到 M3
 

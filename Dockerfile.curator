@@ -1,0 +1,17 @@
+ARG NODE_IMAGE=docker.m.daocloud.io/library/node:22-alpine
+
+FROM ${NODE_IMAGE}
+
+RUN apk add --no-cache git && \
+    npm install -g opencode tsx
+
+WORKDIR /app/curator
+
+COPY packages/registry/curator/opencode-k8s.json ./opencode.json
+COPY packages/registry/curator/system-prompt.md  ./system-prompt.md
+COPY packages/registry/curator/listener.ts       ./listener.ts
+
+# postgres driver for the listener (LISTEN/NOTIFY)
+RUN npm init -y > /dev/null 2>&1 && npm install postgres
+
+ENV NODE_ENV=production

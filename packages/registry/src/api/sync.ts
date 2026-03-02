@@ -7,6 +7,11 @@ import { requireAuth } from '../middleware/auth.js';
 import { AppError } from '../middleware/error-handler.js';
 import { success } from '../middleware/response.js';
 
+/**
+ * @deprecated 同步接口已弃用，改用联邦搜索（GET /api/v1/genes?q=...）。
+ * 外部基因源（ClawHub / EvoMap）不再入库，而是作为实时外部知识源查询。
+ * 保留 NoDeskClaw 同步用于历史数据批量导入。
+ */
 export const syncRouter = new Hono();
 
 const syncState: Record<string, { inProgress: boolean; lastResult: SyncResult | null }> = {
@@ -86,7 +91,12 @@ syncRouter.post('/nodeskclaw', requireAuth('admin'), async (c) => {
 // ClawHub sync
 // ---------------------------------------------------------------------------
 
+/** @deprecated 改用联邦搜索 GET /api/v1/genes?q=... */
 syncRouter.post('/clawhub', requireAuth('admin'), async (c) => {
+  c.header('Deprecation', 'true');
+  c.header('Sunset', '2026-06-01');
+  c.header('Link', '</api/v1/genes?q={query}>; rel="successor-version"');
+
   if (syncState.clawhub.inProgress) {
     throw new AppError(40900, 'sync_in_progress', 'ClawHub 同步正在进行中，请稍后再试', 409);
   }
@@ -112,7 +122,12 @@ syncRouter.post('/clawhub', requireAuth('admin'), async (c) => {
 // EvoMap sync (recommendation-based)
 // ---------------------------------------------------------------------------
 
+/** @deprecated 改用联邦搜索 GET /api/v1/genes?q=... */
 syncRouter.post('/evomap', requireAuth('admin'), async (c) => {
+  c.header('Deprecation', 'true');
+  c.header('Sunset', '2026-06-01');
+  c.header('Link', '</api/v1/genes?q={query}>; rel="successor-version"');
+
   if (syncState.evomap.inProgress) {
     throw new AppError(40900, 'sync_in_progress', 'EvoMap 同步正在进行中，请稍后再试', 409);
   }
