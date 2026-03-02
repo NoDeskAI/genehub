@@ -62,11 +62,20 @@ function enqueue(prompt: string) {
 }
 
 function forceKill(child: ChildProcess) {
-  child.kill('SIGTERM');
+  if (!child.pid) return;
+  try {
+    // Kill the entire process group (opencode + its MCP child processes)
+    process.kill(-child.pid, 'SIGTERM');
+  } catch {
+    child.kill('SIGTERM');
+  }
   setTimeout(() => {
     if (!child.killed) {
-      console.error(`${TAG} SIGTERM ignored, sending SIGKILL`);
-      child.kill('SIGKILL');
+      try {
+        process.kill(-child.pid!, 'SIGKILL');
+      } catch {
+        child.kill('SIGKILL');
+      }
     }
   }, 5_000);
 }
@@ -103,6 +112,7 @@ function runCurator(prompt: string, sessionId: string | null, attempt: number) {
     cwd: CURATOR_CWD,
     env: { ...process.env },
     stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true,
   });
 
   function parseEvents(raw: string) {
