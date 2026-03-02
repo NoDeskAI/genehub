@@ -98,7 +98,7 @@ jobs:
           file: Dockerfile.curator
           push: true
           platforms: linux/amd64
-          build-args: NODE_IMAGE=node:22-alpine
+          build-args: NODE_IMAGE=internet-cn-beijing.cr.volces.com/library/node:22-alpine
           tags: |
             ${{ env.CR_IMAGE_CURATOR }}:${{ env.IMAGE_TAG }}
             ${{ env.CR_IMAGE_CURATOR }}:latest
