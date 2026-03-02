@@ -47,10 +47,22 @@ export const publishCommand = new Command('publish')
         process.exit(1);
       }
 
-      const spinner = ora(`发布 ${validation.data.slug}@${validation.data.version}...`).start();
-      const gene = await client.publishGene(validation.data);
-      spinner.succeed('发布成功');
+      const { slug, version } = validation.data;
+      const spinner = ora(`发布 ${slug}@${version}...`).start();
 
+      let gene;
+      try {
+        gene = await client.publishGene(validation.data);
+      } catch (err) {
+        const isSlugExists =
+          err instanceof Error && err.message.includes('gene_slug_exists');
+        if (!isSlugExists) throw err;
+
+        spinner.text = `基因 ${slug} 已存在，发布新版本 ${version}...`;
+        gene = await client.publishVersion(slug, validation.data);
+      }
+
+      spinner.succeed('发布成功');
       output.ok(`${gene.slug}@${gene.version} 已发布到 GeneHub Registry`);
     } catch (err) {
       output.fail(err instanceof Error ? err.message : String(err));
