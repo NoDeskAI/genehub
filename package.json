@@ -18,7 +18,7 @@
     "version:sync": "node scripts/sync-version.mjs",
     "version:check": "node scripts/sync-version.mjs --check",
     "release": "node scripts/sync-version.mjs && git add -A && git commit -m \"chore: bump version to $(node scripts/sync-version.mjs --npm-version)\" && git tag $(node scripts/sync-version.mjs --tag) && git push origin master --tags",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install || true"
   },
   "engines": {
     "node": ">=20.0.0",
