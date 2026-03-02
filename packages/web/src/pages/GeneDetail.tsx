@@ -168,7 +168,7 @@ export default function GeneDetail() {
   const learning = manifest.learning as { level?: string; objectives?: string[] } | undefined;
   const skill = manifest.skill as { description?: string } | undefined;
   const mcpServers = manifest.mcpServers as Record<string, unknown> | undefined;
-  const rules = manifest.rules as string[] | undefined;
+  const rules = manifest.rules as { name: string; content: string }[] | undefined;
   const statusConfig = getReviewStatusConfig(gene.review_status);
   const catColor = CATEGORY_COLORS[gene.category] || 'bg-gray-50 text-gray-700';
 
@@ -245,14 +245,14 @@ export default function GeneDetail() {
                 <Card>
                   <CardContent className="pt-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-3">规则</h2>
-                    <ul className="space-y-1.5">
-                      {rules.map((rule, i) => (
-                        <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
-                          <span className="text-primary mt-0.5 shrink-0">▸</span>
-                          {rule}
-                        </li>
+                    <div className="space-y-3">
+                      {rules.map((rule) => (
+                        <div key={rule.name} className="bg-gray-50 rounded-lg px-4 py-3">
+                          <span className="text-sm font-medium text-gray-900">{rule.name}</span>
+                          <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{rule.content}</p>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </CardContent>
                 </Card>
               )}
