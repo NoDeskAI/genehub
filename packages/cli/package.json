@@ -1,6 +1,6 @@
 {
   "name": "@nodeskai/genehub",
-  "version": "2026.3.2-7",
+  "version": "2026.3.2-8",
   "description": "GeneHub CLI - AI 员工基因管理命令行工具",
   "type": "module",
   "bin": {
