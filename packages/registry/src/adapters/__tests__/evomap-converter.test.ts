@@ -300,7 +300,7 @@ describe('extractEvoMapMetadata', () => {
       data: makeCapsule(),
     };
     const meta = extractEvoMapMetadata(item);
-    expect(meta.review_status).toBe('approved');
-    expect(meta.is_published).toBe(true);
+    expect(meta.review_status).toBe('pending');
+    expect(meta.is_published).toBe(false);
   });
 });

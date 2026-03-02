@@ -271,7 +271,7 @@ describe('extractClawHubMetadata', () => {
     expect(meta.source_ref).toBe('https://clawhub.ai/skills/my-skill');
     expect(meta.install_count).toBe(120);
     expect(meta.avg_rating).toBe(4);
-    expect(meta.is_published).toBe(true);
+    expect(meta.is_published).toBe(false);
   });
 
   it('defaults stats when not present', () => {

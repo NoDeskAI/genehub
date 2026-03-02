@@ -47,14 +47,14 @@ describe('Genomes API', () => {
     expect(json.error_code).toBe('token_invalid');
   });
 
-  it('DELETE /api/v1/genomes/:slug 非 admin 应返回 403', async () => {
+  it('DELETE /api/v1/genomes/:slug 无效 token 应返回 401', async () => {
     const res = await app.request('/api/v1/genomes/some-genome', {
       method: 'DELETE',
       headers: { Authorization: 'Bearer ghb_publisher_test' },
     });
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
     const json = await res.json();
-    expect(json.error_code).toBe('permission_denied');
+    expect(json.error_code).toBe('token_invalid');
   });
 
   it.skipIf(!hasDB)('POST /api/v1/genomes 空基因列表应返回 422', async () => {

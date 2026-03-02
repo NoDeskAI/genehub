@@ -35,29 +35,33 @@ async function resolveAuth(c: Context): Promise<AuthInfo> {
     }
 
     if (bearerToken.startsWith('ghb_')) {
-      const tokenHash = createHash('sha256').update(bearerToken).digest('hex');
-      const result = await db
-        .select({
-          keyId: apiKeys.id,
-          publisherId: apiKeys.publisher_id,
-          revokedAt: apiKeys.revoked_at,
-          githubLogin: publishers.github_login,
-        })
-        .from(apiKeys)
-        .innerJoin(publishers, eq(apiKeys.publisher_id, publishers.id))
-        .where(eq(apiKeys.token_hash, tokenHash));
+      try {
+        const tokenHash = createHash('sha256').update(bearerToken).digest('hex');
+        const result = await db
+          .select({
+            keyId: apiKeys.id,
+            publisherId: apiKeys.publisher_id,
+            revokedAt: apiKeys.revoked_at,
+            githubLogin: publishers.github_login,
+          })
+          .from(apiKeys)
+          .innerJoin(publishers, eq(apiKeys.publisher_id, publishers.id))
+          .where(eq(apiKeys.token_hash, tokenHash));
 
-      if (result.length > 0 && !result[0].revokedAt) {
-        db.update(apiKeys)
-          .set({ last_used_at: new Date() })
-          .where(eq(apiKeys.id, result[0].keyId))
-          .then(() => {});
+        if (result.length > 0 && !result[0].revokedAt) {
+          db.update(apiKeys)
+            .set({ last_used_at: new Date() })
+            .where(eq(apiKeys.id, result[0].keyId))
+            .then(() => {});
 
-        return {
-          role: 'publisher',
-          publisherId: result[0].publisherId,
-          githubLogin: result[0].githubLogin,
-        };
+          return {
+            role: 'publisher',
+            publisherId: result[0].publisherId,
+            githubLogin: result[0].githubLogin,
+          };
+        }
+      } catch {
+        // DB unavailable — treat token as unverified
       }
     }
 

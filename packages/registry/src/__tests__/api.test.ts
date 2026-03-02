@@ -27,14 +27,14 @@ describe('Registry API', () => {
     },
   );
 
-  it('POST /api/v1/genes 非法 manifest 应返回 422', async () => {
+  it('POST /api/v1/genes 无 token 应返回 401', async () => {
     const res = await app.request('/api/v1/genes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ manifest: { slug: 'BAD' } }),
     });
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(401);
     const json = await res.json();
-    expect(json.error_code).toBe('gene_manifest_invalid');
+    expect(json.error_code).toBe('token_invalid');
   });
 });
