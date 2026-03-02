@@ -1,6 +1,6 @@
 {
   "name": "@nodeskai/genehub-types",
-  "version": "2026.3.2-11",
+  "version": "2026.3.2-12",
   "description": "GeneHub 共享类型定义与 Zod schemas",
   "type": "module",
   "main": "./dist/index.js",
