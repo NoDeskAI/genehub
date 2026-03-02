@@ -44,101 +44,127 @@ authRouter.get('/github', (c) => {
 
 authRouter.get('/github/callback', async (c) => {
   const code = c.req.query('code');
-  if (!code) throw AppError.tokenInvalid();
 
-  const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      client_id: GITHUB_CLIENT_ID,
-      client_secret: GITHUB_CLIENT_SECRET,
-      code,
-    }),
-  });
-  const tokenData = (await tokenRes.json()) as { access_token?: string; error?: string };
-  if (!tokenData.access_token) throw AppError.tokenInvalid();
-
-  const userRes = await fetch('https://api.github.com/user', {
-    headers: { Authorization: `Bearer ${tokenData.access_token}`, 'User-Agent': 'GeneHub' },
-  });
-  const ghUser = (await userRes.json()) as {
-    id: number;
-    login: string;
-    name: string | null;
-    avatar_url: string;
-    html_url: string;
-  };
-
-  const existing = await db.select().from(publishers).where(eq(publishers.github_id, ghUser.id));
-
-  let publisher: (typeof existing)[0];
-
-  if (existing.length > 0) {
-    const [updated] = await db
-      .update(publishers)
-      .set({
-        github_login: ghUser.login,
-        github_name: ghUser.name ?? ghUser.login,
-        github_avatar_url: ghUser.avatar_url,
-        github_profile_url: ghUser.html_url,
-        last_login_at: new Date(),
-      })
-      .where(eq(publishers.github_id, ghUser.id))
-      .returning();
-    publisher = updated;
-  } else {
-    const [created] = await db
-      .insert(publishers)
-      .values({
-        github_id: ghUser.id,
-        github_login: ghUser.login,
-        github_name: ghUser.name ?? ghUser.login,
-        github_avatar_url: ghUser.avatar_url,
-        github_profile_url: ghUser.html_url,
-      })
-      .returning();
-    publisher = created;
+  // Already logged in (duplicate request / page refresh) — skip OAuth flow
+  const existingSession = getCookie(c, COOKIE_NAME);
+  if (!code && existingSession) {
+    return c.redirect(FRONTEND_URL);
   }
 
-  const jwt = await sign(
-    {
-      sub: publisher.id,
-      login: publisher.github_login,
-      exp: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
-    },
-    JWT_SECRET,
-  );
+  try {
+    if (!code) {
+      console.error('[OAuth] callback missing code param');
+      return c.redirect(`${FRONTEND_URL}?auth_error=missing_code`);
+    }
 
-  const cliCallback = getCookie(c, 'cli_callback');
-  deleteCookie(c, 'oauth_state');
-  deleteCookie(c, 'cli_callback');
+    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        client_id: GITHUB_CLIENT_ID,
+        client_secret: GITHUB_CLIENT_SECRET,
+        code,
+      }),
+    });
+    const tokenData = (await tokenRes.json()) as {
+      access_token?: string;
+      error?: string;
+      error_description?: string;
+    };
+    if (!tokenData.access_token) {
+      console.error(
+        '[OAuth] GitHub token exchange failed:',
+        tokenData.error,
+        tokenData.error_description,
+      );
+      return c.redirect(`${FRONTEND_URL}?auth_error=${tokenData.error ?? 'token_exchange_failed'}`);
+    }
 
-  if (cliCallback) {
-    const token = generateApiKeyToken();
-    const tokenHash = createHash('sha256').update(token).digest('hex');
-    const tokenPrefix = token.slice(0, 12);
+    const userRes = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}`, 'User-Agent': 'GeneHub' },
+    });
+    const ghUser = (await userRes.json()) as {
+      id: number;
+      login: string;
+      name: string | null;
+      avatar_url: string;
+      html_url: string;
+    };
 
-    await db.insert(apiKeys).values({
-      publisher_id: publisher.id,
-      token_prefix: tokenPrefix,
-      token_hash: tokenHash,
-      name: 'CLI (auto)',
+    const existing = await db.select().from(publishers).where(eq(publishers.github_id, ghUser.id));
+
+    let publisher: (typeof existing)[0];
+
+    if (existing.length > 0) {
+      const [updated] = await db
+        .update(publishers)
+        .set({
+          github_login: ghUser.login,
+          github_name: ghUser.name ?? ghUser.login,
+          github_avatar_url: ghUser.avatar_url,
+          github_profile_url: ghUser.html_url,
+          last_login_at: new Date(),
+        })
+        .where(eq(publishers.github_id, ghUser.id))
+        .returning();
+      publisher = updated;
+    } else {
+      const [created] = await db
+        .insert(publishers)
+        .values({
+          github_id: ghUser.id,
+          github_login: ghUser.login,
+          github_name: ghUser.name ?? ghUser.login,
+          github_avatar_url: ghUser.avatar_url,
+          github_profile_url: ghUser.html_url,
+        })
+        .returning();
+      publisher = created;
+    }
+
+    const jwt = await sign(
+      {
+        sub: publisher.id,
+        login: publisher.github_login,
+        exp: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
+      },
+      JWT_SECRET,
+    );
+
+    const cliCallback = getCookie(c, 'cli_callback');
+    deleteCookie(c, 'oauth_state');
+    deleteCookie(c, 'cli_callback');
+
+    if (cliCallback) {
+      const token = generateApiKeyToken();
+      const tokenHash = createHash('sha256').update(token).digest('hex');
+      const tokenPrefix = token.slice(0, 12);
+
+      await db.insert(apiKeys).values({
+        publisher_id: publisher.id,
+        token_prefix: tokenPrefix,
+        token_hash: tokenHash,
+        name: 'CLI (auto)',
+      });
+
+      const redirectUrl = new URL(cliCallback);
+      redirectUrl.searchParams.set('token', token);
+      redirectUrl.searchParams.set('login', publisher.github_login);
+      return c.redirect(redirectUrl.toString());
+    }
+
+    setCookie(c, COOKIE_NAME, jwt, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 3600,
+      path: '/',
+      sameSite: 'Lax',
     });
 
-    const redirectUrl = new URL(cliCallback);
-    redirectUrl.searchParams.set('token', token);
-    redirectUrl.searchParams.set('login', publisher.github_login);
-    return c.redirect(redirectUrl.toString());
+    return c.redirect(FRONTEND_URL);
+  } catch (err) {
+    console.error('[OAuth] callback error:', err);
+    return c.redirect(`${FRONTEND_URL}?auth_error=internal`);
   }
-
-  setCookie(c, COOKIE_NAME, jwt, {
-    httpOnly: true,
-    maxAge: 7 * 24 * 3600,
-    path: '/',
-    sameSite: 'Lax',
-  });
-
-  return c.redirect(FRONTEND_URL);
 });
 
 authRouter.post('/logout', (c) => {
