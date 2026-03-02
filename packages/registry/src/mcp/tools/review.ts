@@ -34,12 +34,15 @@ export async function postReview(args: {
     })
     .returning();
 
+  const isApproved = args.verdict === 'approve' || args.verdict === 'approved';
+
   await db
     .update(genes)
     .set({
       ai_score: args.score,
       ai_verdict: args.verdict,
       ai_enriched: true,
+      ...(isApproved && { review_status: 'approved', is_published: true }),
       updated_at: new Date(),
     })
     .where(eq(genes.id, gene.id));
@@ -92,6 +95,7 @@ export async function approveGene(args: { slug: string; model?: string }) {
     .update(genes)
     .set({
       review_status: 'approved',
+      is_published: true,
       ai_verdict: 'approved',
       ai_enriched: true,
       updated_at: new Date(),
