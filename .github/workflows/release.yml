@@ -103,7 +103,7 @@ jobs:
           file: Dockerfile.curator
           push: true
           platforms: linux/amd64
-          build-args: NODE_IMAGE=internet-cn-beijing.cr.volces.com/library/node:22-alpine
+          build-args: NODE_IMAGE=node:22-alpine
           cache-from: type=gha,scope=curator
           cache-to: type=gha,scope=curator,mode=max
           tags: |
