@@ -169,7 +169,9 @@ function runCurator(prompt: string, sessionId: string | null, attempt: number) {
   child.stderr.on('data', (chunk: Buffer) => {
     lastActivityMs = Date.now();
     for (const line of chunk.toString().split('\n')) {
-      if (line.trim()) console.error(`${label} [stderr] ${line}`);
+      if (line.trim() && !line.includes('getConfigContext')) {
+        console.error(`${label} [stderr] ${line}`);
+      }
     }
   });
 
