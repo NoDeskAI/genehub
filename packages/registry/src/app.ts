@@ -16,7 +16,22 @@ import { errorHandler } from './middleware/error-handler.js';
 
 export const app = new Hono();
 
-app.use('*', logger());
+let healthOkCount = 0;
+app.use('*', async (c, next) => {
+  if (c.req.path === '/api/health') {
+    await next();
+    if (c.res.status === 200) {
+      healthOkCount++;
+      if (healthOkCount % 30 === 0) {
+        console.log(`[health] ok ×${healthOkCount}`);
+      }
+    } else {
+      console.error(`[health] FAIL status=${c.res.status}`);
+    }
+    return;
+  }
+  return logger()(c, next);
+});
 app.use('*', cors());
 
 app.onError(errorHandler);

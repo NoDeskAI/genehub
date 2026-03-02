@@ -26,9 +26,8 @@ export async function emitGeneEvent(
   };
 
   try {
-    await db.execute(sql`NOTIFY gene_events, ${JSON.stringify(payload)}`);
-  } catch {
-    // NOTIFY failure should not break the main operation
-    console.error(`[gene-events] Failed to emit ${type} for ${slug}`);
+    await db.execute(sql`SELECT pg_notify('gene_events', ${JSON.stringify(payload)})`);
+  } catch (err) {
+    console.error(`[gene-events] Failed to emit ${type} for ${slug}:`, err);
   }
 }

@@ -2,7 +2,7 @@ ARG NODE_IMAGE=internet-cn-beijing.cr.volces.com/library/node:22-alpine
 
 FROM ${NODE_IMAGE}
 
-RUN apk add --no-cache git && \
+RUN apk add --no-cache git gcompat && \
     npm install -g opencode-ai tsx && \
     npm cache clean --force && \
     rm -rf /tmp/*
