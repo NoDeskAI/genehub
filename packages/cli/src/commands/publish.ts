@@ -15,7 +15,9 @@ export const publishCommand = new Command('publish')
     const config = await loadConfig();
 
     if (!config.token) {
-      output.fail('未配置认证 token，请先运行 genehub config --token <token>');
+      output.fail('未配置认证 token');
+      output.info('  方式 1: genehub config set token <token>');
+      output.info('  方式 2: export GENEHUB_TOKEN=<token>');
       process.exit(1);
     }
 

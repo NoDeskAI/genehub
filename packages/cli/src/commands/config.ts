@@ -1,8 +1,14 @@
 import { Command } from 'commander';
-import { loadConfig, saveConfig } from '../config.js';
+import { getConfigSource, loadConfig, saveConfig } from '../config.js';
 import * as output from '../output.js';
 
 export const configCommand = new Command('config').description('管理 GeneHub CLI 配置');
+
+function sourceLabel(source: 'env' | 'file' | 'default'): string {
+  if (source === 'env') return ' [env]';
+  if (source === 'default') return ' [default]';
+  return '';
+}
 
 configCommand
   .command('set <key> <value>')
@@ -25,7 +31,7 @@ configCommand
 
 configCommand
   .command('get [key]')
-  .description('查看配置')
+  .description('查看配置（支持 GENEHUB_REGISTRY_URL / GENEHUB_TOKEN 环境变量覆盖）')
   .action(async (key?: string) => {
     const config = await loadConfig();
 
@@ -34,9 +40,12 @@ configCommand
         registry: config.registryUrl,
         token: config.token ? `${config.token.slice(0, 8)}***` : undefined,
       };
-      output.info(`${key} = ${map[key] ?? '(未设置)'}`);
+      const src = sourceLabel(getConfigSource(key as 'registry' | 'token'));
+      output.info(`${key} = ${map[key] ?? '(未设置)'}${src}`);
     } else {
-      output.info(`registry = ${config.registryUrl}`);
-      output.info(`token    = ${config.token ? `${config.token.slice(0, 8)}***` : '(未设置)'}`);
+      const regSrc = sourceLabel(getConfigSource('registry'));
+      const tokSrc = sourceLabel(getConfigSource('token'));
+      output.info(`registry = ${config.registryUrl}${regSrc}`);
+      output.info(`token    = ${config.token ? `${config.token.slice(0, 8)}***` : '(未设置)'}${tokSrc}`);
     }
   });

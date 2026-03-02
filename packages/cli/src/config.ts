@@ -14,13 +14,44 @@ const DEFAULT_CONFIG: CliConfig = {
   registryUrl: 'https://genehub.nodeskai.com',
 };
 
+/**
+ * Priority: env vars > config file > defaults
+ *
+ * - GENEHUB_REGISTRY_URL / GENEHUB_REGISTRY
+ * - GENEHUB_TOKEN
+ */
 export async function loadConfig(): Promise<CliConfig> {
+  let fileConfig: Partial<CliConfig> = {};
   try {
     const raw = await readFile(CONFIG_PATH, 'utf-8');
-    return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+    fileConfig = JSON.parse(raw);
   } catch {
-    return DEFAULT_CONFIG;
+    // no config file, use defaults
   }
+
+  const merged = { ...DEFAULT_CONFIG, ...fileConfig };
+
+  const envUrl = process.env.GENEHUB_REGISTRY_URL ?? process.env.GENEHUB_REGISTRY;
+  if (envUrl) {
+    merged.registryUrl = envUrl;
+  }
+
+  const envToken = process.env.GENEHUB_TOKEN;
+  if (envToken) {
+    merged.token = envToken;
+  }
+
+  return merged;
+}
+
+export function getConfigSource(key: 'registry' | 'token'): 'env' | 'file' | 'default' {
+  if (key === 'registry') {
+    if (process.env.GENEHUB_REGISTRY_URL || process.env.GENEHUB_REGISTRY) return 'env';
+  }
+  if (key === 'token') {
+    if (process.env.GENEHUB_TOKEN) return 'env';
+  }
+  return 'file';
 }
 
 export async function saveConfig(config: Partial<CliConfig>): Promise<void> {
