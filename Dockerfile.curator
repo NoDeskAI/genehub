@@ -3,7 +3,7 @@ ARG NODE_IMAGE=docker.m.daocloud.io/library/node:22-alpine
 FROM ${NODE_IMAGE}
 
 RUN apk add --no-cache git && \
-    npm install -g opencode tsx
+    npm install -g opencode-ai tsx
 
 WORKDIR /app/curator
 
