@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { GeneHubClient } from '@nodeskai/genehub-sdk';
+import type { Gene } from '@nodeskai/genehub-types';
 import { GeneManifestSchema } from '@nodeskai/genehub-types';
 import { Command } from 'commander';
 import ora from 'ora';
@@ -50,12 +51,11 @@ export const publishCommand = new Command('publish')
       const { slug, version } = validation.data;
       const spinner = ora(`发布 ${slug}@${version}...`).start();
 
-      let gene;
+      let gene: Gene;
       try {
         gene = await client.publishGene(validation.data);
       } catch (err) {
-        const isSlugExists =
-          err instanceof Error && err.message.includes('gene_slug_exists');
+        const isSlugExists = err instanceof Error && err.message.includes('gene_slug_exists');
         if (!isSlugExists) throw err;
 
         spinner.text = `基因 ${slug} 已存在，发布新版本 ${version}...`;

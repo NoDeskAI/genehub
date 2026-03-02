@@ -17,7 +17,8 @@
     "genehub": "node packages/cli/dist/index.js",
     "version:sync": "node scripts/sync-version.mjs",
     "version:check": "node scripts/sync-version.mjs --check",
-    "release": "node scripts/sync-version.mjs && git add -A && git commit -m \"chore: bump version to $(node scripts/sync-version.mjs --npm-version)\" && git tag $(node scripts/sync-version.mjs --tag) && git push origin master --tags"
+    "release": "node scripts/sync-version.mjs && git add -A && git commit -m \"chore: bump version to $(node scripts/sync-version.mjs --npm-version)\" && git tag $(node scripts/sync-version.mjs --tag) && git push origin master --tags",
+    "prepare": "lefthook install"
   },
   "engines": {
     "node": ">=20.0.0",
@@ -27,6 +28,7 @@
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",
+    "lefthook": "^2.1.2",
     "tsx": "^4.19"
   }
 }
