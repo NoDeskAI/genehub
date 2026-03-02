@@ -168,8 +168,8 @@ export async function createGene(manifestRaw: unknown) {
       dependencies: manifest.dependencies,
       synergies: manifest.synergies,
       author: manifest.author ?? { type: 'human', name: '' },
-      review_status: 'approved',
-      is_published: true,
+      review_status: 'pending',
+      is_published: false,
     })
     .returning();
 
