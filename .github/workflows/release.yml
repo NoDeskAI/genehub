@@ -91,7 +91,7 @@ jobs:
           platforms: linux/amd64
           build-args: NODE_IMAGE=node:22-alpine
           cache-from: type=gha,scope=genehub
-          cache-to: type=gha,scope=genehub,mode=max
+          cache-to: type=gha,scope=genehub
           tags: |
             ${{ env.CR_IMAGE }}:${{ env.IMAGE_TAG }}
             ${{ env.CR_IMAGE }}:latest
@@ -114,14 +114,7 @@ jobs:
           kubectl rollout status deployment/genehub \
             -n nodeskclaw-system --timeout=120s
 
-          # Deploy Curator (CronJob + Listener)
-          kubectl apply -f deploy/k8s/curator.yaml
-
-          # Update Curator images (Curator image is built & pushed locally, always use :latest)
-          kubectl set image cronjob/gene-curator \
-            curator=${{ env.CR_IMAGE_CURATOR }}:latest \
-            -n nodeskclaw-system || true
-
+          # Deploy Curator Listener (CronJob 需要额外 RBAC 权限，跳过失败)
           kubectl set image deployment/gene-curator-listener \
             listener=${{ env.CR_IMAGE_CURATOR }}:latest \
             -n nodeskclaw-system || true
