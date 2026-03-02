@@ -337,8 +337,10 @@ GitHub OAuth                   API Key
 | 基因文件存储 | 文件系统 + Git | 基因内容版本化天然适合 Git 管理 |
 | 搜索引擎 | PostgreSQL FTS（初期）/ Meilisearch（后期） | 先简后繁 |
 | CLI | TypeScript (tsx) | 跨平台，单文件分发 |
+| Web 前端 | React + Vite + Tailwind CSS | 基因浏览、搜索、API Key 管理 |
 | SDK | TypeScript + Python | 覆盖主流 Agent 开发语言 |
 | 分发 | npm + pip + GitHub Releases | 兼容主流包管理器 |
+| Git Hooks | lefthook | pre-commit 执行 Biome lint |
 
 ---
 
@@ -464,15 +466,22 @@ genehub/
 │   │       │   └── adapters/
 │   │       └── pyproject.toml
 │   │
-│   └── cli/                      # 命令行工具
+│   ├── cli/                      # 命令行工具
+│   │   ├── src/
+│   │   │   ├── commands/         # 子命令
+│   │   │   │   ├── install.ts
+│   │   │   │   ├── search.ts
+│   │   │   │   ├── list.ts
+│   │   │   │   ├── publish.ts
+│   │   │   │   └── init.ts
+│   │   │   └── index.ts
+│   │   └── package.json
+│   │
+│   └── web/                      # Web 前端（React + Vite）
 │       ├── src/
-│       │   ├── commands/         # 子命令
-│       │   │   ├── install.ts
-│       │   │   ├── search.ts
-│       │   │   ├── list.ts
-│       │   │   ├── publish.ts
-│       │   │   └── init.ts
-│       │   └── index.ts
+│       │   ├── pages/            # 页面组件
+│       │   ├── components/       # 业务 + UI 组件
+│       │   └── api/              # API 请求封装
 │       └── package.json
 │
 ├── genes/                        # 官方基因库（Git 管理）
@@ -1001,7 +1010,7 @@ MINIMAX_API_KEY: sk-xxx
 - [x] Learning Engine（L1 浅层学习 + L2 深度学习引擎 + genehub-learner 元学习基因）
 - [x] CLI 完整命令集（install/uninstall/search/list/publish/init/config/learn）
 - [ ] NoDeskClaw 集成（→ M2.1）
-- [x] 官方基因库（7 个高质量基因含 learning objectives + scenarios）
+- [x] 官方基因库（8 个高质量基因含 learning objectives + scenarios）
 
 ### M2 - 生态对接
 

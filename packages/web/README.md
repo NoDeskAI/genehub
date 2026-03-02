@@ -1,73 +1,59 @@
-# React + TypeScript + Vite
+# @nodeskai/genehub-web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+GeneHub Web 前端 -- AI 员工基因库的浏览与管理界面。
 
-Currently, two official plugins are available:
+## 技术栈
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **框架**：React 19 + TypeScript
+- **构建**：Vite
+- **样式**：Tailwind CSS
+- **UI 组件**：自建组件库（`src/components/ui/`）
+- **图标**：Lucide React
 
-## React Compiler
+## 页面
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| 路由 | 页面 | 说明 |
+|---|---|---|
+| `/` | Home | 首页、分类导航、推荐基因 |
+| `/browse` | Browse | 基因浏览、联邦搜索、标签过滤 |
+| `/genes/:slug` | GeneDetail | 基因详情、版本列表、审核信息 |
+| `/genomes` | GenomeBrowse | 基因组列表 |
+| `/genomes/:slug` | GenomeDetail | 基因组详情、依赖关系 |
+| `/settings/keys` | Settings | API Key 管理 |
 
-## Expanding the ESLint configuration
+## 目录结构
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+packages/web/
+├── src/
+│   ├── App.tsx               # 路由配置
+│   ├── api/
+│   │   └── client.ts         # API 请求封装
+│   ├── pages/                # 页面组件
+│   ├── components/           # 业务组件
+│   │   ├── Layout.tsx        # 布局、导航、用户菜单
+│   │   ├── GeneCard.tsx
+│   │   ├── GenomeCard.tsx
+│   │   ├── FederatedSearchCard.tsx
+│   │   ├── CategoryNav.tsx
+│   │   ├── ReviewList.tsx
+│   │   ├── LucideIcon.tsx
+│   │   └── ui/              # 基础 UI 组件
+│   └── lib/                  # 工具函数
+├── public/                   # 静态资源
+└── package.json
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 开发
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm dev            # 开发模式（http://localhost:5173）
+pnpm build          # 构建
+pnpm preview        # 预览构建产物
 ```
+
+开发模式下 API 请求通过 Vite proxy 转发到 `http://localhost:3000`（Registry 服务）。
+
+## 部署
+
+生产环境构建产物部署在 Registry 服务的 `public/` 目录下，由 Hono 静态文件中间件提供服务，不需要独立部署。

@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2026-03-02-14
+
+### Added
+- GitHub OAuth + API Key 认证体系（`/auth/github`、API Key CRUD）
+- 联邦搜索（`GET /api/v1/genes/search`）合并本地 + ClawHub 结果，外部基因后台入库 + AI 审核
+- MCP Streamable HTTP 端点（`/mcp`），供 AI Curator 审核基因
+- AI Curator 完整部署（CronJob + Listener + MCP tools）
+- 前端 UI 组件库（card、badge、tabs、tooltip、skeleton 等）
+- 前端页面：基因组浏览/详情、设置（API Key 管理）、联邦搜索卡片
+- CLI `auth login` 命令（GitHub OAuth 浏览器流程）
+- CLI `publish` 支持自动发版（slug 已存在时调用 publishVersion）
+- CLI 支持环境变量配置（`GENEHUB_REGISTRY_URL` / `GENEHUB_TOKEN`）
+- lefthook pre-commit hook 强制提交前 lint
+- `code-review` 基因补充完整
+
+### Changed
+- 新基因默认 `pending` 状态，需 AI Curator 审核后发布
+- 审核通过后自动设置 `is_published = true`
+- npm 发布改用 `pnpm publish`，正确解析 `workspace:*` 依赖
+- OAuth callback 失败时重定向到前端（带 `auth_error` 参数），不再返回 JSON 错误
+
+### Fixed
+- 图标名字符串未映射为 Lucide 组件导致页面异常
+- 含 `rules` 数组的基因详情页白屏（类型断言错误）
+- NOTIFY 事件发射失败导致服务异常
+- `Dockerfile.curator` 引用已删除的 `system-prompt.md`
+- CI lint 失败（Biome 格式化 + organizeImports）
+- CI 测试失败（认证中间件 + 联邦搜索逻辑变更后断言不匹配）
+- Docker 构建因 `prepare` 脚本找不到 git 而失败
+
+---
+
 ## v2026-02-27-m1
 
 ### M1 - 核心功能
