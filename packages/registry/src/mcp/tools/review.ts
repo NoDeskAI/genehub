@@ -63,6 +63,7 @@ export async function flagForDeletion(args: { slug: string; reason: string; mode
     .update(genes)
     .set({
       review_status: 'flagged',
+      is_published: false,
       ai_verdict: 'flagged',
       updated_at: new Date(),
     })
