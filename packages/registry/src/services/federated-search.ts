@@ -159,56 +159,101 @@ async function syncExternalResults(items: FederatedGeneItem[]) {
   const slugs = items.map((i) => i.slug);
 
   const existing = await db
-    .select({ slug: genes.slug })
+    .select({ id: genes.id, slug: genes.slug, version: genes.version })
     .from(genes)
     .where(inArray(genes.slug, slugs));
 
-  const existingSlugs = new Set(existing.map((r) => r.slug));
-  const newItems = items.filter((i) => !existingSlugs.has(i.slug));
-  if (newItems.length === 0) return;
+  const existingMap = new Map(existing.map((r) => [r.slug, r]));
 
-  for (const item of newItems) {
+  for (const item of items) {
     try {
-      const manifest = buildMinimalManifest(item);
-      const [gene] = await db
-        .insert(genes)
-        .values({
-          name: item.name,
-          slug: item.slug,
-          version: item.version ?? '0.0.0',
-          description: item.description ?? '',
-          short_description: (item.description ?? '').slice(0, 256),
-          category: item.category ?? 'development',
-          tags: item.tags.length > 0 ? item.tags : ['ability'],
-          manifest,
-          compatibility: [],
-          dependencies: [],
-          synergies: [],
-          author: { type: 'human', name: item.clawhub_display_name ?? item.name },
-          source: 'clawhub',
-          source_ref: `https://clawhub.ai/skills/${item.slug}`,
-          install_count: item.install_count ?? 0,
-          avg_rating: item.avg_rating ?? 0,
-          review_status: 'pending',
-          is_published: false,
-        })
-        .onConflictDoNothing()
-        .returning();
+      const current = existingMap.get(item.slug);
+      const itemVersion = item.version ?? '0.0.0';
 
-      if (gene) {
-        await db.insert(geneVersions).values({
-          gene_id: gene.id,
-          version: gene.version,
-          manifest,
-          changelog: 'Auto-imported from federated search',
-          is_latest: true,
-        });
-        await emitGeneEvent('gene.created', item.slug, 'clawhub');
+      if (!current) {
+        await insertNewGene(item);
+      } else if (current.version !== itemVersion) {
+        await updateExistingGene(current.id, item);
       }
     } catch (err) {
       console.error(`[federated-search] Failed to sync ${item.slug}:`, err);
     }
   }
+}
+
+async function insertNewGene(item: FederatedGeneItem) {
+  const manifest = buildMinimalManifest(item);
+  const [gene] = await db
+    .insert(genes)
+    .values({
+      name: item.name,
+      slug: item.slug,
+      version: item.version ?? '0.0.0',
+      description: item.description ?? '',
+      short_description: (item.description ?? '').slice(0, 256),
+      category: item.category ?? 'development',
+      tags: item.tags.length > 0 ? item.tags : ['ability'],
+      manifest,
+      compatibility: [],
+      dependencies: [],
+      synergies: [],
+      author: { type: 'human', name: item.clawhub_display_name ?? item.name },
+      source: 'clawhub',
+      source_ref: `https://clawhub.ai/skills/${item.slug}`,
+      install_count: item.install_count ?? 0,
+      avg_rating: item.avg_rating ?? 0,
+      review_status: 'pending',
+      is_published: false,
+    })
+    .onConflictDoNothing()
+    .returning();
+
+  if (gene) {
+    await db.insert(geneVersions).values({
+      gene_id: gene.id,
+      version: gene.version,
+      manifest,
+      changelog: 'Auto-imported from federated search',
+      is_latest: true,
+    });
+    await emitGeneEvent('gene.created', item.slug, 'clawhub');
+  }
+}
+
+async function updateExistingGene(geneId: string, item: FederatedGeneItem) {
+  const manifest = buildMinimalManifest(item);
+  const version = item.version ?? '0.0.0';
+
+  await db
+    .update(geneVersions)
+    .set({ is_latest: false })
+    .where(eq(geneVersions.gene_id, geneId));
+
+  await db.insert(geneVersions).values({
+    gene_id: geneId,
+    version,
+    manifest,
+    changelog: 'Version updated from federated search',
+    is_latest: true,
+  });
+
+  await db
+    .update(genes)
+    .set({
+      version,
+      name: item.name,
+      description: item.description ?? '',
+      short_description: (item.description ?? '').slice(0, 256),
+      manifest,
+      install_count: item.install_count ?? 0,
+      avg_rating: item.avg_rating ?? 0,
+      review_status: 'pending',
+      is_published: false,
+      updated_at: new Date(),
+    })
+    .where(eq(genes.id, geneId));
+
+  await emitGeneEvent('gene.updated', item.slug, 'clawhub');
 }
 
 function buildMinimalManifest(item: FederatedGeneItem) {
