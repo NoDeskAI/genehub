@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type {
@@ -54,6 +54,43 @@ export class NanobotAdapter extends BaseAdapter {
     if (manifest.mcp_servers.length > 0) {
       await this.mergeNanobotMcpConfig(manifest.mcp_servers);
     }
+
+    return {
+      success: true,
+      slug: manifest.slug,
+      version: manifest.version,
+      files,
+      needsRestart: false,
+      dependencies: manifest.dependencies.map((d) => d.slug),
+    };
+  }
+
+  protected override async doInstallFromDirectory(
+    geneDir: string,
+    manifest: GeneManifest,
+    options?: InstallOptions,
+  ): Promise<InstallResult> {
+    const targetDir = options?.targetPath
+      ? join(options.targetPath, manifest.skill.name)
+      : join(this.skillsDir, manifest.skill.name);
+
+    await mkdir(targetDir, { recursive: true });
+    await cp(geneDir, targetDir, { recursive: true });
+
+    if (manifest.mcp_servers.length > 0) {
+      await this.mergeNanobotMcpConfig(manifest.mcp_servers);
+    }
+
+    const files: string[] = [];
+    async function collectFiles(dir: string) {
+      const entries = await readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) await collectFiles(full);
+        else files.push(full);
+      }
+    }
+    await collectFiles(targetDir);
 
     return {
       success: true,

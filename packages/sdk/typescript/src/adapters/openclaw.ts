@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { appendFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { appendFile, cp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import type {
@@ -78,6 +78,46 @@ export class OpenClawAdapter extends BaseAdapter {
       slug: manifest.slug,
       version: manifest.version,
       files: [...new Set(files)],
+      needsRestart: true,
+      dependencies: manifest.dependencies.map((d) => d.slug),
+    };
+  }
+
+  protected override async doInstallFromDirectory(
+    geneDir: string,
+    manifest: GeneManifest,
+    options?: InstallOptions,
+  ): Promise<InstallResult> {
+    const targetDir = options?.targetPath
+      ? join(options.targetPath, manifest.skill.name)
+      : join(this.skillsDir, manifest.skill.name);
+
+    await mkdir(targetDir, { recursive: true });
+    await cp(geneDir, targetDir, { recursive: true });
+
+    if (manifest.config?.openclaw) {
+      await this.mergeOpenClawConfig(manifest.config.openclaw);
+    }
+    if (manifest.mcp_servers?.length) {
+      await this.mergeMcpServers(manifest.mcp_servers);
+    }
+
+    const files: string[] = [];
+    async function collectFiles(dir: string) {
+      const entries = await readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) await collectFiles(full);
+        else files.push(full);
+      }
+    }
+    await collectFiles(targetDir);
+
+    return {
+      success: true,
+      slug: manifest.slug,
+      version: manifest.version,
+      files,
       needsRestart: true,
       dependencies: manifest.dependencies.map((d) => d.slug),
     };
