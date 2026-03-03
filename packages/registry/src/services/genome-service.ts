@@ -3,6 +3,7 @@ import semver from 'semver';
 import { db, schema } from '../db/index.js';
 import { AppError } from '../middleware/error-handler.js';
 import { resolve as resolveGene } from './dependency-resolver.js';
+import { emitGenomeEvent } from './gene-events.js';
 import * as gitea from './gitea-service.js';
 
 const { genomes, genomeVersions, genes, geneRelations } = schema;
@@ -250,6 +251,8 @@ export async function createGenome(input: CreateGenomeInput) {
     is_latest: true,
   });
 
+  await emitGenomeEvent('genome.created', input.slug, input.author?.name ?? 'unknown');
+
   return genome;
 }
 
@@ -335,6 +338,15 @@ export async function publishVersion(
     .set(updateValues)
     .where(eq(genomes.id, genome.id))
     .returning();
+
+  await emitGenomeEvent(
+    'genome.updated',
+    slug,
+    (genome.author as { name?: string })?.name ?? 'unknown',
+    {
+      version: input.version,
+    },
+  );
 
   return updated;
 }

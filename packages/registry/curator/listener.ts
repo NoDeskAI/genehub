@@ -36,6 +36,22 @@ const RETRY_PROMPTS = [
   '最后一次机会。不要输出任何文字。直接调用 post_review(score, verdict, comments)，然后调用 approve_gene 或 flag_for_deletion。',
 ];
 
+function buildPrompt(event: { type: string; slug: string; source: string }): string | null {
+  switch (event.type) {
+    case 'gene.created':
+    case 'gene.updated':
+      return `审核基因 ${event.slug}，来源: ${event.source}`;
+    case 'genome.created':
+    case 'genome.updated':
+      return `审核基因组 ${event.slug}，来源: ${event.source}。使用 get_genome 获取详情，检查基因组合理性、基因引用完整性、描述质量，然后 post_review 并 approve_gene（基因组审核也用此工具）。`;
+    case 'template.created':
+    case 'template.updated':
+      return `审核 AI 员工模板 ${event.slug}，来源: ${event.source}。使用 get_template 获取详情，检查模板角色定义、基因组引用完整性、配置合理性，然后 post_review 并 approve_gene（模板审核也用此工具）。`;
+    default:
+      return null;
+  }
+}
+
 async function listen() {
   console.log('[listener] Connecting to gene_events channel...');
 
@@ -44,8 +60,9 @@ async function listen() {
       const event = JSON.parse(payload);
       console.log(`[listener] Received: ${event.type} — ${event.slug}`);
 
-      if (event.type === 'gene.created' || event.type === 'gene.updated') {
-        enqueue(`审核基因 ${event.slug}，来源: ${event.source}`);
+      const prompt = buildPrompt(event);
+      if (prompt) {
+        enqueue(prompt);
       }
     } catch (err) {
       console.error('[listener] Failed to parse event:', err);

@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import semver from 'semver';
 import { db, schema } from '../db/index.js';
 import { AppError } from '../middleware/error-handler.js';
+import { emitTemplateEvent } from './gene-events.js';
 import * as gitea from './gitea-service.js';
 
 const { agentTemplates, agentTemplateVersions, genomes, genes } = schema;
@@ -271,6 +272,8 @@ export async function createTemplate(input: CreateTemplateInput) {
     is_latest: true,
   });
 
+  await emitTemplateEvent('template.created', input.slug, input.author?.name ?? 'unknown');
+
   return template;
 }
 
@@ -372,6 +375,15 @@ export async function publishVersion(
     .set(updateValues)
     .where(eq(agentTemplates.id, template.id))
     .returning();
+
+  await emitTemplateEvent(
+    'template.updated',
+    slug,
+    (template.author as { name?: string })?.name ?? 'unknown',
+    {
+      version: input.version,
+    },
+  );
 
   return updated;
 }
