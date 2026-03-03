@@ -57,4 +57,11 @@ export interface GeneAdapter {
     geneName: string,
     action: 'installed' | 'updated' | 'uninstalled',
   ): Promise<void>;
+
+  /**
+   * Trigger the bot to process learning tasks via the platform's CLI.
+   * Called after learning task files are created, so the bot can
+   * immediately start learning without waiting for the next conversation.
+   */
+  triggerLearning?(prompt: string): Promise<void>;
 }

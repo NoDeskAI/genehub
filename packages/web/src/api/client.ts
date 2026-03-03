@@ -170,6 +170,52 @@ export async function getGenome(slug: string): Promise<Genome> {
   return get<Genome>(`/genomes/${slug}`);
 }
 
+export type AgentTemplate = {
+  id: string;
+  name: string;
+  slug: string;
+  version: string;
+  description: string;
+  short_description: string;
+  role: string | null;
+  category: string;
+  tags: string[];
+  icon: string | null;
+  avatar_url: string | null;
+  genomes: { slug: string; version: string }[];
+  genes: { slug: string; version: string }[];
+  compatibility: string[];
+  install_count: number;
+  avg_rating: number;
+  author: { type: string; name: string };
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function listTemplates(params?: {
+  q?: string;
+  category?: string;
+  role?: string;
+  sort?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<PagedData<AgentTemplate>> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set('q', params.q);
+  if (params?.category) sp.set('category', params.category);
+  if (params?.role) sp.set('role', params.role);
+  if (params?.sort) sp.set('sort', params.sort);
+  if (params?.page) sp.set('page', String(params.page));
+  if (params?.page_size) sp.set('page_size', String(params.page_size));
+  const qs = sp.toString();
+  return get<PagedData<AgentTemplate>>(`/templates${qs ? `?${qs}` : ''}`);
+}
+
+export async function getTemplate(slug: string): Promise<AgentTemplate> {
+  return get<AgentTemplate>(`/templates/${slug}`);
+}
+
 export async function federatedSearch(params: {
   q: string;
   category?: string;

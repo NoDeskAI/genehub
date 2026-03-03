@@ -1,4 +1,4 @@
-import { Dna, Github, Key, Layers, LogOut, Menu, Search, X } from 'lucide-react';
+import { Dna, Github, Key, Layers, LogOut, Menu, Search, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -8,6 +8,7 @@ import { Input } from './ui/input';
 const NAV_LINKS = [
   { to: '/browse', label: '基因', icon: Dna },
   { to: '/genomes', label: '基因组', icon: Layers },
+  { to: '/templates', label: 'AI 员工模板', icon: User },
 ];
 
 export default function Layout() {

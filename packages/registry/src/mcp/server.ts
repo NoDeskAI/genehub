@@ -21,6 +21,11 @@ import {
   searchGenes,
 } from './tools/query.js';
 import { approveGene, flagForDeletion, postReview } from './tools/review.js';
+import {
+  getTemplate,
+  listTemplates as listTemplatesMcp,
+  suggestTemplate,
+} from './tools/template.js';
 
 export function createMcpServer() {
   const server = new McpServer({
@@ -144,6 +149,47 @@ export function createMcpServer() {
     { gene_slugs: z.array(z.string()).describe('待校验的基因 slug 列表') },
     async (args) => {
       const result = await validateGenome(args);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  // --- Template tools ---
+
+  server.tool(
+    'list_templates',
+    '列出 AI 员工模板，支持按分类、角色和关键词过滤',
+    {
+      category: z.string().optional().describe('按分类过滤'),
+      role: z.string().optional().describe('按角色过滤'),
+      q: z.string().optional().describe('搜索关键词'),
+      page: z.number().optional().describe('页码'),
+      page_size: z.number().optional().describe('每页数量'),
+    },
+    async (args) => {
+      const result = await listTemplatesMcp(args);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'get_template',
+    '获取 AI 员工模板完整详情，包括版本历史',
+    { slug: z.string().describe('模板 slug') },
+    async (args) => {
+      const result = await getTemplate(args);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'suggest_template',
+    '根据需求描述推荐合适的 AI 员工模板',
+    {
+      needs: z.string().describe('需求描述，例如"营销专员" 或 "全栈开发工程师"'),
+      product: z.string().optional().describe('目标产品/平台'),
+    },
+    async (args) => {
+      const result = await suggestTemplate(args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     },
   );

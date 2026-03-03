@@ -88,6 +88,51 @@ export class AppError extends Error {
     );
   }
 
+  static templateNotFound(slug: string) {
+    return new AppError(
+      ERROR_CODES.TEMPLATE_NOT_FOUND,
+      'template_not_found',
+      `AI 员工模板 ${slug} 不存在`,
+      404,
+    );
+  }
+
+  static templateSlugExists(slug: string) {
+    return new AppError(
+      ERROR_CODES.TEMPLATE_SLUG_EXISTS,
+      'template_slug_exists',
+      `AI 员工模板 slug ${slug} 已存在`,
+      409,
+    );
+  }
+
+  static templateVersionConflict(slug: string, version: string) {
+    return new AppError(
+      ERROR_CODES.TEMPLATE_VERSION_CONFLICT,
+      'template_version_conflict',
+      `AI 员工模板 ${slug} 版本 ${version} 已存在`,
+      409,
+    );
+  }
+
+  static templateVersionNotFound(slug: string, version: string) {
+    return new AppError(
+      ERROR_CODES.TEMPLATE_VERSION_NOT_FOUND,
+      'template_version_not_found',
+      `AI 员工模板 ${slug} 版本 ${version} 不存在`,
+      404,
+    );
+  }
+
+  static templateValidationFailed(detail: string) {
+    return new AppError(
+      ERROR_CODES.TEMPLATE_VALIDATION_FAILED,
+      'template_validation_failed',
+      `AI 员工模板校验失败: ${detail}`,
+      422,
+    );
+  }
+
   static genomeValidationFailed(detail: string) {
     return new AppError(
       ERROR_CODES.GENOME_VALIDATION_FAILED,

@@ -281,6 +281,19 @@ export class OpenClawAdapter extends BaseAdapter {
     await writeFile(this.configPath, JSON.stringify(existing, null, 2), 'utf-8');
   }
 
+  async triggerLearning(prompt: string): Promise<void> {
+    const { exec } = await import('node:child_process');
+    const { promisify } = await import('node:util');
+    const execAsync = promisify(exec);
+
+    const escaped = prompt.replace(/"/g, '\\"');
+    try {
+      await execAsync(`openclaw agent --message "${escaped}"`, { timeout: 5000 });
+    } catch {
+      // fire-and-forget: the command may keep running after timeout
+    }
+  }
+
   async notifySkillChange(
     geneName: string,
     action: 'installed' | 'updated' | 'uninstalled',

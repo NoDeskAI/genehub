@@ -77,7 +77,19 @@ export const installCommand = new Command('install')
         const engine = new LearningEngine({ workspaceDir, adapter });
         const learnSpinner = ora('生成学习任务...').start();
         await engine.createLearningTask(manifest);
-        learnSpinner.succeed('学习任务已创建，Agent 将在下次对话中处理');
+        learnSpinner.succeed('学习任务已创建');
+
+        if (adapter.triggerLearning) {
+          const triggerSpinner = ora('触发 bot 学习...').start();
+          try {
+            await adapter.triggerLearning('检查 learning-tasks/ 目录并处理学习任务');
+            triggerSpinner.succeed('已触发 bot 学习（后台处理中）');
+          } catch {
+            triggerSpinner.warn('自动触发失败，Agent 将在下次对话中处理');
+          }
+        } else {
+          output.info('Agent 将在下次对话中处理学习任务');
+        }
       }
     } catch (err) {
       spinner.fail('安装失败');

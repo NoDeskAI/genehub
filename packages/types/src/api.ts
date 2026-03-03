@@ -1,4 +1,12 @@
-import type { Gene, GeneVersion, Genome, GenomeResolveResult, GenomeVersion } from './gene.js';
+import type {
+  AgentTemplate,
+  AgentTemplateVersion,
+  Gene,
+  GeneVersion,
+  Genome,
+  GenomeResolveResult,
+  GenomeVersion,
+} from './gene.js';
 
 export type ApiResponse<T = unknown> = {
   code: number;
@@ -95,6 +103,43 @@ export type FederatedSearchResponse = ApiResponse<{
   sources: { local: number; clawhub: number };
 }>;
 
+export type AgentTemplateListParams = {
+  q?: string;
+  category?: string;
+  role?: string;
+  sort?: 'newest' | 'popular' | 'rating';
+  page?: number;
+  page_size?: number;
+};
+
+export type AgentTemplateListResponse = ApiResponse<PaginatedData<AgentTemplate>>;
+export type AgentTemplateDetailResponse = ApiResponse<AgentTemplate>;
+export type AgentTemplateVersionsResponse = ApiResponse<AgentTemplateVersion[]>;
+
+export type CreateAgentTemplateRequest = {
+  name: string;
+  slug: string;
+  version: string;
+  description?: string;
+  short_description?: string;
+  role?: string;
+  category?: string;
+  tags?: string[];
+  icon?: string;
+  avatar_url?: string;
+  genomes: { slug: string; version: string }[];
+  genes?: { slug: string; version: string }[];
+  compatibility?: string[];
+  author?: { type: string; id?: string; name: string };
+};
+
+export type PublishAgentTemplateVersionRequest = {
+  version: string;
+  genomes: { slug: string; version: string }[];
+  genes?: { slug: string; version: string }[];
+  changelog?: string;
+};
+
 export type CreateGeneRequest = {
   manifest: Gene['manifest'];
   source?: string;
@@ -144,6 +189,11 @@ export const ERROR_CODES = {
   GENOME_VERSION_CONFLICT: 30003,
   GENOME_VALIDATION_FAILED: 30004,
   GENOME_VERSION_NOT_FOUND: 30005,
+  TEMPLATE_NOT_FOUND: 60001,
+  TEMPLATE_SLUG_EXISTS: 60002,
+  TEMPLATE_VERSION_CONFLICT: 60003,
+  TEMPLATE_VALIDATION_FAILED: 60004,
+  TEMPLATE_VERSION_NOT_FOUND: 60005,
   DEPENDENCY_RESOLVE_FAILED: 40001,
   COMPATIBILITY_MISMATCH: 40002,
   LEARNING_TASK_TIMEOUT: 50001,

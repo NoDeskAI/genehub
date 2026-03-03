@@ -137,6 +137,19 @@ export class NanobotAdapter extends BaseAdapter {
     }
   }
 
+  async triggerLearning(prompt: string): Promise<void> {
+    const { exec } = await import('node:child_process');
+    const { promisify } = await import('node:util');
+    const execAsync = promisify(exec);
+
+    const escaped = prompt.replace(/"/g, '\\"');
+    try {
+      await execAsync(`nanobot run --prompt "${escaped}"`, { timeout: 5000 });
+    } catch {
+      // fire-and-forget: nanobot CLI support is tentative
+    }
+  }
+
   private async writeMemoryEntry(
     manifest: GeneManifest,
     action: 'install' | 'uninstall',

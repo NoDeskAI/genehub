@@ -195,6 +195,64 @@ export const geneRelations = pgTable(
   ],
 );
 
+export const agentTemplates = pgTable(
+  'agent_templates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: 128 }).notNull(),
+    slug: varchar('slug', { length: 128 }).notNull(),
+    version: varchar('version', { length: 16 }).notNull(),
+    description: text('description').notNull().default(''),
+    short_description: varchar('short_description', { length: 256 }).notNull().default(''),
+    role: varchar('role', { length: 64 }),
+    category: varchar('category', { length: 32 }).notNull().default('general'),
+    tags: jsonb('tags').$type<string[]>().notNull().default([]),
+    icon: varchar('icon', { length: 64 }),
+    avatar_url: text('avatar_url'),
+    genomes: jsonb('genomes').$type<{ slug: string; version: string }[]>().notNull().default([]),
+    genes: jsonb('genes').$type<{ slug: string; version: string }[]>().notNull().default([]),
+    compatibility: jsonb('compatibility').$type<string[]>().notNull().default([]),
+    install_count: integer('install_count').notNull().default(0),
+    avg_rating: real('avg_rating').notNull().default(0),
+    author: jsonb('author')
+      .$type<{ type: string; id?: string; name: string }>()
+      .notNull()
+      .default({ type: 'human', name: '' }),
+    publisher_id: uuid('publisher_id').references(() => publishers.id),
+    is_published: boolean('is_published').notNull().default(false),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deleted_at: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('agent_templates_slug_idx').on(table.slug),
+    index('agent_templates_category_idx').on(table.category),
+  ],
+);
+
+export const agentTemplateVersions = pgTable(
+  'agent_template_versions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    template_id: uuid('template_id')
+      .notNull()
+      .references(() => agentTemplates.id, { onDelete: 'cascade' }),
+    version: varchar('version', { length: 16 }).notNull(),
+    genomes: jsonb('genomes').$type<{ slug: string; version: string }[]>().notNull(),
+    genes: jsonb('genes').$type<{ slug: string; version: string }[]>().notNull(),
+    changelog: text('changelog').notNull().default(''),
+    is_latest: boolean('is_latest').notNull().default(false),
+    published_at: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('agent_template_versions_template_id_idx').on(table.template_id),
+    uniqueIndex('agent_template_versions_template_version_idx').on(
+      table.template_id,
+      table.version,
+    ),
+  ],
+);
+
 export const geneVersions = pgTable(
   'gene_versions',
   {

@@ -129,6 +129,47 @@ export type GeneRelation = {
   created_at: string;
 };
 
+export type AgentTemplateGeneRef = {
+  slug: string;
+  version: string;
+};
+
+export type AgentTemplate = {
+  id: string;
+  name: string;
+  slug: string;
+  version: string;
+  description: string;
+  short_description: string;
+  role: string | null;
+  category: string;
+  tags: string[];
+  icon: string | null;
+  avatar_url: string | null;
+  genomes: AgentTemplateGeneRef[];
+  genes: AgentTemplateGeneRef[];
+  compatibility: string[];
+  install_count: number;
+  avg_rating: number;
+  author: Author;
+  publisher_id: string | null;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+};
+
+export type AgentTemplateVersion = {
+  id: string;
+  template_id: string;
+  version: string;
+  genomes: AgentTemplateGeneRef[];
+  genes: AgentTemplateGeneRef[];
+  changelog: string;
+  is_latest: boolean;
+  published_at: string;
+};
+
 export type GeneVersion = {
   id: string;
   gene_id: string;
