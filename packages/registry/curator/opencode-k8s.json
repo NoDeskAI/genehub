@@ -24,8 +24,9 @@
     "genehub": {
       "type": "remote",
       "url": "http://genehub/mcp",
+      "oauth": false,
       "headers": {
-        "Authorization": "Bearer ${GENEHUB_ADMIN_TOKEN}"
+        "Authorization": "Bearer {env:GENEHUB_ADMIN_TOKEN}"
       }
     }
   },
