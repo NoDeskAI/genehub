@@ -355,6 +355,8 @@ GitHub OAuth                   API Key
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/genes` | 搜索基因列表（支持 q / category / tags / compatibility / sort） |
+| GET | `/genes/tags` | 标签统计（tag + count） |
+| GET | `/genes/featured` | 推荐基因列表（按安装量/评分排序） |
 | GET | `/genes/:slug` | 基因详情（最新版本） |
 | GET | `/genes/:slug/versions` | 版本列表 |
 | GET | `/genes/:slug/versions/:version` | 指定版本详情 |
@@ -367,6 +369,7 @@ GitHub OAuth                   API Key
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/genomes` | 搜索基因组 |
+| GET | `/genomes/featured` | 推荐基因组列表 |
 | GET | `/genomes/:slug` | 基因组详情 |
 | GET | `/genomes/:slug/resolve` | 解析并返回所有基因的 manifest（含依赖） |
 
@@ -1020,9 +1023,10 @@ MINIMAX_API_KEY: sk-xxx
 
 - [x] GeneHub 侧基础设施：Webhook 端点、NoDeskClaw Adapter（Client + Converter + Sync）、批量导入脚本
 - [x] K8s 部署清单配置 `NODESKCLAW_DATABASE_URL` / `GENEHUB_WEBHOOK_SECRET`
-- [ ] NoDeskClaw 基因市场 API 代理转发到 GeneHub Registry（Phase 2，需改 NoDeskClaw 代码）
-- [ ] NoDeskClaw 学习引擎接入 GeneHub 标准学习协议（Phase 3，需改 NoDeskClaw 代码）
-- [ ] NoDeskClaw `genes` 表降级为本地缓存，GeneHub 为数据主源（Phase 4，需改 NoDeskClaw 代码）
+- [x] GeneHub 补齐缺失 API：`/genes/tags`、`/genes/featured`、`/genes/:slug/synergies`、`/genomes/featured`
+- [x] NoDeskClaw 基因市场 API 代理转发到 GeneHub Registry（Phase 2，`feat/genehub-integration` 分支）
+- [x] NoDeskClaw 学习引擎接入 GeneHub 标准学习协议（Phase 3，manifest 从 GeneHub 拉取）
+- [x] NoDeskClaw `genes` 表降级为本地缓存，GeneHub 为数据主源（Phase 4，`synced_at` 字段 + upsert 策略）
 
 #### M2.2 — ClawHub Adapter ✅
 
