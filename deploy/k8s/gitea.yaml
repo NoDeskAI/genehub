@@ -4,6 +4,7 @@ metadata:
   name: gitea-data
   namespace: nodeskclaw-system
 spec:
+  storageClassName: ebs-ssd
   accessModes:
     - ReadWriteOnce
   resources:
@@ -29,9 +30,11 @@ spec:
       labels:
         app: genehub-gitea
     spec:
+      imagePullSecrets:
+        - name: cr-nodesk-center-cn-beijing
       containers:
         - name: gitea
-          image: gitea/gitea:1.22
+          image: nodesk-center-cn-beijing.cr.volces.com/base-image/gitea:1.22
           ports:
             - containerPort: 3000
           env:
@@ -49,9 +52,13 @@ spec:
               value: "false"
             - name: GITEA__api__ENABLE_SWAGGER
               value: "false"
+            - name: GITEA__security__INSTALL_LOCK
+              value: "true"
           volumeMounts:
             - name: gitea-data
-              mountPath: /data
+              mountPath: /var/lib/gitea
+            - name: gitea-config
+              mountPath: /etc/gitea
           resources:
             requests:
               cpu: 50m
@@ -71,10 +78,14 @@ spec:
               port: 3000
             initialDelaySeconds: 30
             periodSeconds: 30
+      securityContext:
+        fsGroup: 1000
       volumes:
         - name: gitea-data
           persistentVolumeClaim:
             claimName: gitea-data
+        - name: gitea-config
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
