@@ -1012,7 +1012,7 @@ MINIMAX_API_KEY: sk-xxx
 - [x] TypeScript SDK（客户端 + OpenClaw Adapter L1 + nanobot Adapter L1 + Generic Adapter）
 - [x] Learning Engine（L1 浅层学习 + L2 深度学习引擎 + genehub-learner 元学习基因）
 - [x] CLI 完整命令集（install/uninstall/search/list/publish/init/config/learn）
-- [ ] NoDeskClaw 集成（→ M2.1）
+- [x] NoDeskClaw 集成（→ M2.1，已合并）
 - [x] 官方基因库（8 个高质量基因含 learning objectives + scenarios）
 
 ### M2 - 生态对接
@@ -1073,14 +1073,14 @@ MINIMAX_API_KEY: sk-xxx
 
 ## 十三、开放问题
 
-| # | 问题 | 倾向 | 状态 |
+| # | 问题 | 结论 | 状态 |
 |---|------|------|------|
-| 1 | GeneHub 是独立部署还是嵌入 NoDeskClaw | 独立部署，NoDeskClaw 作为客户端 | 待确认 |
-| 2 | 基因文件存储用数据库还是 Git 仓库 | 混合：元数据在 DB，内容在 Git | 待确认 |
-| 3 | Registry 是否对外公开 | 初期内网部署，后期开放公共 Registry | 待确认 |
+| 1 | GeneHub 是独立部署还是嵌入 NoDeskClaw | 独立部署，NoDeskClaw 作为客户端 | 已确认 |
+| 2 | 基因文件存储用数据库还是 Git 仓库 | 混合：元数据在 DB，历史版本内容在 Git（节省空间且支持版本回溯） | 已确认 |
+| 3 | Registry 是否对外公开 | 初期内网部署，后期开放公共 Registry | 已确认 |
 | 4 | ClawHub API 协议 | Convex HTTP API，技能格式为 SKILL.md + frontmatter，有完整 CLI | 已调研 |
 | 5 | Evomap GEP 协议 | Gene/Capsule/Event 三层结构，Evolver 引擎 + 能力市场 | 已调研 |
-| 6 | ClawHub 恶意技能过滤策略 | 跳过被标记/低星级技能，结合 VirusTotal 扫描结果 | 待确认 |
+| 6 | 恶意技能过滤策略 | 依靠 AI Curator Agent 自动发现并标记，无需外部扫描服务 | 已确认 |
 
 ---
 

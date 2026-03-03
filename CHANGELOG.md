@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2026-03-03
+
+### Added
+- Registry 新增 4 个 API 端点：`/genes/tags`、`/genes/featured`、`/genes/:slug/synergies`、`/genomes/featured`
+- NoDeskClaw 后端接入 GeneHub Registry（PR #2 已合并）：
+  - Phase 2: 基因市场 API 代理（GeneHub 优先 + 本地 fallback）
+  - Phase 3: 学习引擎从 GeneHub 拉取 manifest，安装上报 + 创造推送 + 效能同步
+  - Phase 4: genes 表降级为缓存（synced_at + upsert 策略）
+
+### Changed
+- 确认 6 个架构开放问题：独立部署、混合存储、初期内网、AI Curator 自主过滤恶意基因
+
+---
+
 ## v2026-03-02-14
 
 ### Added
