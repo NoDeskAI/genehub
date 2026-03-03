@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2026-03-04-2
+
+### Added
+- 版本历史支持点击展开：查看安装命令、git tag、文件内容（Gene / Genome / Template 通用）
+- 基因组 / 模板详情页补全版本历史、文件浏览、评审记录 Tab
+- MCP 新增 `review_genome` / `review_template` 工具
+- 基因组 / 模板发布自动触发 Curator 审核
+- Curator 提示词更新，支持基因组和模板审核
+
+### Changed
+- 基因文件存储架构重构，集成 Gitea 自托管 Git 管理
+- 基因组 / 模板集成 Gitea Git 管理（版本文件、archive 下载）
+- delete API 改为硬删除，同步清理 Gitea 仓库
+- MCP 端点改为 session-based 模式，仅接受 POST
+- pre-commit hook 自动同步 VERSION 到所有 package.json
+
+### Fixed
+- JWT 登录用户的管理员角色识别（`optionalAuth` 中间件未检查 `ADMIN_LOGINS`）
+- 管理员审核状态筛选：前端 "待审核" 映射值从 `draft` 改为 `pending`
+- OpenClaw / Nanobot adapter 多文件基因安装只复制 SKILL.md
+- `create` 时 slug 唯一检查过滤已删除记录
+- Gitea 仓库创建前检查是否已存在
+- Gitea K8s 部署配置修复
+
+---
+
 ## v2026-03-03-1
 
 ### Added
