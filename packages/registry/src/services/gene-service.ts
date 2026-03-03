@@ -4,6 +4,7 @@ import semver from 'semver';
 import { db, schema } from '../db/index.js';
 import { AppError } from '../middleware/error-handler.js';
 import { emitGeneEvent } from './gene-events.js';
+import * as gitea from './gitea-service.js';
 
 const { genes, geneVersions } = schema;
 
@@ -180,7 +181,11 @@ export type PublisherContext = {
   isAdmin?: boolean;
 };
 
-export async function createGene(manifestRaw: unknown, publisherCtx?: PublisherContext) {
+export async function createGene(
+  manifestRaw: unknown,
+  publisherCtx?: PublisherContext,
+  files?: Record<string, string>,
+) {
   const parsed = GeneManifestSchema.safeParse(manifestRaw);
   if (!parsed.success) {
     const detail = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
@@ -210,6 +215,35 @@ export async function createGene(manifestRaw: unknown, publisherCtx?: PublisherC
     ? { type: 'human' as const, name: publisherCtx.githubLogin ?? '' }
     : (manifest.author ?? { type: 'human' as const, name: '' });
 
+  let repositoryUrl: string | null = null;
+  let commitSha: string | null = null;
+  let gitTag: string | null = null;
+  let fileList: { path: string; size: number; sha: string }[] | null = null;
+  let fileCount = 0;
+
+  if (files && Object.keys(files).length > 0) {
+    const isGiteaReady = await gitea.isGiteaAvailable();
+    if (!isGiteaReady) throw AppError.giteaUnavailable();
+
+    try {
+      await gitea.createRepo(manifest.slug, manifest.short_description || manifest.description);
+      const tag = `v${manifest.version}`;
+      const result = await gitea.uploadFiles(manifest.slug, files, `feat: ${tag} initial publish`);
+      await gitea.createTag(manifest.slug, tag, result.sha);
+      repositoryUrl = gitea.getRepoUrl(manifest.slug);
+      commitSha = result.sha;
+      gitTag = tag;
+      fileList = Object.entries(files).map(([path, content]) => ({
+        path,
+        size: Buffer.byteLength(content, 'utf-8'),
+        sha: '',
+      }));
+      fileCount = fileList.length;
+    } catch (err) {
+      throw AppError.giteaRepoError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   const [gene] = await db
     .insert(genes)
     .values({
@@ -223,6 +257,8 @@ export async function createGene(manifestRaw: unknown, publisherCtx?: PublisherC
       icon: manifest.icon ?? null,
       source,
       source_ref: sourceRef,
+      repository_url: repositoryUrl,
+      file_count: fileCount,
       publisher_id: publisherCtx?.publisherId ?? null,
       manifest,
       compatibility,
@@ -238,6 +274,9 @@ export async function createGene(manifestRaw: unknown, publisherCtx?: PublisherC
     gene_id: gene.id,
     version: manifest.version,
     manifest,
+    commit_sha: commitSha,
+    git_tag: gitTag,
+    files: fileList,
     changelog: '初始版本',
     is_latest: true,
   });
@@ -247,7 +286,12 @@ export async function createGene(manifestRaw: unknown, publisherCtx?: PublisherC
   return gene;
 }
 
-export async function publishVersion(slug: string, manifestRaw: unknown, changelog?: string) {
+export async function publishVersion(
+  slug: string,
+  manifestRaw: unknown,
+  changelog?: string,
+  files?: Record<string, string>,
+) {
   const parsed = GeneManifestSchema.safeParse(manifestRaw);
   if (!parsed.success) {
     const detail = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
@@ -279,6 +323,36 @@ export async function publishVersion(slug: string, manifestRaw: unknown, changel
     throw AppError.manifestInvalid(`新版本 ${manifest.version} 必须大于当前版本 ${gene.version}`);
   }
 
+  let commitSha: string | null = null;
+  let gitTag: string | null = null;
+  let fileList: { path: string; size: number; sha: string }[] | null = null;
+  let fileCount = gene.file_count;
+
+  if (files && Object.keys(files).length > 0) {
+    const isGiteaReady = await gitea.isGiteaAvailable();
+    if (!isGiteaReady) throw AppError.giteaUnavailable();
+
+    try {
+      const hasRepo = await gitea.repoExists(slug);
+      if (!hasRepo) {
+        await gitea.createRepo(slug, manifest.short_description || manifest.description);
+      }
+      const tag = `v${manifest.version}`;
+      const result = await gitea.uploadFiles(slug, files, `feat: ${tag}`);
+      await gitea.createTag(slug, tag, result.sha);
+      commitSha = result.sha;
+      gitTag = tag;
+      fileList = Object.entries(files).map(([path, content]) => ({
+        path,
+        size: Buffer.byteLength(content, 'utf-8'),
+        sha: '',
+      }));
+      fileCount = fileList.length;
+    } catch (err) {
+      throw AppError.giteaRepoError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   await db
     .update(geneVersions)
     .set({ is_latest: false })
@@ -288,28 +362,37 @@ export async function publishVersion(slug: string, manifestRaw: unknown, changel
     gene_id: gene.id,
     version: manifest.version,
     manifest,
+    commit_sha: commitSha,
+    git_tag: gitTag,
+    files: fileList,
     changelog: changelog ?? '',
     is_latest: true,
   });
 
   const compatibility = manifest.compatibility.map((c) => c.product);
 
+  const updateValues: Record<string, unknown> = {
+    version: manifest.version,
+    name: manifest.name,
+    description: manifest.description,
+    short_description: manifest.short_description,
+    category: manifest.category,
+    tags: manifest.tags,
+    icon: manifest.icon ?? null,
+    manifest,
+    compatibility,
+    dependencies: manifest.dependencies,
+    synergies: manifest.synergies,
+    file_count: fileCount,
+    updated_at: new Date(),
+  };
+  if (!gene.repository_url && commitSha) {
+    updateValues.repository_url = gitea.getRepoUrl(slug);
+  }
+
   const [updated] = await db
     .update(genes)
-    .set({
-      version: manifest.version,
-      name: manifest.name,
-      description: manifest.description,
-      short_description: manifest.short_description,
-      category: manifest.category,
-      tags: manifest.tags,
-      icon: manifest.icon ?? null,
-      manifest,
-      compatibility,
-      dependencies: manifest.dependencies,
-      synergies: manifest.synergies,
-      updated_at: new Date(),
-    })
+    .set(updateValues)
     .where(eq(genes.id, gene.id))
     .returning();
 
@@ -365,6 +448,76 @@ export async function incrementInstallCount(slug: string) {
     .update(genes)
     .set({ install_count: sql`${genes.install_count} + 1`, updated_at: new Date() })
     .where(eq(genes.id, gene.id));
+}
+
+export async function getGeneFiles(slug: string, version?: string) {
+  const gene = await getGeneBySlug(slug);
+  if (!gene.repository_url) {
+    const manifest = gene.manifest as Record<string, unknown>;
+    const skillContent = (manifest as { skill?: { content?: string } }).skill?.content;
+    const fakeFiles = [{ path: 'gene.yaml', size: 0, sha: '', type: 'file' as const }];
+    if (skillContent) {
+      fakeFiles.push({ path: 'SKILL.md', size: skillContent.length, sha: '', type: 'file' });
+    }
+    return fakeFiles;
+  }
+
+  let ref = 'main';
+  if (version) {
+    const ver = await db
+      .select()
+      .from(geneVersions)
+      .where(and(eq(geneVersions.gene_id, gene.id), eq(geneVersions.version, version)));
+    if (ver.length > 0 && ver[0].git_tag) {
+      ref = ver[0].git_tag;
+    }
+  }
+
+  return gitea.getFileTree(slug, ref);
+}
+
+export async function getGeneFileContent(slug: string, filePath: string, version?: string) {
+  const gene = await getGeneBySlug(slug);
+  if (!gene.repository_url) {
+    if (filePath === 'SKILL.md') {
+      const manifest = gene.manifest as { skill?: { content?: string } };
+      return manifest.skill?.content ?? '';
+    }
+    throw AppError.geneNotFound(`${slug}/${filePath}`);
+  }
+
+  let ref = 'main';
+  if (version) {
+    const ver = await db
+      .select()
+      .from(geneVersions)
+      .where(and(eq(geneVersions.gene_id, gene.id), eq(geneVersions.version, version)));
+    if (ver.length > 0 && ver[0].git_tag) {
+      ref = ver[0].git_tag;
+    }
+  }
+
+  return gitea.getFileContent(slug, filePath, ref);
+}
+
+export async function getGeneArchiveStream(slug: string, version?: string) {
+  const gene = await getGeneBySlug(slug);
+  if (!gene.repository_url) {
+    throw AppError.giteaRepoError(`基因 ${slug} 无文件仓库，请使用 manifest API`);
+  }
+
+  let ref = 'main';
+  if (version) {
+    const ver = await db
+      .select()
+      .from(geneVersions)
+      .where(and(eq(geneVersions.gene_id, gene.id), eq(geneVersions.version, version)));
+    if (ver.length > 0 && ver[0].git_tag) {
+      ref = ver[0].git_tag;
+    }
+  }
+
+  return gitea.getArchiveStream(slug, ref);
 }
 
 export async function reportEffectiveness(

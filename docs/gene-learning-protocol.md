@@ -78,10 +78,13 @@ synergies:                             # 协同推荐（非强依赖）
   - "test-driven-development"
 
 # === 技能内容 ===
+# 技能内容以独立文件存储在基因目录中（SKILL.md），不再嵌入 manifest。
+# gene.yaml 中 skill.file 指向文件路径，skill.content 仅用于向后兼容。
 skill:
   name: "code-review"                  # 技能名（用于文件/目录命名）
   always: false                        # true = 始终激活, false = 按需调用
-  content: |                           # 完整的技能描述（SKILL.md 内容）
+  file: "SKILL.md"                     # 技能文件路径（推荐，存储在 Gitea 仓库中）
+  content: |                           # 向后兼容：内联内容（新基因不建议使用）
     ---
     name: code-review
     description: 深度代码审查与优化建议
@@ -153,7 +156,33 @@ learning:
       expected_focus: "security"
 ```
 
-### 2.2 字段说明
+### 2.2 基因目录结构
+
+每个基因以目录形式存储，发布时整个目录上传到 Registry（存入 Gitea），安装时以 tarball 下载：
+
+```
+<gene-slug>/
+├── gene.yaml        # 基因元数据（必须）
+├── SKILL.md         # 技能内容（推荐）
+├── scripts/         # 脚本文件（可选）
+│   └── setup.sh
+├── rules/           # 规则文件（可选）
+│   └── naming.mdc
+├── templates/       # 模板文件（可选）
+│   └── prompt.md
+└── assets/          # 静态资源（可选）
+    └── diagram.png
+```
+
+**文件存储与版本管理**：
+
+- 每个基因对应 Gitea 上一个 Git 仓库（`genes/<slug>`）
+- 每次发布创建 git tag（`v1.0.0`），对应一个不可变版本
+- commit SHA 记录在 DB 的 `gene_versions.commit_sha` 中
+- 安装时通过 `GET /genes/:slug/archive?version=x.y.z` 下载 tarball
+- DB 仅存索引元数据，文件内容全部由 Gitea 管理
+
+### 2.3 字段说明
 
 #### 必填字段
 

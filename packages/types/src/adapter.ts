@@ -40,6 +40,17 @@ export interface GeneAdapter {
 
   install(manifest: GeneManifest, options?: InstallOptions): Promise<InstallResult>;
 
+  /**
+   * Install a gene from an extracted directory containing all gene files.
+   * Used for multi-file genes downloaded as tarballs from the registry.
+   * Falls back to manifest-based install if not implemented.
+   */
+  installFromDirectory?(
+    geneDir: string,
+    manifest: GeneManifest,
+    options?: InstallOptions,
+  ): Promise<InstallResult>;
+
   uninstall(slug: string, options?: UninstallOptions): Promise<UninstallResult>;
 
   list(): Promise<InstalledGene[]>;
@@ -48,20 +59,10 @@ export interface GeneAdapter {
 
   getInstalledVersion(slug: string): Promise<string | null>;
 
-  /**
-   * Notify the host that a skill was added/removed/updated.
-   * Implementations should invalidate caches and inject notifications
-   * so the agent sees the change immediately.
-   */
   notifySkillChange?(
     geneName: string,
     action: 'installed' | 'updated' | 'uninstalled',
   ): Promise<void>;
 
-  /**
-   * Trigger the bot to process learning tasks via the platform's CLI.
-   * Called after learning task files are created, so the bot can
-   * immediately start learning without waiting for the next conversation.
-   */
   triggerLearning?(prompt: string): Promise<void>;
 }

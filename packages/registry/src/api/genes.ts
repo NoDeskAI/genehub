@@ -70,6 +70,33 @@ genesRouter.get('/:slug/versions/:version', async (c) => {
   return success(c, ver);
 });
 
+genesRouter.get('/:slug/files', async (c) => {
+  const slug = c.req.param('slug');
+  const version = c.req.query('version');
+  const files = await geneService.getGeneFiles(slug, version);
+  return success(c, files);
+});
+
+genesRouter.get('/:slug/files/*', async (c) => {
+  const slug = c.req.param('slug');
+  const filePath = c.req.path.replace(`/api/v1/genes/${slug}/files/`, '');
+  const version = c.req.query('version');
+  const content = await geneService.getGeneFileContent(slug, filePath, version);
+  return success(c, { path: filePath, content });
+});
+
+genesRouter.get('/:slug/archive', async (c) => {
+  const slug = c.req.param('slug');
+  const version = c.req.query('version');
+  const stream = await geneService.getGeneArchiveStream(slug, version);
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'application/gzip',
+      'Content-Disposition': `attachment; filename="${slug}.tar.gz"`,
+    },
+  });
+});
+
 genesRouter.post('/', requireAuth('publisher'), async (c) => {
   const body = await c.req.json();
   const publisherCtx = {
@@ -77,14 +104,19 @@ genesRouter.post('/', requireAuth('publisher'), async (c) => {
     githubLogin: c.get('githubLogin') as string | undefined,
     isAdmin: (c.get('authRole') as string) === 'admin',
   };
-  const gene = await geneService.createGene(body.manifest ?? body, publisherCtx);
+  const gene = await geneService.createGene(body.manifest ?? body, publisherCtx, body.files);
   return success(c, gene);
 });
 
 genesRouter.post('/:slug/versions', requireAuth('publisher'), async (c) => {
   const slug = c.req.param('slug');
   const body = await c.req.json();
-  const gene = await geneService.publishVersion(slug, body.manifest ?? body, body.changelog);
+  const gene = await geneService.publishVersion(
+    slug,
+    body.manifest ?? body,
+    body.changelog,
+    body.files,
+  );
   return success(c, gene);
 });
 

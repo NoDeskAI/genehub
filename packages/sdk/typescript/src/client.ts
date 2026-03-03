@@ -80,18 +80,54 @@ export class GeneHubClient {
     return this.request<Genome>(`/api/v1/genomes/${slug}`);
   }
 
-  async publishGene(manifest: GeneManifest): Promise<Gene> {
+  async publishGene(manifest: GeneManifest, files?: Record<string, string>): Promise<Gene> {
     return this.request<Gene>('/api/v1/genes', {
       method: 'POST',
-      body: JSON.stringify({ manifest }),
+      body: JSON.stringify({ manifest, files }),
     });
   }
 
-  async publishVersion(slug: string, manifest: GeneManifest, changelog?: string): Promise<Gene> {
+  async publishVersion(
+    slug: string,
+    manifest: GeneManifest,
+    changelog?: string,
+    files?: Record<string, string>,
+  ): Promise<Gene> {
     return this.request<Gene>(`/api/v1/genes/${slug}/versions`, {
       method: 'POST',
-      body: JSON.stringify({ manifest, changelog }),
+      body: JSON.stringify({ manifest, changelog, files }),
     });
+  }
+
+  async getGeneFiles(
+    slug: string,
+    version?: string,
+  ): Promise<{ path: string; size: number; sha: string; type: string }[]> {
+    const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+    return this.request(`/api/v1/genes/${slug}/files${qs}`);
+  }
+
+  async getGeneFileContent(
+    slug: string,
+    filePath: string,
+    version?: string,
+  ): Promise<{ path: string; content: string }> {
+    const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+    return this.request(`/api/v1/genes/${slug}/files/${filePath}${qs}`);
+  }
+
+  async downloadArchive(slug: string, version?: string): Promise<ArrayBuffer> {
+    const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+    const url = `${this.baseUrl}/api/v1/genes/${slug}/archive${qs}`;
+    const headers: Record<string, string> = {};
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+    }
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      throw new Error(`[GeneHub] Download archive failed: HTTP ${res.status}`);
+    }
+    return res.arrayBuffer();
   }
 
   async resolve(

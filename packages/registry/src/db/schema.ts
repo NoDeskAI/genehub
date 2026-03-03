@@ -61,6 +61,8 @@ export const genes = pgTable(
     icon: varchar('icon', { length: 64 }),
     source: varchar('source', { length: 16 }).notNull().default('official'),
     source_ref: text('source_ref'),
+    repository_url: text('repository_url'),
+    file_count: integer('file_count').notNull().default(0),
     manifest: jsonb('manifest').notNull(),
     compatibility: jsonb('compatibility').$type<string[]>().notNull().default([]),
     dependencies: jsonb('dependencies')
@@ -262,6 +264,9 @@ export const geneVersions = pgTable(
       .references(() => genes.id, { onDelete: 'cascade' }),
     version: varchar('version', { length: 16 }).notNull(),
     manifest: jsonb('manifest').notNull(),
+    commit_sha: varchar('commit_sha', { length: 40 }),
+    git_tag: varchar('git_tag', { length: 64 }),
+    files: jsonb('files').$type<{ path: string; size: number; sha: string }[]>(),
     changelog: text('changelog').notNull().default(''),
     is_latest: boolean('is_latest').notNull().default(false),
     published_at: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),

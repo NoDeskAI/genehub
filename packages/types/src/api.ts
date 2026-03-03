@@ -140,8 +140,19 @@ export type PublishAgentTemplateVersionRequest = {
   changelog?: string;
 };
 
+export type GeneFileEntry = {
+  path: string;
+  size: number;
+  sha: string;
+  type: 'file' | 'dir';
+};
+
+export type GeneFileTreeResponse = ApiResponse<GeneFileEntry[]>;
+export type GeneFileContentResponse = ApiResponse<{ path: string; content: string }>;
+
 export type CreateGeneRequest = {
   manifest: Gene['manifest'];
+  files?: Record<string, string>;
   source?: string;
   source_ref?: string;
 };
@@ -196,6 +207,8 @@ export const ERROR_CODES = {
   TEMPLATE_VERSION_NOT_FOUND: 60005,
   DEPENDENCY_RESOLVE_FAILED: 40001,
   COMPATIBILITY_MISMATCH: 40002,
+  GITEA_UNAVAILABLE: 50101,
+  GITEA_REPO_ERROR: 50102,
   LEARNING_TASK_TIMEOUT: 50001,
   LEARNING_CALLBACK_FAILED: 50002,
   INTERNAL_ERROR: 90001,

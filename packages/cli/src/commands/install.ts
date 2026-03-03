@@ -1,6 +1,8 @@
-import { homedir } from 'node:os';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { detectAdapter, GeneHubClient, getAdapter, LearningEngine } from '@nodeskai/genehub-sdk';
+import type { InstallResult } from '@nodeskai/genehub-types';
 import { Command } from 'commander';
 import ora from 'ora';
 import { loadConfig } from '../config.js';
@@ -12,6 +14,18 @@ function parseSlugVersion(input: string): { slug: string; version?: string } {
     return { slug: input.slice(0, atIdx), version: input.slice(atIdx + 1) };
   }
   return { slug: input };
+}
+
+async function extractTarGz(buffer: ArrayBuffer, destDir: string): Promise<void> {
+  await mkdir(destDir, { recursive: true });
+  const { extract } = await import('tar');
+  const tarPath = join(tmpdir(), `genehub-${Date.now()}.tar.gz`);
+  await writeFile(tarPath, Buffer.from(buffer));
+  try {
+    await extract({ file: tarPath, cwd: destDir, strip: 1 });
+  } finally {
+    await rm(tarPath, { force: true });
+  }
 }
 
 export const installCommand = new Command('install')
@@ -43,11 +57,37 @@ export const installCommand = new Command('install')
       }
 
       const installSpinner = ora('安装中...').start();
-      const result = await adapter.install(manifest, {
-        force: opts.force,
-        targetPath: opts.target,
-      });
-      installSpinner.succeed('安装完成');
+
+      let result: InstallResult | undefined;
+      let isMultiFile = false;
+
+      try {
+        const archive = await client.downloadArchive(slug, version);
+        const tempDir = join(tmpdir(), `genehub-install-${slug}-${Date.now()}`);
+        await extractTarGz(archive, tempDir);
+        isMultiFile = true;
+
+        if (adapter.installFromDirectory) {
+          result = await adapter.installFromDirectory(tempDir, manifest, {
+            force: opts.force,
+            targetPath: opts.target,
+          });
+        } else {
+          result = await adapter.install(manifest, {
+            force: opts.force,
+            targetPath: opts.target,
+          });
+        }
+
+        await rm(tempDir, { recursive: true, force: true });
+      } catch {
+        result = await adapter.install(manifest, {
+          force: opts.force,
+          targetPath: opts.target,
+        });
+      }
+
+      installSpinner.succeed(isMultiFile ? '安装完成（多文件基因）' : '安装完成');
 
       output.ok(`${result.slug}@${result.version} 安装成功`);
       output.info(`文件: ${result.files.join(', ')}`);

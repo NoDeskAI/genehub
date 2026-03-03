@@ -224,8 +224,10 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | icon | string(64) | 图标名（lucide 图标标识） |
 | source | enum | `official` / `clawhub` / `evomap` / `community` / `agent` / `github` |
 | source_ref | string | 外部来源引用（ClawHub URL / Evomap ID / GitHub login） |
+| repository_url | text nullable | Gitea 仓库路径（如 `genes/clean-code`） |
+| file_count | int | 基因文件数量 |
 | publisher_id | FK nullable | 发布者（见 3.3 节） |
-| manifest | JSON | **标准基因清单**（见第四章） |
+| manifest | JSON | **标准基因清单**（见第四章），仅存 gene.yaml 解析结果 |
 | compatibility | JSON | 兼容产品列表 `["openclaw", "nanobot"]`（初期仅支持这两个产品） |
 | dependencies | JSON | 依赖基因 `[{"slug": "xxx", "version": ">=1.0"}]` |
 | synergies | JSON | 协同推荐基因 |
@@ -314,6 +316,9 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | gene_id | FK | 所属基因 |
 | version | string(16) | 版本号 |
 | manifest | JSON | 该版本的完整 manifest |
+| commit_sha | varchar(40) nullable | Gitea commit SHA |
+| git_tag | varchar(64) nullable | Gitea git tag（如 `v1.0.0`） |
+| files | JSON nullable | 文件列表 `[{path, size, sha}]` |
 | changelog | text | 变更日志 |
 | is_latest | bool | 是否最新 |
 | published_at | datetime | 发布时间 |
@@ -501,7 +506,7 @@ GitHub OAuth                   API Key
 |------|------|------|
 | Registry API | TypeScript + Hono | 轻量高性能，运行在 Node.js / Bun / Edge |
 | 数据库 | PostgreSQL | 与 NoDeskClaw 同生态，支持 JSONB 全文搜索 |
-| 基因文件存储 | 文件系统 + Git | 基因内容版本化天然适合 Git 管理 |
+| 基因文件存储 | Gitea（自托管 Git） | 每个基因一个 Git 仓库，git tag 管理版本，DB 仅存索引 |
 | 搜索引擎 | PostgreSQL ILIKE（当前）/ Meilisearch（Future） | 先简后繁 |
 | CLI | TypeScript (tsx) | 跨平台，npm 全局安装 |
 | Web 前端 | React 19 + Vite 7 + Tailwind CSS 4 + Radix UI | 基因浏览、搜索、API Key 管理（6 个页面） |
@@ -528,6 +533,9 @@ GitHub OAuth                   API Key
 | GET | `/genes/:slug/versions` | 版本列表 | 已实现 |
 | GET | `/genes/:slug/versions/:version` | 指定版本详情 | 已实现 |
 | GET | `/genes/:slug/manifest` | 获取 manifest（支持 `?version=x.y.z`） | 已实现 |
+| GET | `/genes/:slug/files` | 文件列表（支持 `?version=x.y.z`） | 已实现 |
+| GET | `/genes/:slug/files/*` | 获取文件内容（支持 `?version=x.y.z`） | 已实现 |
+| GET | `/genes/:slug/archive` | 下载 tarball（支持 `?version=x.y.z`） | 已实现 |
 | GET | `/genes/:slug/variants` | 变体列表（基于 `parent_gene_id`） | Future |
 | GET | `/genes/:slug/synergies` | 协同推荐 | 已实现 |
 | GET | `/genes/:slug/reviews` | 审核记录列表（分页） | 已实现 |
@@ -685,7 +693,7 @@ genehub/
 │   ├── registry/                   # Gene Registry Service（@nodeskai/genehub-registry）
 │   │   ├── src/
 │   │   │   ├── api/                # API 路由（genes / genomes / auth / keys / reviews / resolve / sync / webhooks）
-│   │   │   ├── services/           # 业务逻辑（gene-service / genome-service / federated-search / dependency-resolver / gene-events）
+│   │   │   ├── services/           # 业务逻辑（gene-service / genome-service / gitea-service / federated-search / dependency-resolver / gene-events）
 │   │   │   ├── db/                 # 数据库（Drizzle schema + migrations + seed）
 │   │   │   ├── middleware/         # 中间件（auth / error-handler / response）
 │   │   │   ├── mcp/               # MCP Server（20 个工具）
@@ -731,10 +739,12 @@ genehub/
 ├── deploy/                         # 部署配置
 │   └── k8s/
 │       ├── genehub.yaml            # Registry + Web 部署
+│       ├── gitea.yaml              # Gitea 基因文件存储
 │       ├── curator.yaml            # Curator CronJob + Listener
 │       └── postgres.yaml           # PostgreSQL StatefulSet
 │
 ├── scripts/                        # 工具脚本
+│   ├── init-gitea.sh              # Gitea 初始化（创建 admin + org）
 │   └── sync-version.mjs           # 版本号同步
 │
 ├── .github/workflows/              # CI/CD
@@ -946,11 +956,14 @@ genehub install code-review
   1. 查询 Registry: GET /genes/code-review/manifest
   2. 解析依赖: POST /resolve { genes: ["code-review"] }
   3. 检测目标产品: 自动识别当前环境（openclaw / nanobot / 通用）
-  4. 下载 manifest + 依赖
+  4. 下载基因文件:
+     ├── 优先: GET /genes/code-review/archive -> tar.gz 下载 + 解压到临时目录
+     └── 降级: 使用 manifest 中的 skill.content（旧基因兼容）
   5. 调用对应 Adapter 注入基因
+     ├── 多文件基因: adapter.installFromDirectory(tempDir, manifest)
      ├── OpenClaw: 写入 SKILL.md + 合并 openclaw.json
-     ├── nanobot: 配置注入（待定）
-     └── Generic: 输出 gene.yaml 到本地目录
+     ├── nanobot: 配置注入
+     └── Generic: 复制整个基因目录到 .genehub/genes/
   6. 验证安装结果
   7. 输出安装报告
 ```
@@ -1391,7 +1404,7 @@ Agent 涌现的新能力可以回馈到基因生态：
 | # | 问题 | 结论 | 状态 |
 |---|------|------|------|
 | 1 | GeneHub 是独立部署还是嵌入 NoDeskClaw | 独立部署，NoDeskClaw 作为客户端 | 已确认 |
-| 2 | 基因文件存储用数据库还是 Git 仓库 | 混合：元数据在 DB，历史版本内容在 Git（节省空间且支持版本回溯） | 已确认 |
+| 2 | 基因文件存储用数据库还是 Git 仓库 | Gitea 自托管 Git：每个基因一个仓库，git tag 管理版本，DB 仅存索引元数据 | 已实现 |
 | 3 | Registry 是否对外公开 | 初期内网部署，后期开放公共 Registry | 已确认 |
 | 4 | ClawHub API 协议 | Convex HTTP API，技能格式为 SKILL.md + frontmatter，有完整 CLI | 已调研 |
 | 5 | Evomap GEP 协议 | Gene/Capsule/Event 三层结构，Evolver 引擎 + 能力市场 | 已调研 |

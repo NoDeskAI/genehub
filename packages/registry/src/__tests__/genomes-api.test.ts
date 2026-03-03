@@ -62,7 +62,7 @@ describe('Genomes API', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer ghb_admin_dev',
+        Authorization: 'Bearer admin-dev-token',
       },
       body: JSON.stringify({
         name: 'Test Genome',
@@ -81,7 +81,7 @@ describe('Genomes API', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer ghb_admin_dev',
+        Authorization: 'Bearer admin-dev-token',
       },
       body: JSON.stringify({
         name: 'Test Genome',
@@ -101,7 +101,7 @@ describe('Genomes API', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer ghb_admin_dev',
+        Authorization: 'Bearer admin-dev-token',
       },
       body: JSON.stringify({
         name: 'Test Genome',
@@ -120,7 +120,7 @@ describe('Genomes API', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer ghb_admin_dev',
+        Authorization: 'Bearer admin-dev-token',
       },
       body: JSON.stringify({ genes: [{ slug: 'x', version: '1.0.0' }] }),
     });

@@ -13,7 +13,15 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { type Gene, type GeneVersion, getGene, getGeneVersions } from '@/api/client';
+import {
+  type Gene,
+  type GeneFileEntry,
+  type GeneVersion,
+  getGene,
+  getGeneFileContent,
+  getGeneFiles,
+  getGeneVersions,
+} from '@/api/client';
 import LucideIcon from '@/components/LucideIcon';
 import ReviewList from '@/components/ReviewList';
 import { Badge } from '@/components/ui/badge';
@@ -107,6 +115,95 @@ function VersionHistory({ versions }: { versions: GeneVersion[] }) {
           </time>
         </div>
       ))}
+    </div>
+  );
+}
+
+function FileExplorer({ slug }: { slug: string }) {
+  const [files, setFiles] = useState<GeneFileEntry[]>([]);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getGeneFiles(slug)
+      .then(setFiles)
+      .catch(() => setFiles([]))
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  useEffect(() => {
+    if (!selectedFile) {
+      setFileContent('');
+      return;
+    }
+    getGeneFileContent(slug, selectedFile)
+      .then((data) => setFileContent(data.content))
+      .catch(() => setFileContent('(无法加载文件内容)'));
+  }, [slug, selectedFile]);
+
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-6 w-1/2" />
+      </div>
+    );
+  }
+
+  if (files.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Layers className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+        <p className="text-muted">暂无文件信息</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <div className="grid grid-cols-3 divide-x divide-border min-h-[300px]">
+        <div className="col-span-1 bg-gray-50">
+          <div className="px-3 py-2 border-b border-border text-xs font-medium text-muted">
+            文件列表 ({files.length})
+          </div>
+          <div className="divide-y divide-border">
+            {files.map((f) => (
+              <button
+                type="button"
+                key={f.path}
+                onClick={() => setSelectedFile(f.path === selectedFile ? null : f.path)}
+                className={`w-full text-left px-3 py-2 text-sm font-mono hover:bg-white transition ${
+                  selectedFile === f.path ? 'bg-white text-primary font-medium' : 'text-gray-700'
+                }`}
+              >
+                {f.path}
+                <span className="text-xs text-muted ml-2">
+                  {f.size > 1024 ? `${(f.size / 1024).toFixed(1)}KB` : `${f.size}B`}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="col-span-2">
+          {selectedFile ? (
+            <>
+              <div className="px-4 py-2 border-b border-border flex items-center justify-between bg-gray-50">
+                <span className="text-sm font-mono text-gray-700">{selectedFile}</span>
+                <CopyButton text={fileContent} />
+              </div>
+              <pre className="p-4 text-sm font-mono text-gray-800 overflow-auto max-h-[500px] whitespace-pre-wrap">
+                {fileContent}
+              </pre>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted text-sm">
+              选择文件查看内容
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -217,6 +314,7 @@ export default function GeneDetail() {
           <Tabs defaultValue="overview">
             <TabsList>
               <TabsTrigger value="overview">概述</TabsTrigger>
+              <TabsTrigger value="files">文件</TabsTrigger>
               <TabsTrigger value="reviews">评审记录</TabsTrigger>
               <TabsTrigger value="versions">版本历史</TabsTrigger>
             </TabsList>
@@ -322,6 +420,8 @@ export default function GeneDetail() {
                 <InstallBlock slug={gene.slug} />
               </div>
             </TabsContent>
+
+            <TabsContent value="files">{slug && <FileExplorer slug={slug} />}</TabsContent>
 
             <TabsContent value="reviews">{slug && <ReviewList slug={slug} />}</TabsContent>
 

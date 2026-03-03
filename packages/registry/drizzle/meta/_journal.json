@@ -29,6 +29,13 @@
       "when": 1772526127767,
       "tag": "0003_silly_maestro",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772531305543,
+      "tag": "0004_illegal_infant_terrible",
+      "breakpoints": true
     }
   ]
 }

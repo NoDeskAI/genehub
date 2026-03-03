@@ -168,6 +168,24 @@ export class AppError extends Error {
     return new AppError(ERROR_CODES.PERMISSION_DENIED, 'permission_denied', '权限不足', 403);
   }
 
+  static giteaUnavailable() {
+    return new AppError(
+      ERROR_CODES.GITEA_UNAVAILABLE,
+      'gitea_unavailable',
+      'Gitea 文件存储服务不可用',
+      503,
+    );
+  }
+
+  static giteaRepoError(detail: string) {
+    return new AppError(
+      ERROR_CODES.GITEA_REPO_ERROR,
+      'gitea_repo_error',
+      `Gitea 仓库操作失败: ${detail}`,
+      502,
+    );
+  }
+
   static internal(message = '内部错误') {
     return new AppError(ERROR_CODES.INTERNAL_ERROR, 'internal_error', message, 500);
   }

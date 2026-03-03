@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type {
   GeneManifest,
@@ -46,6 +46,38 @@ export class GenericAdapter extends BaseAdapter {
       await writeFile(skillPath, manifest.skill.content, 'utf-8');
       files.push(skillPath);
     }
+
+    return {
+      success: true,
+      slug: manifest.slug,
+      version: manifest.version,
+      files,
+      needsRestart: false,
+      dependencies: manifest.dependencies.map((d) => d.slug),
+    };
+  }
+
+  protected override async doInstallFromDirectory(
+    geneDir: string,
+    manifest: GeneManifest,
+    options?: InstallOptions,
+  ): Promise<InstallResult> {
+    const targetDir = options?.targetPath
+      ? join(options.targetPath, manifest.slug)
+      : join(this.genesDir, manifest.slug);
+
+    await cp(geneDir, targetDir, { recursive: true });
+
+    const files: string[] = [];
+    async function collectFiles(dir: string) {
+      const entries = await readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) await collectFiles(full);
+        else files.push(full);
+      }
+    }
+    await collectFiles(targetDir);
 
     return {
       success: true,

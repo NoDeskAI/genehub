@@ -216,6 +216,27 @@ export async function getTemplate(slug: string): Promise<AgentTemplate> {
   return get<AgentTemplate>(`/templates/${slug}`);
 }
 
+export type GeneFileEntry = {
+  path: string;
+  size: number;
+  sha: string;
+  type: string;
+};
+
+export async function getGeneFiles(slug: string, version?: string): Promise<GeneFileEntry[]> {
+  const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+  return get<GeneFileEntry[]>(`/genes/${slug}/files${qs}`);
+}
+
+export async function getGeneFileContent(
+  slug: string,
+  filePath: string,
+  version?: string,
+): Promise<{ path: string; content: string }> {
+  const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+  return get<{ path: string; content: string }>(`/genes/${slug}/files/${filePath}${qs}`);
+}
+
 export async function federatedSearch(params: {
   q: string;
   category?: string;

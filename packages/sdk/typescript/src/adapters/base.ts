@@ -19,10 +19,28 @@ export abstract class BaseAdapter implements GeneAdapter {
     return result;
   }
 
+  async installFromDirectory(
+    geneDir: string,
+    manifest: GeneManifest,
+    options?: InstallOptions,
+  ): Promise<InstallResult> {
+    const result = await this.doInstallFromDirectory(geneDir, manifest, options);
+    await this.onPostInstall(manifest, result);
+    return result;
+  }
+
   protected abstract doInstall(
     manifest: GeneManifest,
     options?: InstallOptions,
   ): Promise<InstallResult>;
+
+  protected async doInstallFromDirectory(
+    _geneDir: string,
+    manifest: GeneManifest,
+    options?: InstallOptions,
+  ): Promise<InstallResult> {
+    return this.doInstall(manifest, options);
+  }
 
   protected async onPostInstall(_manifest: GeneManifest, _result: InstallResult): Promise<void> {}
 
