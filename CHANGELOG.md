@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2026-03-03-1
+
+### Added
+- AI 员工模板（Agent Template）完整实体：数据库表、CRUD API（11 个端点）、版本管理
+- AI 员工模板前端页面：TemplateBrowse 浏览 + TemplateDetail 详情 + TemplateCard 组件
+- 3 个 MCP 工具：`list_templates`、`get_template`、`suggest_template`
+- GeneAdapter 接口新增 `triggerLearning` 方法，OpenClaw / Nanobot Adapter 实现
+- CLI `install --learn` 支持自动触发 bot 对话学习
+- 9 个 Agent Template API 端到端测试
+
+### Changed
+- 架构文档新增三层能力体系（Gene -> Genome -> Agent Template）、企业私有基因库、学习通道设计
+- 学习协议文档补充对话触发学习与串行学习章节
+
+### Fixed
+- SDK / types 的 `package.json` exports 改用 `publishConfig` 方案，开发时直接引用源码，避免 stale dist 导致新方法不可用
+
+---
+
 ## v2026-03-03
 
 ### Added
