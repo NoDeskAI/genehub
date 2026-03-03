@@ -424,8 +424,7 @@ export async function deleteTemplate(slug: string) {
   const template = await getTemplateBySlug(slug);
 
   const [deleted] = await db
-    .update(agentTemplates)
-    .set({ deleted_at: new Date(), is_published: false, updated_at: new Date() })
+    .delete(agentTemplates)
     .where(eq(agentTemplates.id, template.id))
     .returning();
 

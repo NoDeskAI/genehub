@@ -432,11 +432,7 @@ export async function updateGene(slug: string, updates: Record<string, unknown>)
 export async function deleteGene(slug: string) {
   const gene = await getGeneBySlug(slug);
 
-  const [deleted] = await db
-    .update(genes)
-    .set({ deleted_at: new Date(), is_published: false, updated_at: new Date() })
-    .where(eq(genes.id, gene.id))
-    .returning();
+  const [deleted] = await db.delete(genes).where(eq(genes.id, gene.id)).returning();
 
   return deleted;
 }
