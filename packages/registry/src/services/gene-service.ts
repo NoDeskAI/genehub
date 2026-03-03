@@ -373,15 +373,24 @@ export async function reportEffectiveness(
 ) {
   const gene = await getGeneBySlug(slug);
 
+  const currentScore = gene.effectiveness_score ?? 0;
   const currentRating = gene.avg_rating ?? 0;
-  const currentCount = gene.install_count || 1;
-  const newRating = (currentRating * (currentCount - 1) + report.value) / currentCount;
+
+  // effectiveness_score: EMA (exponential moving average), alpha = 0.3
+  const alpha = 0.3;
+  const newEffectiveness =
+    currentScore === 0 ? report.value : currentScore * (1 - alpha) + report.value * alpha;
+
+  // avg_rating: only updated by positive signals (user_positive / task_success)
+  const isPositive =
+    report.metric_type === 'user_positive' || report.metric_type === 'task_success';
+  const newRating = isPositive ? Math.max(currentRating, newEffectiveness) : currentRating;
 
   await db
     .update(genes)
     .set({
+      effectiveness_score: Math.round(newEffectiveness * 100) / 100,
       avg_rating: Math.round(newRating * 100) / 100,
-      effectiveness_score: Math.round(newRating * 100) / 100,
       updated_at: new Date(),
     })
     .where(eq(genes.id, gene.id));
