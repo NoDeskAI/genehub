@@ -13,9 +13,11 @@ import { useAuth } from '@/hooks/useAuth';
 
 const REVIEW_STATUS_OPTIONS = [
   { value: '', label: '全部状态' },
-  { value: 'draft', label: '待审核' },
+  { value: 'pending', label: '待审核' },
   { value: 'approved', label: '已通过' },
-  { value: 'flagged', label: '已拒绝' },
+  { value: 'needs_improvement', label: '待改进' },
+  { value: 'flagged', label: '已标记删除' },
+  { value: 'rejected', label: '已拒绝' },
 ];
 
 const SORT_OPTIONS = [
