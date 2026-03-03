@@ -52,7 +52,7 @@ app.get('/api/info', (c) =>
 // MCP Streamable HTTP endpoint — token-gated for Curator / authorized clients
 const MCP_TOKEN = process.env.GENEHUB_ADMIN_TOKEN;
 
-app.all('/mcp', async (c) => {
+app.post('/mcp', async (c) => {
   if (MCP_TOKEN) {
     const auth = c.req.header('Authorization');
     if (auth !== `Bearer ${MCP_TOKEN}`) {
@@ -61,6 +61,9 @@ app.all('/mcp', async (c) => {
   }
   return handleMcpRequest(c.req.raw);
 });
+
+app.delete('/mcp', (c) => c.text('', 405));
+app.get('/mcp', (c) => c.text('', 405));
 
 app.route('/auth', authRouter);
 app.route('/api/v1/genes', genesRouter);
