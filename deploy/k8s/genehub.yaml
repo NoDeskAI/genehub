@@ -61,6 +61,8 @@ spec:
                 secretKeyRef:
                   name: genehub-app-secret
                   key: GENEHUB_ADMIN_TOKEN
+            - name: GENEHUB_ADMIN_LOGINS
+              value: "xzq-xu"
             - name: GITEA_URL
               value: "http://genehub-gitea:3000"
           resources:
