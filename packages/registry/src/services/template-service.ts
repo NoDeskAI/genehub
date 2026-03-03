@@ -162,13 +162,9 @@ async function uploadFilesToGitea(
   if (!isGiteaReady) throw AppError.giteaUnavailable();
 
   try {
-    if (isNew) {
+    const hasRepo = await gitea.repoExists(slug, GITEA_ORG);
+    if (!hasRepo) {
       await gitea.createRepo(slug, description, GITEA_ORG);
-    } else {
-      const hasRepo = await gitea.repoExists(slug, GITEA_ORG);
-      if (!hasRepo) {
-        await gitea.createRepo(slug, description, GITEA_ORG);
-      }
     }
     const tag = `v${version}`;
     const commitMsg = isNew ? `feat: ${tag} initial publish` : `feat: ${tag}`;

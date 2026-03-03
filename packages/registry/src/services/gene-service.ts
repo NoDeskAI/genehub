@@ -226,7 +226,10 @@ export async function createGene(
     if (!isGiteaReady) throw AppError.giteaUnavailable();
 
     try {
-      await gitea.createRepo(manifest.slug, manifest.short_description || manifest.description);
+      const hasRepo = await gitea.repoExists(manifest.slug);
+      if (!hasRepo) {
+        await gitea.createRepo(manifest.slug, manifest.short_description || manifest.description);
+      }
       const tag = `v${manifest.version}`;
       const result = await gitea.uploadFiles(manifest.slug, files, `feat: ${tag} initial publish`);
       await gitea.createTag(manifest.slug, tag, result.sha);
