@@ -36,6 +36,9 @@ export type GeneVersion = {
   changelog: string;
   is_latest: boolean;
   published_at: string;
+  commit_sha: string | null;
+  git_tag: string | null;
+  files: { path: string; size: number; sha: string }[] | null;
 };
 
 export type GeneReview = {

@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import VersionHistory from '@/components/VersionHistory';
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -35,43 +36,6 @@ function CopyButton({ text }: { text: string }) {
       {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
       {copied ? '已复制' : '复制'}
     </button>
-  );
-}
-
-function VersionHistory({ versions }: { versions: GeneVersion[] }) {
-  if (versions.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <Layers className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-muted">暂无版本记录</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {versions.map((v) => (
-        <div
-          key={v.id}
-          className="flex items-start justify-between border border-border rounded-xl px-5 py-4"
-        >
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-sm font-medium text-gray-900">v{v.version}</span>
-              {v.is_latest && (
-                <Badge variant="success" className="text-[10px] px-1.5 py-0">
-                  latest
-                </Badge>
-              )}
-            </div>
-            {v.changelog && <p className="text-sm text-muted mt-1">{v.changelog}</p>}
-          </div>
-          <time className="text-xs text-muted whitespace-nowrap">
-            {new Date(v.published_at).toLocaleDateString('zh-CN')}
-          </time>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -299,7 +263,7 @@ export default function GenomeDetail() {
             </TabsContent>
 
             <TabsContent value="versions">
-              <VersionHistory versions={versions} />
+              <VersionHistory versions={versions} slug={genome.slug} entityType="genome" />
             </TabsContent>
           </Tabs>
         </div>
