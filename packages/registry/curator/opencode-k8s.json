@@ -29,5 +29,8 @@
       }
     }
   },
+  "permission": {
+    "*": "allow"
+  },
   "agent": {}
 }
