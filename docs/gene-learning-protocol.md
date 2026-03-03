@@ -838,4 +838,78 @@ Token 通过 `genehub auth login` 或 GeneHub Web UI 生成。
 
 ---
 
+## 十一、基因组与模板的目录结构
+
+基因组和 AI 员工模板与基因一样通过 Git 仓库管理。它们本质是**引用清单（composition manifest）**，Git 仓库中存放 manifest 文件和可选文档，不含基因实际文件。
+
+### 11.1 Gitea 组织结构
+
+| Gitea Org | 存储内容 | 示例仓库 |
+|-----------|---------|---------|
+| `genes` | 基因文件（gene.yaml + SKILL.md + 额外文件） | `genes/clean-code` |
+| `genomes` | 基因组 manifest（genome.yaml + README.md） | `genomes/fullstack-dev` |
+| `templates` | 模板 manifest（template.yaml + README.md） | `templates/senior-backend` |
+
+### 11.2 genome.yaml 结构
+
+```yaml
+name: "全栈开发基因组"
+slug: "fullstack-dev"
+version: "1.0.0"
+description: "全栈开发必备基因组合"
+short_description: "全栈开发基因组合"
+category: "development"
+tags: ["fullstack", "development"]
+genes:
+  - slug: "code-review"
+    version: "1.0.0"
+  - slug: "clean-code"
+    version: "1.0.0"
+  - slug: "debugging"
+    version: "1.0.0"
+compatibility: ["openclaw", "nanobot"]
+author:
+  type: "human"
+  name: "GeneHub Team"
+```
+
+### 11.3 template.yaml 结构
+
+```yaml
+name: "高级后端工程师"
+slug: "senior-backend"
+version: "1.0.0"
+description: "适合后端开发的 AI 员工模板"
+short_description: "后端工程师模板"
+role: "后端工程师"
+category: "engineering"
+tags: ["backend", "engineering"]
+genomes:
+  - slug: "fullstack-dev"
+    version: "1.0.0"
+genes:
+  - slug: "data-analysis"
+    version: "1.0.0"
+compatibility: ["openclaw", "nanobot"]
+author:
+  type: "human"
+  name: "GeneHub Team"
+```
+
+### 11.4 CLI 命令
+
+```bash
+genehub genome publish <dir>     # 发布基因组（扫描 genome.yaml + 目录文件）
+genehub genome install <slug>    # 安装基因组：解析基因列表 -> 逐个安装所有基因
+genehub genome list              # 搜索基因组
+genehub genome info <slug>       # 查看基因组详情 + 引用的基因列表
+
+genehub template publish <dir>   # 发布 AI 员工模板
+genehub template install <slug>  # 递归安装：先安装基因组 -> 再安装额外基因
+genehub template list            # 搜索模板
+genehub template info <slug>     # 查看模板详情
+```
+
+---
+
 *协议持续演进中，欢迎各产品团队反馈。*

@@ -1,11 +1,21 @@
 import type {
+  AgentTemplate,
+  AgentTemplateListParams,
+  AgentTemplateVersion,
   ApiResponse,
+  CreateAgentTemplateRequest,
+  CreateGenomeRequest,
   Gene,
   GeneListParams,
   GeneManifest,
   GeneVersion,
   Genome,
+  GenomeListParams,
+  GenomeResolveResult,
+  GenomeVersion,
   PaginatedData,
+  PublishAgentTemplateVersionRequest,
+  PublishGenomeVersionRequest,
   ResolvedGene,
 } from '@nodeskai/genehub-types';
 
@@ -45,6 +55,8 @@ export class GeneHubClient {
     return json.data;
   }
 
+  // ── Gene ──
+
   async searchGenes(params: GeneListParams = {}): Promise<PaginatedData<Gene>> {
     const qs = new URLSearchParams();
     if (params.q) qs.set('q', params.q);
@@ -74,10 +86,6 @@ export class GeneHubClient {
 
   async getVersion(slug: string, version: string): Promise<GeneVersion> {
     return this.request<GeneVersion>(`/api/v1/genes/${slug}/versions/${version}`);
-  }
-
-  async getGenome(slug: string): Promise<Genome> {
-    return this.request<Genome>(`/api/v1/genomes/${slug}`);
   }
 
   async publishGene(manifest: GeneManifest, files?: Record<string, string>): Promise<Gene> {
@@ -153,5 +161,177 @@ export class GeneHubClient {
       method: 'POST',
       body: JSON.stringify(report),
     });
+  }
+
+  // ── Genome ──
+
+  async searchGenomes(params: GenomeListParams = {}): Promise<PaginatedData<Genome>> {
+    const qs = new URLSearchParams();
+    if (params.q) qs.set('q', params.q);
+    if (params.category) qs.set('category', params.category);
+    if (params.sort) qs.set('sort', params.sort);
+    if (params.page) qs.set('page', String(params.page));
+    if (params.page_size) qs.set('page_size', String(params.page_size));
+
+    const query = qs.toString();
+    return this.request<PaginatedData<Genome>>(`/api/v1/genomes${query ? `?${query}` : ''}`);
+  }
+
+  async getGenome(slug: string): Promise<Genome> {
+    return this.request<Genome>(`/api/v1/genomes/${slug}`);
+  }
+
+  async getGenomeVersions(slug: string): Promise<GenomeVersion[]> {
+    return this.request<GenomeVersion[]>(`/api/v1/genomes/${slug}/versions`);
+  }
+
+  async getGenomeVersion(slug: string, version: string): Promise<GenomeVersion> {
+    return this.request<GenomeVersion>(`/api/v1/genomes/${slug}/versions/${version}`);
+  }
+
+  async resolveGenome(
+    slug: string,
+    version?: string,
+    product?: string,
+  ): Promise<GenomeResolveResult> {
+    const qs = new URLSearchParams();
+    if (version) qs.set('version', version);
+    if (product) qs.set('product', product);
+    const query = qs.toString();
+    return this.request<GenomeResolveResult>(
+      `/api/v1/genomes/${slug}/resolve${query ? `?${query}` : ''}`,
+    );
+  }
+
+  async publishGenome(data: CreateGenomeRequest, files?: Record<string, string>): Promise<Genome> {
+    return this.request<Genome>('/api/v1/genomes', {
+      method: 'POST',
+      body: JSON.stringify({ ...data, files }),
+    });
+  }
+
+  async publishGenomeVersion(
+    slug: string,
+    data: PublishGenomeVersionRequest,
+    files?: Record<string, string>,
+  ): Promise<Genome> {
+    return this.request<Genome>(`/api/v1/genomes/${slug}/versions`, {
+      method: 'POST',
+      body: JSON.stringify({ ...data, files }),
+    });
+  }
+
+  async getGenomeFiles(
+    slug: string,
+    version?: string,
+  ): Promise<{ path: string; size: number; sha: string; type: string }[]> {
+    const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+    return this.request(`/api/v1/genomes/${slug}/files${qs}`);
+  }
+
+  async getGenomeFileContent(
+    slug: string,
+    filePath: string,
+    version?: string,
+  ): Promise<{ path: string; content: string }> {
+    const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+    return this.request(`/api/v1/genomes/${slug}/files/${filePath}${qs}`);
+  }
+
+  async downloadGenomeArchive(slug: string, version?: string): Promise<ArrayBuffer> {
+    const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+    const url = `${this.baseUrl}/api/v1/genomes/${slug}/archive${qs}`;
+    const headers: Record<string, string> = {};
+    if (this.token) headers.Authorization = `Bearer ${this.token}`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`[GeneHub] Download genome archive failed: HTTP ${res.status}`);
+    return res.arrayBuffer();
+  }
+
+  async reportGenomeInstall(slug: string): Promise<void> {
+    await this.request(`/api/v1/genomes/${slug}/installed`, { method: 'POST', body: '{}' });
+  }
+
+  // ── Agent Template ──
+
+  async searchTemplates(
+    params: AgentTemplateListParams = {},
+  ): Promise<PaginatedData<AgentTemplate>> {
+    const qs = new URLSearchParams();
+    if (params.q) qs.set('q', params.q);
+    if (params.category) qs.set('category', params.category);
+    if (params.role) qs.set('role', params.role);
+    if (params.sort) qs.set('sort', params.sort);
+    if (params.page) qs.set('page', String(params.page));
+    if (params.page_size) qs.set('page_size', String(params.page_size));
+
+    const query = qs.toString();
+    return this.request<PaginatedData<AgentTemplate>>(
+      `/api/v1/templates${query ? `?${query}` : ''}`,
+    );
+  }
+
+  async getTemplate(slug: string): Promise<AgentTemplate> {
+    return this.request<AgentTemplate>(`/api/v1/templates/${slug}`);
+  }
+
+  async getTemplateVersions(slug: string): Promise<AgentTemplateVersion[]> {
+    return this.request<AgentTemplateVersion[]>(`/api/v1/templates/${slug}/versions`);
+  }
+
+  async getTemplateVersion(slug: string, version: string): Promise<AgentTemplateVersion> {
+    return this.request<AgentTemplateVersion>(`/api/v1/templates/${slug}/versions/${version}`);
+  }
+
+  async publishTemplate(
+    data: CreateAgentTemplateRequest,
+    files?: Record<string, string>,
+  ): Promise<AgentTemplate> {
+    return this.request<AgentTemplate>('/api/v1/templates', {
+      method: 'POST',
+      body: JSON.stringify({ ...data, files }),
+    });
+  }
+
+  async publishTemplateVersion(
+    slug: string,
+    data: PublishAgentTemplateVersionRequest,
+    files?: Record<string, string>,
+  ): Promise<AgentTemplate> {
+    return this.request<AgentTemplate>(`/api/v1/templates/${slug}/versions`, {
+      method: 'POST',
+      body: JSON.stringify({ ...data, files }),
+    });
+  }
+
+  async getTemplateFiles(
+    slug: string,
+    version?: string,
+  ): Promise<{ path: string; size: number; sha: string; type: string }[]> {
+    const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+    return this.request(`/api/v1/templates/${slug}/files${qs}`);
+  }
+
+  async getTemplateFileContent(
+    slug: string,
+    filePath: string,
+    version?: string,
+  ): Promise<{ path: string; content: string }> {
+    const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+    return this.request(`/api/v1/templates/${slug}/files/${filePath}${qs}`);
+  }
+
+  async downloadTemplateArchive(slug: string, version?: string): Promise<ArrayBuffer> {
+    const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+    const url = `${this.baseUrl}/api/v1/templates/${slug}/archive${qs}`;
+    const headers: Record<string, string> = {};
+    if (this.token) headers.Authorization = `Bearer ${this.token}`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`[GeneHub] Download template archive failed: HTTP ${res.status}`);
+    return res.arrayBuffer();
+  }
+
+  async reportTemplateInstall(slug: string): Promise<void> {
+    await this.request(`/api/v1/templates/${slug}/installed`, { method: 'POST', body: '{}' });
   }
 }

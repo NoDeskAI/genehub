@@ -68,13 +68,18 @@ export type CreateGenomeRequest = {
   genes: { slug: string; version: string; config_override?: Record<string, unknown> }[];
   compatibility?: string[];
   author?: { type: string; id?: string; name: string };
+  files?: Record<string, string>;
 };
 
 export type PublishGenomeVersionRequest = {
   version: string;
   genes: { slug: string; version: string; config_override?: Record<string, unknown> }[];
   changelog?: string;
+  files?: Record<string, string>;
 };
+
+export type GenomeFileTreeResponse = ApiResponse<GeneFileEntry[]>;
+export type GenomeFileContentResponse = ApiResponse<{ path: string; content: string }>;
 
 export type FederatedSearchParams = {
   q: string;
@@ -131,6 +136,7 @@ export type CreateAgentTemplateRequest = {
   genes?: { slug: string; version: string }[];
   compatibility?: string[];
   author?: { type: string; id?: string; name: string };
+  files?: Record<string, string>;
 };
 
 export type PublishAgentTemplateVersionRequest = {
@@ -138,7 +144,11 @@ export type PublishAgentTemplateVersionRequest = {
   genomes: { slug: string; version: string }[];
   genes?: { slug: string; version: string }[];
   changelog?: string;
+  files?: Record<string, string>;
 };
+
+export type AgentTemplateFileTreeResponse = ApiResponse<GeneFileEntry[]>;
+export type AgentTemplateFileContentResponse = ApiResponse<{ path: string; content: string }>;
 
 export type GeneFileEntry = {
   path: string;

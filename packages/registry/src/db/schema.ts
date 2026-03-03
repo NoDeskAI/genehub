@@ -119,6 +119,8 @@ export const genomes = pgTable(
       .$type<{ type: string; id?: string; name: string }>()
       .notNull()
       .default({ type: 'human', name: '' }),
+    repository_url: text('repository_url'),
+    file_count: integer('file_count').notNull().default(0),
     is_published: boolean('is_published').notNull().default(false),
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -141,6 +143,9 @@ export const genomeVersions = pgTable(
     genes: jsonb('genes')
       .$type<{ slug: string; version: string; config_override?: Record<string, unknown> }[]>()
       .notNull(),
+    commit_sha: varchar('commit_sha', { length: 40 }),
+    git_tag: varchar('git_tag', { length: 64 }),
+    files: jsonb('files').$type<{ path: string; size: number; sha: string }[]>(),
     changelog: text('changelog').notNull().default(''),
     is_latest: boolean('is_latest').notNull().default(false),
     published_at: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),
@@ -220,6 +225,8 @@ export const agentTemplates = pgTable(
       .$type<{ type: string; id?: string; name: string }>()
       .notNull()
       .default({ type: 'human', name: '' }),
+    repository_url: text('repository_url'),
+    file_count: integer('file_count').notNull().default(0),
     publisher_id: uuid('publisher_id').references(() => publishers.id),
     is_published: boolean('is_published').notNull().default(false),
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -242,6 +249,9 @@ export const agentTemplateVersions = pgTable(
     version: varchar('version', { length: 16 }).notNull(),
     genomes: jsonb('genomes').$type<{ slug: string; version: string }[]>().notNull(),
     genes: jsonb('genes').$type<{ slug: string; version: string }[]>().notNull(),
+    commit_sha: varchar('commit_sha', { length: 40 }),
+    git_tag: varchar('git_tag', { length: 64 }),
+    files: jsonb('files').$type<{ path: string; size: number; sha: string }[]>(),
     changelog: text('changelog').notNull().default(''),
     is_latest: boolean('is_latest').notNull().default(false),
     published_at: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),

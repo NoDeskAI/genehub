@@ -51,6 +51,33 @@ genomesRouter.get('/:slug/versions/:version', async (c) => {
   return success(c, ver);
 });
 
+genomesRouter.get('/:slug/files', async (c) => {
+  const slug = c.req.param('slug');
+  const version = c.req.query('version');
+  const files = await genomeService.getGenomeFiles(slug, version);
+  return success(c, files);
+});
+
+genomesRouter.get('/:slug/files/*', async (c) => {
+  const slug = c.req.param('slug');
+  const filePath = c.req.path.replace(`/api/v1/genomes/${slug}/files/`, '');
+  const version = c.req.query('version');
+  const content = await genomeService.getGenomeFileContent(slug, filePath, version);
+  return success(c, { path: filePath, content });
+});
+
+genomesRouter.get('/:slug/archive', async (c) => {
+  const slug = c.req.param('slug');
+  const version = c.req.query('version');
+  const stream = await genomeService.getGenomeArchiveStream(slug, version);
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'application/gzip',
+      'Content-Disposition': `attachment; filename="${slug}.tar.gz"`,
+    },
+  });
+});
+
 genomesRouter.post('/', requireAuth('publisher'), async (c) => {
   const body = await c.req.json();
   const genome = await genomeService.createGenome(body);

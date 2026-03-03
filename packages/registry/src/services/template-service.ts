@@ -2,8 +2,10 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import semver from 'semver';
 import { db, schema } from '../db/index.js';
 import { AppError } from '../middleware/error-handler.js';
+import * as gitea from './gitea-service.js';
 
 const { agentTemplates, agentTemplateVersions, genomes, genes } = schema;
+const GITEA_ORG = gitea.GITEA_TEMPLATES_ORG;
 
 export type TemplateListQuery = {
   q?: string;
@@ -34,6 +36,7 @@ export type CreateTemplateInput = {
   genes?: TemplateRef[];
   compatibility?: string[];
   author?: { type: string; id?: string; name: string };
+  files?: Record<string, string>;
 };
 
 export async function listTemplates(query: TemplateListQuery) {
@@ -147,6 +150,48 @@ async function validateGeneRefs(refs: TemplateRef[]) {
   }
 }
 
+async function uploadFilesToGitea(
+  slug: string,
+  version: string,
+  description: string,
+  files: Record<string, string>,
+  isNew: boolean,
+) {
+  const isGiteaReady = await gitea.isGiteaAvailable();
+  if (!isGiteaReady) throw AppError.giteaUnavailable();
+
+  try {
+    if (isNew) {
+      await gitea.createRepo(slug, description, GITEA_ORG);
+    } else {
+      const hasRepo = await gitea.repoExists(slug, GITEA_ORG);
+      if (!hasRepo) {
+        await gitea.createRepo(slug, description, GITEA_ORG);
+      }
+    }
+    const tag = `v${version}`;
+    const commitMsg = isNew ? `feat: ${tag} initial publish` : `feat: ${tag}`;
+    const result = await gitea.uploadFiles(slug, files, commitMsg, GITEA_ORG);
+    await gitea.createTag(slug, tag, result.sha, GITEA_ORG);
+
+    const fileList = Object.entries(files).map(([path, content]) => ({
+      path,
+      size: Buffer.byteLength(content, 'utf-8'),
+      sha: '',
+    }));
+
+    return {
+      repositoryUrl: gitea.getRepoUrl(slug, GITEA_ORG),
+      commitSha: result.sha,
+      gitTag: tag,
+      fileList,
+      fileCount: fileList.length,
+    };
+  } catch (err) {
+    throw AppError.giteaRepoError(err instanceof Error ? err.message : String(err));
+  }
+}
+
 export async function createTemplate(input: CreateTemplateInput) {
   if (!input.name || !input.slug || !input.version) {
     throw AppError.templateValidationFailed('name, slug, version 为必填字段');
@@ -170,6 +215,27 @@ export async function createTemplate(input: CreateTemplateInput) {
     await validateGeneRefs(input.genes);
   }
 
+  let repositoryUrl: string | null = null;
+  let commitSha: string | null = null;
+  let gitTag: string | null = null;
+  let fileList: { path: string; size: number; sha: string }[] | null = null;
+  let fileCount = 0;
+
+  if (input.files && Object.keys(input.files).length > 0) {
+    const giteaResult = await uploadFilesToGitea(
+      input.slug,
+      input.version,
+      input.short_description || input.description || '',
+      input.files,
+      true,
+    );
+    repositoryUrl = giteaResult.repositoryUrl;
+    commitSha = giteaResult.commitSha;
+    gitTag = giteaResult.gitTag;
+    fileList = giteaResult.fileList;
+    fileCount = giteaResult.fileCount;
+  }
+
   const [template] = await db
     .insert(agentTemplates)
     .values({
@@ -187,6 +253,8 @@ export async function createTemplate(input: CreateTemplateInput) {
       genes: input.genes ?? [],
       compatibility: input.compatibility ?? [],
       author: input.author ?? { type: 'human', name: '' },
+      repository_url: repositoryUrl,
+      file_count: fileCount,
       is_published: true,
     })
     .returning();
@@ -196,6 +264,9 @@ export async function createTemplate(input: CreateTemplateInput) {
     version: input.version,
     genomes: input.genomes,
     genes: input.genes ?? [],
+    commit_sha: commitSha,
+    git_tag: gitTag,
+    files: fileList,
     changelog: '初始版本',
     is_latest: true,
   });
@@ -210,6 +281,7 @@ export async function publishVersion(
     genomes: TemplateRef[];
     genes?: TemplateRef[];
     changelog?: string;
+    files?: Record<string, string>;
   },
 ) {
   const template = await getTemplateBySlug(slug);
@@ -243,6 +315,25 @@ export async function publishVersion(
     await validateGeneRefs(input.genes);
   }
 
+  let commitSha: string | null = null;
+  let gitTag: string | null = null;
+  let fileList: { path: string; size: number; sha: string }[] | null = null;
+  let fileCount = template.file_count;
+
+  if (input.files && Object.keys(input.files).length > 0) {
+    const giteaResult = await uploadFilesToGitea(
+      slug,
+      input.version,
+      template.short_description || template.description || '',
+      input.files,
+      false,
+    );
+    commitSha = giteaResult.commitSha;
+    gitTag = giteaResult.gitTag;
+    fileList = giteaResult.fileList;
+    fileCount = giteaResult.fileCount;
+  }
+
   await db
     .update(agentTemplateVersions)
     .set({ is_latest: false })
@@ -258,18 +349,27 @@ export async function publishVersion(
     version: input.version,
     genomes: input.genomes,
     genes: input.genes ?? [],
+    commit_sha: commitSha,
+    git_tag: gitTag,
+    files: fileList,
     changelog: input.changelog ?? '',
     is_latest: true,
   });
 
+  const updateValues: Record<string, unknown> = {
+    version: input.version,
+    genomes: input.genomes,
+    genes: input.genes ?? [],
+    file_count: fileCount,
+    updated_at: new Date(),
+  };
+  if (!template.repository_url && commitSha) {
+    updateValues.repository_url = gitea.getRepoUrl(slug, GITEA_ORG);
+  }
+
   const [updated] = await db
     .update(agentTemplates)
-    .set({
-      version: input.version,
-      genomes: input.genomes,
-      genes: input.genes ?? [],
-      updated_at: new Date(),
-    })
+    .set(updateValues)
     .where(eq(agentTemplates.id, template.id))
     .returning();
 
@@ -348,6 +448,81 @@ export async function getTemplateVersion(slug: string, version: string) {
   }
 
   return result[0];
+}
+
+export async function getTemplateFiles(slug: string, version?: string) {
+  const template = await getTemplateBySlug(slug);
+  if (!template.repository_url) {
+    return [{ path: 'template.yaml', size: 0, sha: '', type: 'file' as const }];
+  }
+
+  let ref = 'main';
+  if (version) {
+    const ver = await db
+      .select()
+      .from(agentTemplateVersions)
+      .where(
+        and(
+          eq(agentTemplateVersions.template_id, template.id),
+          eq(agentTemplateVersions.version, version),
+        ),
+      );
+    if (ver.length > 0 && ver[0].git_tag) {
+      ref = ver[0].git_tag;
+    }
+  }
+
+  return gitea.getFileTree(slug, ref, GITEA_ORG);
+}
+
+export async function getTemplateFileContent(slug: string, filePath: string, version?: string) {
+  const template = await getTemplateBySlug(slug);
+  if (!template.repository_url) {
+    throw AppError.giteaRepoError(`模板 ${slug} 无文件仓库`);
+  }
+
+  let ref = 'main';
+  if (version) {
+    const ver = await db
+      .select()
+      .from(agentTemplateVersions)
+      .where(
+        and(
+          eq(agentTemplateVersions.template_id, template.id),
+          eq(agentTemplateVersions.version, version),
+        ),
+      );
+    if (ver.length > 0 && ver[0].git_tag) {
+      ref = ver[0].git_tag;
+    }
+  }
+
+  return gitea.getFileContent(slug, filePath, ref, GITEA_ORG);
+}
+
+export async function getTemplateArchiveStream(slug: string, version?: string) {
+  const template = await getTemplateBySlug(slug);
+  if (!template.repository_url) {
+    throw AppError.giteaRepoError(`模板 ${slug} 无文件仓库，无法下载 archive`);
+  }
+
+  let ref = 'main';
+  if (version) {
+    const ver = await db
+      .select()
+      .from(agentTemplateVersions)
+      .where(
+        and(
+          eq(agentTemplateVersions.template_id, template.id),
+          eq(agentTemplateVersions.version, version),
+        ),
+      );
+    if (ver.length > 0 && ver[0].git_tag) {
+      ref = ver[0].git_tag;
+    }
+  }
+
+  return gitea.getArchiveStream(slug, ref, GITEA_ORG);
 }
 
 export async function incrementInstallCount(slug: string) {

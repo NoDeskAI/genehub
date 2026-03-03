@@ -191,6 +191,14 @@ genehub init [path]               # 初始化 gene.yaml + SKILL.md 模板
 genehub config set/get            # 管理配置（registry / token）
 genehub auth login/status/logout  # GitHub OAuth 认证
 genehub learn <slug>              # 触发深度学习（--check 检查结果）
+genehub genome publish <path>     # 发布基因组（包含 genome.yaml）
+genehub genome install <slug>     # 安装基因组（递归安装所有基因）
+genehub genome list               # 搜索基因组
+genehub genome info <slug>        # 基因组详情
+genehub template publish <path>   # 发布 AI 员工模板（包含 template.yaml）
+genehub template install <slug>   # 安装模板（递归安装基因组 + 基因）
+genehub template list             # 搜索模板
+genehub template info <slug>      # 模板详情
 
 # Future
 genehub info <gene-slug>          # 基因详情（未实现）
@@ -260,6 +268,8 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | icon | string(64) | 图标 |
 | genes | JSON | 包含的基因 `[{"slug": "xxx", "version": ">=1.0", "config_override": {}}]` |
 | compatibility | JSON | 兼容产品列表 |
+| repository_url | text nullable | Gitea 仓库路径（如 `genomes/fullstack-dev`） |
+| file_count | int | 文件数量 |
 | install_count | int | 应用次数 |
 | avg_rating | float | 评分 |
 | author | JSON | 作者信息 |
@@ -286,6 +296,8 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | genomes | JSON | 引用的基因组 `[{slug, version}]` |
 | genes | JSON | 额外独立基因 `[{slug, version}]` |
 | compatibility | JSON | 兼容产品列表 |
+| repository_url | text nullable | Gitea 仓库路径（如 `templates/senior-backend`） |
+| file_count | int | 文件数量 |
 | install_count | int | 安装次数 |
 | avg_rating | float | 平均评分 |
 | author | JSON | 作者信息 |
@@ -304,6 +316,9 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | version | string(16) | 版本号 |
 | genomes | JSON | 该版本的基因组列表 |
 | genes | JSON | 该版本的额外基因列表 |
+| commit_sha | varchar(40) nullable | Gitea commit SHA |
+| git_tag | varchar(64) nullable | Gitea git tag |
+| files | JSON nullable | 文件列表 `[{path, size, sha}]` |
 | changelog | text | 变更日志 |
 | is_latest | bool | 是否最新 |
 | published_at | datetime | 发布时间 |
@@ -331,6 +346,9 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | genome_id | FK | 所属基因组 |
 | version | string(16) | 版本号 |
 | genes | JSON | 该版本的基因组合 |
+| commit_sha | varchar(40) nullable | Gitea commit SHA |
+| git_tag | varchar(64) nullable | Gitea git tag（如 `v1.0.0`） |
+| files | JSON nullable | 文件列表 `[{path, size, sha}]` |
 | changelog | text | 变更日志 |
 | is_latest | bool | 是否最新 |
 | published_at | datetime | 发布时间 |
@@ -367,17 +385,7 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | created_by | string(64) | 创建者（默认 `curator-agent`） |
 | created_at | datetime | |
 
-#### GenomeVersion（基因组版本历史）
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | UUID | 主键 |
-| genome_id | FK | 所属基因组 |
-| version | string(16) | 版本号 |
-| genes | JSON | 该版本包含的基因列表 |
-| changelog | text | 变更日志 |
-| is_latest | bool | 是否最新 |
-| published_at | datetime | 发布时间 |
+#### GenomeVersion（基因组版本历史）-- 重复，见上
 
 #### GeneReview（基因审核记录）
 
@@ -506,7 +514,7 @@ GitHub OAuth                   API Key
 |------|------|------|
 | Registry API | TypeScript + Hono | 轻量高性能，运行在 Node.js / Bun / Edge |
 | 数据库 | PostgreSQL | 与 NoDeskClaw 同生态，支持 JSONB 全文搜索 |
-| 基因文件存储 | Gitea（自托管 Git） | 每个基因一个 Git 仓库，git tag 管理版本，DB 仅存索引 |
+| 基因文件存储 | Gitea（自托管 Git） | 每个基因/基因组/模板各一个 Git 仓库（三个 org：genes/genomes/templates），git tag 管理版本，DB 仅存索引 |
 | 搜索引擎 | PostgreSQL ILIKE（当前）/ Meilisearch（Future） | 先简后繁 |
 | CLI | TypeScript (tsx) | 跨平台，npm 全局安装 |
 | Web 前端 | React 19 + Vite 7 + Tailwind CSS 4 + Radix UI | 基因浏览、搜索、API Key 管理（6 个页面） |
@@ -550,6 +558,9 @@ GitHub OAuth                   API Key
 | GET | `/genomes/:slug/resolve` | 解析并返回所有基因的 manifest（含依赖） | 已实现 |
 | GET | `/genomes/:slug/versions` | 基因组版本列表 | 已实现 |
 | GET | `/genomes/:slug/versions/:version` | 指定基因组版本详情 | 已实现 |
+| GET | `/genomes/:slug/files` | 文件列表（支持 `?version=x.y.z`） | 已实现 |
+| GET | `/genomes/:slug/files/*` | 获取文件内容（支持 `?version=x.y.z`） | 已实现 |
+| GET | `/genomes/:slug/archive` | 下载 tarball（支持 `?version=x.y.z`） | 已实现 |
 
 #### 基因管理
 
@@ -579,6 +590,9 @@ GitHub OAuth                   API Key
 | GET | `/templates/:slug` | 模板详情 | 已实现 |
 | GET | `/templates/:slug/versions` | 版本列表 | 已实现 |
 | GET | `/templates/:slug/versions/:version` | 指定版本 | 已实现 |
+| GET | `/templates/:slug/files` | 文件列表（支持 `?version=x.y.z`） | 已实现 |
+| GET | `/templates/:slug/files/*` | 获取文件内容 | 已实现 |
+| GET | `/templates/:slug/archive` | 下载 tarball | 已实现 |
 | POST | `/templates` | 创建模板（需 publisher） | 已实现 |
 | POST | `/templates/:slug/versions` | 发布新版本（需 publisher） | 已实现 |
 | PUT | `/templates/:slug` | 更新（需 publisher） | 已实现 |
@@ -721,7 +735,7 @@ genehub/
 │   │
 │   ├── cli/                        # 命令行工具（@nodeskai/genehub）
 │   │   └── src/
-│   │       └── commands/           # install / uninstall / search / list / publish / init / config / auth / learn
+│   │       └── commands/           # install / uninstall / search / list / publish / init / config / auth / learn / genome / template
 │   │
 │   └── web/                        # Web 前端（React 19 + Vite + Tailwind CSS 4）
 │       └── src/
@@ -744,7 +758,7 @@ genehub/
 │       └── postgres.yaml           # PostgreSQL StatefulSet
 │
 ├── scripts/                        # 工具脚本
-│   ├── init-gitea.sh              # Gitea 初始化（创建 admin + org）
+│   ├── init-gitea.sh              # Gitea 初始化（创建 admin + genes/genomes/templates 三个 org）
 │   └── sync-version.mjs           # 版本号同步
 │
 ├── .github/workflows/              # CI/CD

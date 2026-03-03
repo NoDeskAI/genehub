@@ -44,6 +44,33 @@ templatesRouter.get('/:slug/versions/:version', async (c) => {
   return success(c, ver);
 });
 
+templatesRouter.get('/:slug/files', async (c) => {
+  const slug = c.req.param('slug');
+  const version = c.req.query('version');
+  const files = await templateService.getTemplateFiles(slug, version);
+  return success(c, files);
+});
+
+templatesRouter.get('/:slug/files/*', async (c) => {
+  const slug = c.req.param('slug');
+  const filePath = c.req.path.replace(`/api/v1/templates/${slug}/files/`, '');
+  const version = c.req.query('version');
+  const content = await templateService.getTemplateFileContent(slug, filePath, version);
+  return success(c, { path: filePath, content });
+});
+
+templatesRouter.get('/:slug/archive', async (c) => {
+  const slug = c.req.param('slug');
+  const version = c.req.query('version');
+  const stream = await templateService.getTemplateArchiveStream(slug, version);
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'application/gzip',
+      'Content-Disposition': `attachment; filename="${slug}.tar.gz"`,
+    },
+  });
+});
+
 templatesRouter.post('/', requireAuth('publisher'), async (c) => {
   const body = await c.req.json();
   const template = await templateService.createTemplate(body);

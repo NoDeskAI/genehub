@@ -75,6 +75,8 @@ export type Genome = {
   install_count: number;
   avg_rating: number;
   author: Author;
+  repository_url: string | null;
+  file_count: number;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -86,6 +88,9 @@ export type GenomeVersion = {
   genome_id: string;
   version: string;
   genes: GenomeGeneRef[];
+  commit_sha: string | null;
+  git_tag: string | null;
+  files: { path: string; size: number; sha: string }[] | null;
   changelog: string;
   is_latest: boolean;
   published_at: string;
@@ -153,6 +158,8 @@ export type AgentTemplate = {
   avg_rating: number;
   author: Author;
   publisher_id: string | null;
+  repository_url: string | null;
+  file_count: number;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -165,6 +172,9 @@ export type AgentTemplateVersion = {
   version: string;
   genomes: AgentTemplateGeneRef[];
   genes: AgentTemplateGeneRef[];
+  commit_sha: string | null;
+  git_tag: string | null;
+  files: { path: string; size: number; sha: string }[] | null;
   changelog: string;
   is_latest: boolean;
   published_at: string;

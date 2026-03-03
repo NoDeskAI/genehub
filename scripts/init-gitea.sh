@@ -5,7 +5,9 @@ GITEA_URL="${GITEA_URL:-http://localhost:3001}"
 GITEA_ADMIN_USER="${GITEA_ADMIN_USER:-genehub}"
 GITEA_ADMIN_PASSWORD="${GENEHUB_ADMIN_TOKEN:-admin-dev-token}"
 GITEA_ADMIN_EMAIL="${GITEA_ADMIN_EMAIL:-admin@genehub.local}"
-GITEA_ORG="${GITEA_ORG:-genes}"
+
+ORGS=("${GITEA_ORG:-genes}" "genomes" "templates")
+ORG_LABELS=("GeneHub Genes:Gene repository storage" "GeneHub Genomes:Genome repository storage" "GeneHub Templates:Agent template repository storage")
 
 wait_for_gitea() {
   echo "Waiting for Gitea at ${GITEA_URL}..."
@@ -47,30 +49,38 @@ create_admin() {
 }
 
 create_org() {
-  echo "Creating organization '${GITEA_ORG}'..."
+  local org_name="$1"
+  local full_name="$2"
+  local description="$3"
+
+  echo "Creating organization '${org_name}'..."
   local status
   status=$(curl -s -o /dev/null -w "%{http_code}" \
     -u "${GITEA_ADMIN_USER}:${GITEA_ADMIN_PASSWORD}" \
     "${GITEA_URL}/api/v1/orgs" \
     -H "Content-Type: application/json" \
     -d "{
-      \"username\": \"${GITEA_ORG}\",
-      \"full_name\": \"GeneHub Genes\",
-      \"description\": \"Gene repository storage\",
+      \"username\": \"${org_name}\",
+      \"full_name\": \"${full_name}\",
+      \"description\": \"${description}\",
       \"visibility\": \"public\"
     }")
 
   if [ "$status" = "201" ]; then
-    echo "Organization created."
+    echo "Organization '${org_name}' created."
   elif [ "$status" = "422" ]; then
-    echo "Organization already exists, skipping."
+    echo "Organization '${org_name}' already exists, skipping."
   else
-    echo "WARNING: Unexpected status $status when creating organization."
+    echo "WARNING: Unexpected status $status when creating organization '${org_name}'."
   fi
 }
 
 wait_for_gitea
 create_admin
-create_org
+
+for i in "${!ORGS[@]}"; do
+  IFS=':' read -r full_name description <<< "${ORG_LABELS[$i]}"
+  create_org "${ORGS[$i]}" "$full_name" "$description"
+done
 
 echo "Gitea initialization complete."
