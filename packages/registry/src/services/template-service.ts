@@ -424,6 +424,14 @@ export async function deleteTemplate(slug: string) {
     .where(eq(agentTemplates.id, template.id))
     .returning();
 
+  try {
+    if (await gitea.repoExists(slug, GITEA_ORG)) {
+      await gitea.deleteRepo(slug, GITEA_ORG);
+    }
+  } catch (err) {
+    console.error(`[template] Failed to delete Gitea repo ${GITEA_ORG}/${slug}:`, err);
+  }
+
   return deleted;
 }
 

@@ -437,6 +437,14 @@ export async function deleteGene(slug: string) {
 
   const [deleted] = await db.delete(genes).where(eq(genes.id, gene.id)).returning();
 
+  try {
+    if (await gitea.repoExists(slug)) {
+      await gitea.deleteRepo(slug);
+    }
+  } catch (err) {
+    console.error(`[gene] Failed to delete Gitea repo genes/${slug}:`, err);
+  }
+
   return deleted;
 }
 
