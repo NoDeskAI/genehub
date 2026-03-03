@@ -201,7 +201,7 @@ export async function createGene(
   const existing = await db
     .select({ id: genes.id })
     .from(genes)
-    .where(eq(genes.slug, manifest.slug));
+    .where(and(eq(genes.slug, manifest.slug), isNull(genes.deleted_at)));
   if (existing.length > 0) {
     throw AppError.slugExists(manifest.slug);
   }

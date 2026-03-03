@@ -205,7 +205,7 @@ export async function createTemplate(input: CreateTemplateInput) {
   const existing = await db
     .select({ id: agentTemplates.id })
     .from(agentTemplates)
-    .where(eq(agentTemplates.slug, input.slug));
+    .where(and(eq(agentTemplates.slug, input.slug), isNull(agentTemplates.deleted_at)));
 
   if (existing.length > 0) {
     throw AppError.templateSlugExists(input.slug);

@@ -191,7 +191,7 @@ export async function createGenome(input: CreateGenomeInput) {
   const existing = await db
     .select({ id: genomes.id })
     .from(genomes)
-    .where(eq(genomes.slug, input.slug));
+    .where(and(eq(genomes.slug, input.slug), isNull(genomes.deleted_at)));
 
   if (existing.length > 0) {
     throw AppError.genomeSlugExists(input.slug);
