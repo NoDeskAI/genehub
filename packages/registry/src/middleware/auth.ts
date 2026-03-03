@@ -13,6 +13,12 @@ export type AuthRole = 'public' | 'publisher' | 'admin';
 const ADMIN_TOKEN = process.env.GENEHUB_ADMIN_TOKEN ?? 'admin-dev-token';
 const JWT_SECRET = process.env.GENEHUB_JWT_SECRET ?? 'genehub-dev-jwt-secret';
 const COOKIE_NAME = 'ghb_session';
+const ADMIN_LOGINS = new Set(
+  (process.env.GENEHUB_ADMIN_LOGINS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
+);
 
 type AuthInfo = {
   role: AuthRole;
@@ -74,8 +80,9 @@ async function resolveAuth(c: Context): Promise<AuthInfo> {
       const payload = await verify(jwt, JWT_SECRET, 'HS256');
       const publisherId = payload.sub as string;
       const login = payload.login as string | undefined;
+      const role: AuthRole = login && ADMIN_LOGINS.has(login) ? 'admin' : 'publisher';
 
-      return { role: 'publisher', publisherId, githubLogin: login };
+      return { role, publisherId, githubLogin: login };
     } catch {
       return { role: 'public' };
     }
