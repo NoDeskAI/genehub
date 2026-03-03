@@ -184,7 +184,7 @@ AI 员工模板是最高层抽象，GeneHub 存储公共模板（面向社区）
 # 已实现命令
 genehub install <gene-slug>       # 安装基因（支持 @version、--force、--learn、--target）
 genehub uninstall <gene-slug>     # 卸载基因
-genehub search <keyword>          # 搜索基因（当前本地搜索，Future: 联邦搜索）
+genehub search <keyword>          # 搜索基因（当前本地搜索，计划接入联邦搜索）
 genehub list                      # 列出已安装基因
 genehub publish <path>            # 发布基因（支持新建 + 更新版本）
 genehub init [path]               # 初始化 gene.yaml + SKILL.md 模板
@@ -680,8 +680,8 @@ genehub/
 │   │   │   ├── services/           # 业务逻辑（gene-service / genome-service / gitea-service / federated-search / dependency-resolver / gene-events）
 │   │   │   ├── db/                 # 数据库（Drizzle schema + migrations + seed）
 │   │   │   ├── middleware/         # 中间件（auth / error-handler / response）
-│   │   │   ├── mcp/               # MCP Server（20 个工具）
-│   │   │   │   ├── tools/         # query / genome / manage / review
+│   │   │   ├── mcp/               # MCP Server（22 个工具）
+│   │   │   │   ├── tools/         # query / genome / template / manage / review
 │   │   │   │   ├── server.ts      # MCP Server 定义
 │   │   │   │   └── http.ts        # Streamable HTTP 传输
 │   │   │   ├── adapters/          # 外部基因适配器
@@ -692,8 +692,8 @@ genehub/
 │   │   ├── curator/               # Gene Curator Agent 配置
 │   │   │   ├── opencode.json      # 本地开发配置
 │   │   │   ├── opencode-k8s.json  # K8s 生产配置
-│   │   │   ├── system-prompt.md   # Curator 角色定义
-│   │   │   └── listener.ts        # 事件监听器
+│   │   │   ├── AGENTS.md          # Curator 角色定义（系统提示词）
+│   │   │   └── listener.ts        # 事件监听器（LISTEN/NOTIFY）
 │   │   └── package.json
 │   │
 │   ├── sdk/
@@ -710,7 +710,7 @@ genehub/
 │   └── web/                        # Web 前端（React 19 + Vite + Tailwind CSS 4）
 │       └── src/
 │           ├── pages/              # Home / Browse / GeneDetail / GenomeBrowse / GenomeDetail / TemplateBrowse / TemplateDetail / Settings
-│           ├── components/         # Layout / GeneCard / GenomeCard / TemplateCard / FederatedSearchCard / ReviewList
+│           ├── components/         # Layout / GeneCard / GenomeCard / TemplateCard / FederatedSearchCard / ReviewList / VersionHistory
 │           ├── components/ui/      # button / badge / card / input / skeleton / separator / tabs / tooltip
 │           └── api/                # API 请求封装
 │
@@ -1020,7 +1020,7 @@ GeneHub 内置了一套基于 **OpenCode**（开源终端 AI 框架）和 **MCP*
 
 ### 11.2 MCP Server
 
-GeneHub MCP Server 将基因库能力暴露为 20 个标准 MCP 工具，任何支持 MCP 协议的 AI 框架（OpenCode、Claude Code、Cursor 等）都可以接入。
+GeneHub MCP Server 将基因库能力暴露为 22 个标准 MCP 工具，任何支持 MCP 协议的 AI 框架（OpenCode、Claude Code、Cursor 等）都可以接入。
 
 **代码位置**：`packages/registry/src/mcp/`
 
@@ -1032,8 +1032,9 @@ src/mcp/
 └── tools/
     ├── query.ts       # 6 个查询工具
     ├── genome.ts      # 4 个基因组工具
+    ├── template.ts    # 3 个模板工具
     ├── manage.ts      # 4 个管理工具
-    └── review.ts      # 3 个审核工具
+    └── review.ts      # 5 个审核工具
 ```
 
 **传输方式**：
@@ -1076,7 +1077,9 @@ pnpm --filter @nodeskai/genehub-registry mcp:dev
 | 管理 | `merge_genes` | 合并重复基因 |
 | 审核 | `post_review` | 发布点评（评分 0-10 + 评语） |
 | 审核 | `flag_for_deletion` | 标记待删除（人工确认后才会删除） |
-| 审核 | `approve_gene` | 审核通过 |
+| 审核 | `approve_gene` | 审核通过基因 |
+| 审核 | `review_genome` | 审核基因组（评分 + 评语 + 状态） |
+| 审核 | `review_template` | 审核 AI 员工模板（评分 + 评语 + 状态） |
 
 ### 11.3 Gene Curator（基因库管理员）
 
@@ -1089,7 +1092,7 @@ curator/
 ├── opencode.json      # 本地开发配置（MCP stdio）
 ├── opencode-k8s.json  # K8s 生产配置（MCP Streamable HTTP → http://genehub/mcp）
 ├── opencode-prod.json # 本地连线上配置（kubectl exec）
-├── system-prompt.md   # Curator 的角色定义和工作规范
+├── AGENTS.md          # Curator 的角色定义和工作规范（支持基因 / 基因组 / 模板审核）
 └── listener.ts        # 实时事件监听器（PostgreSQL LISTEN/NOTIFY）
 ```
 
@@ -1307,15 +1310,20 @@ MINIMAX_API_KEY: sk-xxx
 
 ### M3 - AI 能力 + 进阶功能 ✅（AI 部分）
 
-- [x] MCP Server（20 个工具：查询 6 + 基因组 4 + 模板 3 + 管理 4 + 审核 3）
-- [x] Gene Curator Agent（OpenCode 配置 + 系统提示词 + 事件监听器）
+- [x] MCP Server（22 个工具：查询 6 + 基因组 4 + 模板 3 + 管理 4 + 审核 5）
+- [x] Gene Curator Agent（OpenCode 配置 + AGENTS.md 提示词 + 事件监听器，支持基因/基因组/模板审核）
 - [x] 事件驱动架构（PostgreSQL LISTEN/NOTIFY + gene_events）
-- [x] 联邦搜索（本地 DB + ClawHub API 并行查询、去重、分数归一化）
-- [x] 基因审核 API（`gene_reviews` + 人工反馈覆盖）
+- [x] 联邦搜索（本地 DB + ClawHub + Evomap 并行查询、去重、分数归一化）
+- [x] 基因审核 API（`gene_reviews` 统一表，支持 gene/genome/template 三种实体类型）
 - [x] 基因关系模型（`gene_relations`：synergy / conflict / extends / replaces）
 - [x] 基因组版本管理（`genome_versions` + resolve 解析）
 - [x] K8s 部署清单（CronJob 定期巡检 + Deployment 实时监听）
-- [x] Web 前端（React 19 + Vite + Tailwind CSS 4，6 个页面 + 15 个组件）
+- [x] Web 前端（React 19 + Vite + Tailwind CSS 4，8 个页面 + 16 个组件）
+- [x] Gitea 集成（基因/基因组/模板文件 Git 版本管理、archive 下载）
+- [x] Web 管理员功能（未发布内容筛选、审核状态过滤）
+- [x] Web 版本历史展开查看文件内容和安装命令
+- [x] GitHub OAuth + API Key 认证 + 管理员角色
+- [x] GitHub Actions CI/CD（lint + build + test + npm publish + Docker deploy + K8s rolling update）
 - [ ] Python SDK
 - [ ] npm / pip 分发支持
 - [ ] 基因效能数据聚合与排行
