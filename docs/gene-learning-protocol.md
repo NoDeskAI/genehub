@@ -281,6 +281,9 @@ interface GeneAdapter {
 
   /** 获取已安装基因的版本 */
   getInstalledVersion(slug: string): Promise<string | null>;
+
+  /** 触发 bot 处理学习任务（可选，各平台 CLI 实现） */
+  triggerLearning?(prompt: string): Promise<void>;
 }
 
 interface InstallOptions {
@@ -547,6 +550,39 @@ Agent Host              GeneHub Registry          审核者
 Agent 创造的基因需要两步审核：
 1. 实例所有者审核（`pending_owner`）
 2. 管理员审核（`pending_admin`）
+
+### 4.5 对话触发学习
+
+学习通道利用各 bot 平台自有的 CLI 非交互对话能力，让 bot 基于 `genehub-learner` 技能自主完成学习。
+
+**流程**：
+
+```
+genehub install <gene> --learn
+  |-- 1. 安装基因文件
+  |-- 2. 创建学习任务文件 learning-tasks/{slug}.md
+  |-- 3. 调用 adapter.triggerLearning() 触发 bot 对话
+         |-- bot 发现 learning-tasks/ 中的任务
+         |-- 自主学习并写入 learning-results/
+```
+
+Adapter 的 `triggerLearning` 方法是可选的。各平台实现：
+
+| 平台 | CLI 命令 | 说明 |
+|------|---------|------|
+| OpenClaw | `openclaw agent --message "检查 learning-tasks/ 并处理学习任务"` | 非交互对话 |
+| nanobot | `nanobot run --prompt "..."` | 试验性，待确认 |
+| DeskClaw | 待定 | 后续扩展 |
+
+触发后不阻塞等待结果，学习在后台异步进行。
+
+### 4.6 串行学习
+
+多个基因同时安装时，学习任务按序串行执行：
+
+- 任务文件通过 front matter 的 `order` 字段标识执行顺序
+- `genehub-learner` SKILL.md 指引 Agent 按 order 排序逐个处理
+- 完成一个任务后再开始下一个，避免认知过载
 
 ---
 
