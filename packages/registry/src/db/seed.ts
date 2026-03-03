@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { db, schema } from './index.js';
 
 const SEED_GENES = [
@@ -148,13 +149,21 @@ async function seed() {
   console.log('Seeding database...');
 
   for (const gene of SEED_GENES) {
-    const _existing = await db
+    const existing = await db
       .select({ id: schema.genes.id })
       .from(schema.genes)
-      .where(/* drizzle eq */ undefined as never)
-      .limit(0);
+      .where(eq(schema.genes.slug, gene.slug));
 
-    const [inserted] = await db.insert(schema.genes).values(gene).onConflictDoNothing().returning();
+    if (existing.length > 0) {
+      console.log(`  = ${gene.slug} (already exists)`);
+      continue;
+    }
+
+    const [inserted] = await db
+      .insert(schema.genes)
+      .values(gene)
+      .onConflictDoNothing({ target: schema.genes.slug })
+      .returning();
 
     if (inserted) {
       await db.insert(schema.geneVersions).values({
@@ -165,8 +174,6 @@ async function seed() {
         is_latest: true,
       });
       console.log(`  + ${gene.slug}@${gene.version}`);
-    } else {
-      console.log(`  = ${gene.slug} (already exists)`);
     }
   }
 

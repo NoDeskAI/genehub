@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { db, schema } from '../db/index.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -22,16 +22,24 @@ reviewsRouter.get('/:slug/reviews', async (c) => {
   const page = Number(c.req.query('page')) || 1;
   const pageSize = Math.min(50, Number(c.req.query('page_size')) || 20);
   const offset = (page - 1) * pageSize;
+  const geneId = geneResult[0].id;
 
-  const items = await db
-    .select()
-    .from(geneReviews)
-    .where(eq(geneReviews.gene_id, geneResult[0].id))
-    .orderBy(desc(geneReviews.created_at))
-    .limit(pageSize)
-    .offset(offset);
+  const [items, countResult] = await Promise.all([
+    db
+      .select()
+      .from(geneReviews)
+      .where(eq(geneReviews.gene_id, geneId))
+      .orderBy(desc(geneReviews.created_at))
+      .limit(pageSize)
+      .offset(offset),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(geneReviews)
+      .where(eq(geneReviews.gene_id, geneId)),
+  ]);
 
-  return paginated(c, items, items.length, page, pageSize);
+  const total = Number(countResult[0]?.count ?? 0);
+  return paginated(c, items, total, page, pageSize);
 });
 
 reviewsRouter.post('/:slug/reviews/:reviewId/feedback', requireAuth('admin'), async (c) => {

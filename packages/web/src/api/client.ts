@@ -122,7 +122,7 @@ export async function listGenes(params?: {
   if (params?.q) sp.set('q', params.q);
   if (params?.category) sp.set('category', params.category);
   if (params?.compatibility) sp.set('compatibility', params.compatibility);
-  if (params?.tag) sp.set('tag', params.tag);
+  if (params?.tag) sp.set('tags', params.tag);
   if (params?.sort) sp.set('sort', params.sort);
   if (params?.page) sp.set('page', String(params.page));
   if (params?.page_size) sp.set('page_size', String(params.page_size));

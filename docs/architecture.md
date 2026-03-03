@@ -155,15 +155,21 @@ GeneHub = 基因注册中心（Registry）+ 标准学习协议（Protocol）+ �
 统一的基因管理命令行，兼容多种安装方式：
 
 ```bash
-# 原生命令
-genehub install <gene-slug>
-genehub search <keyword>
-genehub list
-genehub info <gene-slug>
-genehub uninstall <gene-slug>
-genehub publish <path>
+# 已实现命令
+genehub install <gene-slug>       # 安装基因（支持 @version、--force、--learn、--target）
+genehub uninstall <gene-slug>     # 卸载基因
+genehub search <keyword>          # 搜索基因（当前本地搜索，Future: 联邦搜索）
+genehub list                      # 列出已安装基因
+genehub publish <path>            # 发布基因（支持新建 + 更新版本）
+genehub init [path]               # 初始化 gene.yaml + SKILL.md 模板
+genehub config set/get            # 管理配置（registry / token）
+genehub auth login/status/logout  # GitHub OAuth 认证
+genehub learn <slug>              # 触发深度学习（--check 检查结果）
 
-# 兼容已有生态
+# Future
+genehub info <gene-slug>          # 基因详情（未实现）
+
+# 兼容已有生态（Future）
 claw install <gene-slug>          # ClawHub 兼容
 npx genehub install <gene-slug>   # npm 生态兼容
 pip install genehub-<gene-slug>   # Python 生态兼容
@@ -189,7 +195,7 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | short_description | string(256) | 摘要 |
 | category | string(32) | 领域分类 |
 | tags | JSON | 标签数组（能力 / 性格 / 知识 / 工具） |
-| icon | string(32) | 图标名 |
+| icon | string(64) | 图标名（lucide 图标标识） |
 | source | enum | `official` / `clawhub` / `evomap` / `community` / `agent` / `github` |
 | source_ref | string | 外部来源引用（ClawHub URL / Evomap ID / GitHub login） |
 | publisher_id | FK nullable | 发布者（见 3.3 节） |
@@ -202,7 +208,10 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | install_count | int | 总安装数 |
 | avg_rating | float | 平均评分 |
 | effectiveness_score | float | 综合效能分 |
-| review_status | enum | `draft` / `pending` / `approved` / `rejected` |
+| ai_score | float nullable | AI Curator 评分（0-10） |
+| ai_verdict | string(24) nullable | AI 审核结论（如 `approve`、`needs_improvement`、`flagged`） |
+| ai_enriched | bool | 是否已被 AI Curator 处理过 |
+| review_status | enum | `draft` / `pending` / `approved` / `rejected` / `flagged` / `needs_improvement` |
 | is_published | bool | 是否上架 |
 | created_at | datetime | |
 | updated_at | datetime | |
@@ -218,7 +227,9 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | version | string(16) | 版本号 |
 | description | text | 描述 |
 | short_description | string(256) | 摘要 |
-| icon | string(32) | 图标 |
+| category | string(32) | 分类（默认 `general`） |
+| tags | JSON | 标签数组 |
+| icon | string(64) | 图标 |
 | genes | JSON | 包含的基因 `[{"slug": "xxx", "version": ">=1.0", "config_override": {}}]` |
 | compatibility | JSON | 兼容产品列表 |
 | install_count | int | 应用次数 |
@@ -240,6 +251,96 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | changelog | text | 变更日志 |
 | is_latest | bool | 是否最新 |
 | published_at | datetime | 发布时间 |
+
+#### GenomeVersion（基因组版本历史）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| genome_id | FK | 所属基因组 |
+| version | string(16) | 版本号 |
+| genes | JSON | 该版本的基因组合 |
+| changelog | text | 变更日志 |
+| is_latest | bool | 是否最新 |
+| published_at | datetime | 发布时间 |
+
+#### GeneReview（AI 审核记录）
+
+每次 AI Curator 审核或人工 feedback 均产生一条记录：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| gene_id | FK | 所属基因 |
+| reviewer | string(64) | 审核者标识（默认 `curator-agent`） |
+| score | float nullable | 评分（0-10） |
+| verdict | string(24) nullable | 结论（`approve` / `reject` / `needs_improvement` / `flagged`） |
+| comments | JSON | 审核意见数组 |
+| changes_made | JSON nullable | AI 自动修改的字段记录 |
+| feedback | string(32) nullable | 人工反馈覆盖（admin 操作） |
+| model | string(64) nullable | 使用的 LLM 模型标识 |
+| created_at | datetime | |
+
+#### GeneRelation（基因关系）
+
+记录基因之间的结构化关系，由 AI Curator 自动发现或人工维护：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| source_gene_id | FK | 源基因 |
+| target_gene_id | FK | 目标基因 |
+| relation_type | string(24) | `synergy` / `conflict` / `extends` / `replaces` |
+| strength | float | 关系强度（0-1，默认 0.5） |
+| reason | text nullable | 关系说明 |
+| created_by | string(64) | 创建者（默认 `curator-agent`） |
+| created_at | datetime | |
+
+#### GenomeVersion（基因组版本历史）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| genome_id | FK | 所属基因组 |
+| version | string(16) | 版本号 |
+| genes | JSON | 该版本包含的基因列表 |
+| changelog | text | 变更日志 |
+| is_latest | bool | 是否最新 |
+| published_at | datetime | 发布时间 |
+
+#### GeneReview（基因审核记录）
+
+AI Curator 或人工审核的评审记录：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| gene_id | FK | 所属基因 |
+| reviewer | string(64) | 审核者标识（默认 `curator-agent`） |
+| score | float nullable | 评分（0-10） |
+| verdict | string(24) nullable | 审核结论（`approve` / `reject` / `needs_improvement` / `flagged`） |
+| comments | JSON | 审核意见数组 |
+| changes_made | JSON nullable | AI 做出的修改记录 |
+| feedback | string(32) nullable | 人工反馈覆盖 |
+| model | string(64) nullable | 使用的 AI 模型标识 |
+| created_at | datetime | |
+
+#### GeneRelation（基因关系）
+
+基因间的关联关系，由 AI Curator 自动发现或人工设置：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| source_gene_id | FK | 源基因 |
+| target_gene_id | FK | 目标基因 |
+| relation_type | string(24) | 关系类型：`synergy` / `conflict` / `extends` / `replaces` |
+| strength | float | 关系强度（0-1，默认 0.5） |
+| reason | text nullable | 关联理由 |
+| created_by | string(64) | 创建者（默认 `curator-agent`） |
+| created_at | datetime | |
+
+唯一约束：`(source_gene_id, target_gene_id, relation_type)`
 
 ### 3.2 与 NoDeskClaw 的数据关系
 
@@ -335,10 +436,10 @@ GitHub OAuth                   API Key
 | Registry API | TypeScript + Hono | 轻量高性能，运行在 Node.js / Bun / Edge |
 | 数据库 | PostgreSQL | 与 NoDeskClaw 同生态，支持 JSONB 全文搜索 |
 | 基因文件存储 | 文件系统 + Git | 基因内容版本化天然适合 Git 管理 |
-| 搜索引擎 | PostgreSQL FTS（初期）/ Meilisearch（后期） | 先简后繁 |
-| CLI | TypeScript (tsx) | 跨平台，单文件分发 |
-| Web 前端 | React + Vite + Tailwind CSS | 基因浏览、搜索、API Key 管理 |
-| SDK | TypeScript + Python | 覆盖主流 Agent 开发语言 |
+| 搜索引擎 | PostgreSQL ILIKE（当前）/ Meilisearch（Future） | 先简后繁 |
+| CLI | TypeScript (tsx) | 跨平台，npm 全局安装 |
+| Web 前端 | React 19 + Vite 7 + Tailwind CSS 4 + Radix UI | 基因浏览、搜索、API Key 管理（6 个页面） |
+| SDK | TypeScript（已实现）+ Python（Future） | 覆盖主流 Agent 开发语言 |
 | 分发 | npm + pip + GitHub Releases | 兼容主流包管理器 |
 | Git Hooks | lefthook | pre-commit 执行 Biome lint |
 
@@ -352,47 +453,103 @@ GitHub OAuth                   API Key
 
 #### 基因查询
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/genes` | 搜索基因列表（支持 q / category / tags / compatibility / sort） |
-| GET | `/genes/tags` | 标签统计（tag + count） |
-| GET | `/genes/featured` | 推荐基因列表（按安装量/评分排序） |
-| GET | `/genes/:slug` | 基因详情（最新版本） |
-| GET | `/genes/:slug/versions` | 版本列表 |
-| GET | `/genes/:slug/versions/:version` | 指定版本详情 |
-| GET | `/genes/:slug/manifest` | 获取 manifest（用于安装） |
-| GET | `/genes/:slug/variants` | 变体列表 |
-| GET | `/genes/:slug/synergies` | 协同推荐 |
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| GET | `/genes` | 搜索基因列表（支持 q / category / tags / compatibility / sort） | 已实现 |
+| GET | `/genes/tags` | 标签统计（tag + count） | 已实现 |
+| GET | `/genes/featured` | 推荐基因列表（按安装量/评分排序） | 已实现 |
+| GET | `/genes/:slug` | 基因详情（最新版本） | 已实现 |
+| GET | `/genes/:slug/versions` | 版本列表 | 已实现 |
+| GET | `/genes/:slug/versions/:version` | 指定版本详情 | 已实现 |
+| GET | `/genes/:slug/manifest` | 获取 manifest（支持 `?version=x.y.z`） | 已实现 |
+| GET | `/genes/:slug/variants` | 变体列表（基于 `parent_gene_id`） | Future |
+| GET | `/genes/:slug/synergies` | 协同推荐 | 已实现 |
+| GET | `/genes/:slug/reviews` | 审核记录列表（分页） | 已实现 |
 
 #### 基因组查询
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/genomes` | 搜索基因组 |
-| GET | `/genomes/featured` | 推荐基因组列表 |
-| GET | `/genomes/:slug` | 基因组详情 |
-| GET | `/genomes/:slug/resolve` | 解析并返回所有基因的 manifest（含依赖） |
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| GET | `/genomes` | 搜索基因组 | 已实现 |
+| GET | `/genomes/featured` | 推荐基因组列表 | 已实现 |
+| GET | `/genomes/:slug` | 基因组详情 | 已实现 |
+| GET | `/genomes/:slug/resolve` | 解析并返回所有基因的 manifest（含依赖） | 已实现 |
+| GET | `/genomes/:slug/versions` | 基因组版本列表 | 已实现 |
+| GET | `/genomes/:slug/versions/:version` | 指定基因组版本详情 | 已实现 |
 
-#### 基因发布
+#### 基因管理
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/genes` | 发布新基因 |
-| PUT | `/genes/:slug/versions` | 发布新版本 |
-| POST | `/genes/:slug/deprecate` | 废弃基因 |
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| POST | `/genes` | 发布新基因（需 publisher） | 已实现 |
+| POST | `/genes/:slug/versions` | 发布新版本（需 publisher） | 已实现 |
+| PUT | `/genes/:slug` | 更新基因元数据（需 publisher） | 已实现 |
+| DELETE | `/genes/:slug` | 删除基因（需 admin，软删除） | 已实现 |
+| POST | `/genes/:slug/deprecate` | 废弃基因 | Future |
+
+#### 基因组管理
+
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| POST | `/genomes` | 创建基因组（需 publisher） | 已实现 |
+| POST | `/genomes/:slug/versions` | 发布基因组新版本（需 publisher） | 已实现 |
+| PUT | `/genomes/:slug` | 更新基因组（需 publisher） | 已实现 |
+| DELETE | `/genomes/:slug` | 删除基因组（需 admin） | 已实现 |
+
+#### 效能与统计
+
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| POST | `/genes/:slug/installed` | 安装计数上报 | 已实现 |
+| POST | `/genes/:slug/effectiveness` | 效能数据上报（EMA 算法） | 已实现 |
+| POST | `/genomes/:slug/installed` | 基因组安装计数上报 | 已实现 |
+| POST | `/effectiveness/batch` | 批量效能上报 | Future |
+
+#### 审核
+
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| POST | `/genes/:slug/reviews/:reviewId/feedback` | 人工反馈覆盖 AI 审核结论（需 admin） | 已实现 |
 
 #### 依赖解析
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/resolve` | 批量解析依赖，返回安装计划 |
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| POST | `/resolve` | 解析依赖，返回安装计划（当前单基因，Future: 批量） | 已实现 |
 
 #### 联邦搜索
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/genes/search?q=xxx` | 联邦搜索（本地 + ClawHub 实时查询，外部结果后台入库为 pending 待 AI 审核） |
-| POST | `/import/git` | 从 Git 仓库导入基因 |
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| GET | `/genes/search?q=xxx` | 联邦搜索（本地 + ClawHub 实时查询，外部结果后台入库为 pending 待 AI 审核） | 已实现 |
+| POST | `/import/git` | 从 Git 仓库导入基因 | Future |
+
+#### 认证
+
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| GET | `/auth/github` | GitHub OAuth 登录 | 已实现 |
+| GET | `/auth/github/callback` | OAuth 回调 | 已实现 |
+| POST | `/auth/logout` | 登出 | 已实现 |
+| GET | `/auth/me` | 当前用户信息 | 已实现 |
+
+#### API Key 管理
+
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| POST | `/keys` | 创建 API Key（需 publisher） | 已实现 |
+| GET | `/keys` | 列出 API Key（需 publisher） | 已实现 |
+| DELETE | `/keys/:id` | 撤销 API Key（需 publisher） | 已实现 |
+
+#### NoDeskClaw 同步与 Webhook
+
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| POST | `/sync/nodeskclaw` | NoDeskClaw 批量同步（需 admin 白名单） | 已实现 |
+| GET | `/sync/status` | 同步状态查询 | 已实现 |
+| POST | `/webhooks/nodeskclaw/gene-created` | NoDeskClaw 基因创造回调 | 已实现 |
+| POST | `/webhooks/nodeskclaw/gene-learned` | NoDeskClaw 基因学习回调 | 已实现 |
+| POST | `/webhooks/nodeskclaw/effectiveness` | NoDeskClaw 效能数据回调 | 已实现 |
 
 #### ~~外部基因同步~~（已弃用）
 
@@ -433,76 +590,90 @@ GitHub OAuth                   API Key
 
 ```
 genehub/
-├── docs/                         # 设计文档
-│   ├── architecture.md           # 架构设计（本文档）
-│   └── gene-learning-protocol.md # 标准学习协议规范
+├── docs/                           # 设计文档
+│   ├── architecture.md             # 架构设计（本文档）
+│   └── gene-learning-protocol.md   # 标准学习协议规范
 │
 ├── packages/
-│   ├── registry/                 # Gene Registry Service
-│   │   ├── src/
-│   │   │   ├── api/              # API 路由
-│   │   │   ├── services/         # 业务逻辑
-│   │   │   ├── models/           # 数据模型
-│   │   │   ├── adapters/         # 外部基因适配器
-│   │   │   │   ├── clawhub.ts    # ClawHub 适配
-│   │   │   │   ├── evomap.ts     # Evomap 适配
-│   │   │   │   └── git.ts        # Git 仓库导入
-│   │   │   └── index.ts
-│   │   ├── package.json
-│   │   └── tsconfig.json
+│   ├── types/                      # 共享类型定义（@nodeskai/genehub-types）
+│   │   └── src/
+│   │       ├── manifest.ts         # Gene Manifest Zod Schema
+│   │       ├── api.ts              # API 类型 + 错误码
+│   │       └── index.ts
 │   │
-│   ├── sdk/                      # 标准学习协议 SDK
-│   │   ├── typescript/           # TypeScript SDK
-│   │   │   ├── src/
-│   │   │   │   ├── client.ts     # GeneHub API 客户端
-│   │   │   │   ├── protocol.ts   # 标准学习协议实现
-│   │   │   │   ├── adapters/     # 产品适配器（初期）
-│   │   │   │   │   ├── openclaw.ts
-│   │   │   │   │   ├── nanobot.ts
-│   │   │   │   │   └── generic.ts
-│   │   │   │   └── types.ts      # 类型定义
-│   │   │   └── package.json
-│   │   └── python/               # Python SDK
-│   │       ├── genehub/
-│   │       │   ├── client.py
-│   │       │   ├── protocol.py
-│   │       │   └── adapters/
-│   │       └── pyproject.toml
-│   │
-│   ├── cli/                      # 命令行工具
+│   ├── registry/                   # Gene Registry Service（@nodeskai/genehub-registry）
 │   │   ├── src/
-│   │   │   ├── commands/         # 子命令
-│   │   │   │   ├── install.ts
-│   │   │   │   ├── search.ts
-│   │   │   │   ├── list.ts
-│   │   │   │   ├── publish.ts
-│   │   │   │   └── init.ts
+│   │   │   ├── api/                # API 路由（genes / genomes / auth / keys / reviews / resolve / sync / webhooks）
+│   │   │   ├── services/           # 业务逻辑（gene-service / genome-service / federated-search / dependency-resolver / gene-events）
+│   │   │   ├── db/                 # 数据库（Drizzle schema + migrations + seed）
+│   │   │   ├── middleware/         # 中间件（auth / error-handler / response）
+│   │   │   ├── mcp/               # MCP Server（17 个工具）
+│   │   │   │   ├── tools/         # query / genome / manage / review
+│   │   │   │   ├── server.ts      # MCP Server 定义
+│   │   │   │   └── http.ts        # Streamable HTTP 传输
+│   │   │   ├── adapters/          # 外部基因适配器
+│   │   │   │   ├── clawhub/       # ClawHub 适配（client + converter + sync）
+│   │   │   │   ├── evomap/        # Evomap 适配（client + converter + sync）
+│   │   │   │   └── nodeskclaw/    # NoDeskClaw 适配（converter + sync）
 │   │   │   └── index.ts
+│   │   ├── curator/               # Gene Curator Agent 配置
+│   │   │   ├── opencode.json      # 本地开发配置
+│   │   │   ├── opencode-k8s.json  # K8s 生产配置
+│   │   │   ├── system-prompt.md   # Curator 角色定义
+│   │   │   └── listener.ts        # 事件监听器
 │   │   └── package.json
 │   │
-│   └── web/                      # Web 前端（React + Vite）
-│       ├── src/
-│       │   ├── pages/            # 页面组件
-│       │   ├── components/       # 业务 + UI 组件
-│       │   └── api/              # API 请求封装
-│       └── package.json
+│   ├── sdk/
+│   │   └── typescript/             # TypeScript SDK（@nodeskai/genehub-sdk）
+│   │       └── src/
+│   │           ├── client.ts       # GeneHub API 客户端
+│   │           ├── learning/       # 标准学习协议引擎（L1/L2）
+│   │           └── adapters/       # 产品适配器（openclaw / nanobot / generic）
+│   │
+│   ├── cli/                        # 命令行工具（@nodeskai/genehub）
+│   │   └── src/
+│   │       └── commands/           # install / uninstall / search / list / publish / init / config / auth / learn
+│   │
+│   └── web/                        # Web 前端（React 19 + Vite + Tailwind CSS 4）
+│       └── src/
+│           ├── pages/              # Home / Browse / GeneDetail / GenomeBrowse / GenomeDetail / Settings
+│           ├── components/         # Layout / GeneCard / GenomeCard / FederatedSearchCard / ReviewList
+│           ├── components/ui/      # button / badge / card / input / skeleton / separator / tabs / tooltip
+│           └── api/                # API 请求封装
 │
-├── genes/                        # 官方基因库（Git 管理）
-│   ├── skills/
-│   │   └── <gene-slug>/
-│   │       ├── gene.yaml         # 基因元数据
-│   │       └── SKILL.md          # 技能内容
-│   ├── rules/
-│   └── protocols/
+├── genes/                          # 官方基因库（Git 管理，8 个基因）
+│   └── skills/
+│       └── <gene-slug>/
+│           ├── gene.yaml           # 基因元数据
+│           └── SKILL.md            # 技能内容
 │
-├── adapters/                     # 安装方式兼容层
-│   ├── clawhub/                  # claw install 兼容
-│   └── npm/                      # npx genehub 兼容
+├── deploy/                         # 部署配置
+│   └── k8s/
+│       ├── genehub.yaml            # Registry + Web 部署
+│       ├── curator.yaml            # Curator CronJob + Listener
+│       └── postgres.yaml           # PostgreSQL StatefulSet
 │
+├── scripts/                        # 工具脚本
+│   └── sync-version.mjs           # 版本号同步
+│
+├── .github/workflows/              # CI/CD
+│   ├── ci.yml                      # lint + build + test
+│   └── release.yml                 # npm publish + Docker build + K8s deploy
+│
+├── VERSION                         # 项目版本号
+├── CHANGELOG.md
+├── lefthook.yml                    # pre-commit lint hook
+├── biome.json                      # Biome 配置
 ├── README.md
-├── package.json                  # monorepo 根配置
-└── .gitignore
+├── AGENTS.md                       # 开发指南
+├── package.json                    # monorepo 根配置
+└── pnpm-workspace.yaml
 ```
+
+> **未实现的目录**（计划中）：
+> - `packages/sdk/python/` — Python SDK（M3 计划）
+> - `adapters/` — 安装方式兼容层（clawhub / npm / pip，后续扩展）
+> - `genes/rules/`、`genes/protocols/` — 规则类、协议类基因（当前仅有 skills 分类）
 
 ---
 
@@ -1063,11 +1234,20 @@ MINIMAX_API_KEY: sk-xxx
 - [x] 基因关系模型（`gene_relations`：synergy / conflict / extends / replaces）
 - [x] 基因组版本管理（`genome_versions` + resolve 解析）
 - [x] K8s 部署清单（CronJob 定期巡检 + Deployment 实时监听）
+- [x] Web 前端（React 19 + Vite + Tailwind CSS 4，6 个页面 + 15 个组件）
 - [ ] Python SDK
 - [ ] npm / pip 分发支持
 - [ ] 基因效能数据聚合与排行
 - [ ] 全文搜索升级（Meilisearch）
 - [ ] DeskClaw Adapter（后续扩展）
+- [ ] CLI `info` 命令
+- [ ] CLI `search` 接入联邦搜索
+- [ ] SDK `federatedSearch()` 方法
+- [ ] `POST /resolve` 批量解析
+- [ ] `GET /genes/:slug/variants` 变体列表
+- [ ] `POST /genes/:slug/deprecate` 废弃基因
+- [ ] `POST /import/git` Git 仓库导入
+- [ ] `POST /effectiveness/batch` 批量效能上报
 
 ---
 

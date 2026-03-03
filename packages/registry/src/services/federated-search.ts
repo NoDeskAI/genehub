@@ -205,7 +205,7 @@ async function insertNewGene(item: FederatedGeneItem) {
       review_status: 'pending',
       is_published: false,
     })
-    .onConflictDoNothing()
+    .onConflictDoNothing({ target: genes.slug })
     .returning();
 
   if (gene) {
