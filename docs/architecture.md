@@ -39,6 +39,32 @@ GeneHub = 基因注册中心（Registry）+ 标准学习协议（Protocol）+ �
 
 ---
 
+## 一(bis)、三层能力体系
+
+GeneHub 管理三层能力实体，从原子到组合：
+
+| 层级 | 实体 | 说明 |
+|------|------|------|
+| L1 | Gene（基因） | 原子能力单元，一个 SKILL.md + manifest |
+| L2 | Genome（基因组） | 基因的精选合集，一键安装一套能力 |
+| L3 | Agent Template（AI 员工模板） | 基因组 + 额外基因 + 角色设定，一个可复制的 AI 员工身份 |
+
+```
+Gene（基因）
+  └── 原子能力单元
+
+Genome（基因组）
+  └── 引用多个基因，一键安装
+
+Agent Template（AI 员工模板）
+  └── 引用基因组 + 额外基因 + 角色定位 + 头像
+  └── 一个可以被克隆的 AI 员工身份
+```
+
+AI 员工模板是最高层抽象，GeneHub 存储公共模板（面向社区），NoDeskClaw 存储企业私有模板（安全隔离）。
+
+---
+
 ## 二、系统架构
 
 ### 2.1 全局架构
@@ -239,6 +265,46 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | created_at | datetime | |
 | updated_at | datetime | |
 | deleted_at | datetime | 软删除 |
+
+#### Agent Template（AI 员工模板）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| name | string(128) | 模板名称 |
+| slug | string(128) | 唯一标识符 |
+| version | string(16) | 版本号 |
+| description | text | 描述 |
+| short_description | string(256) | 摘要 |
+| role | string(64) nullable | 角色定位（如「营销专员」「代码审查员」） |
+| category | string(32) | 分类 |
+| tags | JSON | 标签数组 |
+| icon | string(64) | 图标 |
+| avatar_url | text nullable | 员工头像 |
+| genomes | JSON | 引用的基因组 `[{slug, version}]` |
+| genes | JSON | 额外独立基因 `[{slug, version}]` |
+| compatibility | JSON | 兼容产品列表 |
+| install_count | int | 安装次数 |
+| avg_rating | float | 平均评分 |
+| author | JSON | 作者信息 |
+| publisher_id | FK nullable | 发布者 |
+| is_published | bool | 是否上架 |
+| created_at | datetime | |
+| updated_at | datetime | |
+| deleted_at | datetime | 软删除 |
+
+#### Agent Template Version（模板版本历史）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| template_id | FK | 所属模板 |
+| version | string(16) | 版本号 |
+| genomes | JSON | 该版本的基因组列表 |
+| genes | JSON | 该版本的额外基因列表 |
+| changelog | text | 变更日志 |
+| is_latest | bool | 是否最新 |
+| published_at | datetime | 发布时间 |
 
 #### GeneVersion（基因版本历史）
 
@@ -496,6 +562,21 @@ GitHub OAuth                   API Key
 | PUT | `/genomes/:slug` | 更新基因组（需 publisher） | 已实现 |
 | DELETE | `/genomes/:slug` | 删除基因组（需 admin） | 已实现 |
 
+#### AI 员工模板
+
+| 方法 | 路径 | 说明 | 状态 |
+|------|------|------|------|
+| GET | `/templates` | 搜索模板列表（支持 q / category / role / sort） | 已实现 |
+| GET | `/templates/featured` | 推荐模板列表 | 已实现 |
+| GET | `/templates/:slug` | 模板详情 | 已实现 |
+| GET | `/templates/:slug/versions` | 版本列表 | 已实现 |
+| GET | `/templates/:slug/versions/:version` | 指定版本 | 已实现 |
+| POST | `/templates` | 创建模板（需 publisher） | 已实现 |
+| POST | `/templates/:slug/versions` | 发布新版本（需 publisher） | 已实现 |
+| PUT | `/templates/:slug` | 更新（需 publisher） | 已实现 |
+| DELETE | `/templates/:slug` | 删除（需 admin） | 已实现 |
+| POST | `/templates/:slug/installed` | 安装计数上报 | 已实现 |
+
 #### 效能与统计
 
 | 方法 | 路径 | 说明 | 状态 |
@@ -607,7 +688,7 @@ genehub/
 │   │   │   ├── services/           # 业务逻辑（gene-service / genome-service / federated-search / dependency-resolver / gene-events）
 │   │   │   ├── db/                 # 数据库（Drizzle schema + migrations + seed）
 │   │   │   ├── middleware/         # 中间件（auth / error-handler / response）
-│   │   │   ├── mcp/               # MCP Server（17 个工具）
+│   │   │   ├── mcp/               # MCP Server（20 个工具）
 │   │   │   │   ├── tools/         # query / genome / manage / review
 │   │   │   │   ├── server.ts      # MCP Server 定义
 │   │   │   │   └── http.ts        # Streamable HTTP 传输
@@ -636,8 +717,8 @@ genehub/
 │   │
 │   └── web/                        # Web 前端（React 19 + Vite + Tailwind CSS 4）
 │       └── src/
-│           ├── pages/              # Home / Browse / GeneDetail / GenomeBrowse / GenomeDetail / Settings
-│           ├── components/         # Layout / GeneCard / GenomeCard / FederatedSearchCard / ReviewList
+│           ├── pages/              # Home / Browse / GeneDetail / GenomeBrowse / GenomeDetail / TemplateBrowse / TemplateDetail / Settings
+│           ├── components/         # Layout / GeneCard / GenomeCard / TemplateCard / FederatedSearchCard / ReviewList
 │           ├── components/ui/      # button / badge / card / input / skeleton / separator / tabs / tooltip
 │           └── api/                # API 请求封装
 │
@@ -915,7 +996,7 @@ GeneHub 内置了一套基于 **OpenCode**（开源终端 AI 框架）和 **MCP*
 │   ├── /api/v1/genomes  REST API                                  │
 │   └── /mcp             MCP Streamable HTTP (token-gated)         │
 │                                                                  │
-│   MCP 17 Tools:                                                  │
+│   MCP 20 Tools:                                                  │
 │     Query:  list_genes / get_gene / search_genes /               │
 │             find_similar / get_library_stats / evaluate_in_context│
 │     Genome: list_genomes / get_genome /                          │
@@ -942,7 +1023,7 @@ GeneHub 内置了一套基于 **OpenCode**（开源终端 AI 框架）和 **MCP*
 
 ### 11.2 MCP Server
 
-GeneHub MCP Server 将基因库能力暴露为 17 个标准 MCP 工具，任何支持 MCP 协议的 AI 框架（OpenCode、Claude Code、Cursor 等）都可以接入。
+GeneHub MCP Server 将基因库能力暴露为 20 个标准 MCP 工具，任何支持 MCP 协议的 AI 框架（OpenCode、Claude Code、Cursor 等）都可以接入。
 
 **代码位置**：`packages/registry/src/mcp/`
 
@@ -989,6 +1070,9 @@ pnpm --filter @nodeskai/genehub-registry mcp:dev
 | 基因组 | `get_genome` | 基因组详情 + 版本历史 |
 | 基因组 | `suggest_genome` | 根据需求描述推荐合适的基因组 |
 | 基因组 | `validate_genome` | 校验基因组合法性（存在性、发布状态、冲突检测） |
+| 模板 | `list_templates` | 列出 AI 员工模板，按分类/角色/关键词过滤 |
+| 模板 | `get_template` | 模板详情 + 版本历史 |
+| 模板 | `suggest_template` | 根据需求描述推荐模板 |
 | 管理 | `update_gene_category` | 重分类（需提供理由） |
 | 管理 | `update_gene_description` | 改善描述文本 |
 | 管理 | `update_gene_synergies` | 设置关联关系（synergy/conflict/extends/replaces） |
@@ -1226,7 +1310,7 @@ MINIMAX_API_KEY: sk-xxx
 
 ### M3 - AI 能力 + 进阶功能 ✅（AI 部分）
 
-- [x] MCP Server（17 个工具：查询 6 + 基因组 4 + 管理 4 + 审核 3）
+- [x] MCP Server（20 个工具：查询 6 + 基因组 4 + 模板 3 + 管理 4 + 审核 3）
 - [x] Gene Curator Agent（OpenCode 配置 + 系统提示词 + 事件监听器）
 - [x] 事件驱动架构（PostgreSQL LISTEN/NOTIFY + gene_events）
 - [x] 联邦搜索（本地 DB + ClawHub API 并行查询、去重、分数归一化）
@@ -1248,6 +1332,57 @@ MINIMAX_API_KEY: sk-xxx
 - [ ] `POST /genes/:slug/deprecate` 废弃基因
 - [ ] `POST /import/git` Git 仓库导入
 - [ ] `POST /effectiveness/batch` 批量效能上报
+
+---
+
+## 十三(bis)、企业私有基因库
+
+GeneHub = 公共基因注册中心（强制开源）。企业私有基因留在 NoDeskClaw（安全隔离）。
+
+| 维度 | GeneHub | NoDeskClaw |
+|------|---------|-----------|
+| 定位 | 公共社区 | 企业私有 |
+| 基因来源 | 社区贡献 / Agent 创造 | 企业内部 Agent 涌现 |
+| 访问控制 | 公开读，发布需认证 | 企业内部访问 |
+| 基因市场数据 | GeneHub 生产 API | 企业私有市场页面 |
+
+## 十三(ter)、基因回馈与进化
+
+Agent 涌现的新能力可以回馈到基因生态：
+
+- Agent 涌现新能力 -> 自发或外部驱动分享
+- 企业内部 Agent 反馈 -> 默认存企业私有库
+- 手动或通过 public 接口推送到 GeneHub（公开分享）
+- 社交进化：Agent A 通过 learning channel 指导 Agent B 学习
+
+## 十三(quater)、效能评定机制
+
+- 用户点赞/点踩 -> 对应 skill 评分 +/-
+- Agent 自评通过 API 推送（EMA 算法，alpha=0.3）
+- 使用频率加分（使用 = +分，不用不扣分）
+- 建立淘汰机制（零效能基因标记/下架）
+
+## 十三(quinque)、学习通道设计
+
+学习通道 = 对 bot 的一次 CLI 非交互对话调用，bot 基于 genehub-learner 技能自主完成学习。
+
+**工作流程**：
+
+1. `genehub install <gene> --learn` 安装基因
+2. CLI 创建学习任务文件 `learning-tasks/{slug}.md`
+3. CLI 调用平台 CLI 触发 bot 对话（`GeneAdapter.triggerLearning()`）
+4. bot 发现 learning-tasks/ 中的任务，自主学习，写入结果
+5. `genehub learn --check <slug>` 检查结果并应用
+
+**各平台触发方式**：
+
+| 平台 | 命令 | 状态 |
+|------|------|------|
+| OpenClaw | `openclaw agent --message "..."` | 已实现 |
+| nanobot | `nanobot run --prompt "..."` | 试验性 |
+| DeskClaw | 待定 | 未实现 |
+
+**串行学习**：学习任务文件中通过 `order` 字段排序，genehub-learner 按序逐个处理。
 
 ---
 
