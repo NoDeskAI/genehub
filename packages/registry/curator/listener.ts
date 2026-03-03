@@ -29,7 +29,7 @@ type OpenCodeEvent = {
   };
 };
 
-const REVIEW_ACTIONS = ['post_review', 'approve_gene', 'flag_for_deletion'];
+const REVIEW_ACTIONS = ['post_review', 'approve_gene', 'flag_for_deletion', 'review_genome', 'review_template'];
 
 const RETRY_PROMPTS = [
   '不要再问我，你自己决定，你有这个权利。立刻调用 post_review 发布评分，然后调用 approve_gene 或 flag_for_deletion。',
@@ -43,10 +43,10 @@ function buildPrompt(event: { type: string; slug: string; source: string }): str
       return `审核基因 ${event.slug}，来源: ${event.source}`;
     case 'genome.created':
     case 'genome.updated':
-      return `审核基因组 ${event.slug}，来源: ${event.source}。使用 get_genome 获取详情，检查基因组合理性、基因引用完整性、描述质量，然后 post_review 并 approve_gene（基因组审核也用此工具）。`;
+      return `审核基因组 ${event.slug}，来源: ${event.source}。使用 get_genome 获取详情，检查基因组合理性、基因引用完整性、描述质量，然后调用 review_genome 提交审核结论。`;
     case 'template.created':
     case 'template.updated':
-      return `审核 AI 员工模板 ${event.slug}，来源: ${event.source}。使用 get_template 获取详情，检查模板角色定义、基因组引用完整性、配置合理性，然后 post_review 并 approve_gene（模板审核也用此工具）。`;
+      return `审核 AI 员工模板 ${event.slug}，来源: ${event.source}。使用 get_template 获取详情，检查模板角色定义、基因组引用完整性、配置合理性，然后调用 review_template 提交审核结论。`;
     default:
       return null;
   }

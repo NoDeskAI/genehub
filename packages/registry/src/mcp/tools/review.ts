@@ -1,8 +1,8 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import { db, schema } from '../../db/index.js';
-import { emitGeneEvent } from '../../services/gene-events.js';
+import { emitGeneEvent, emitGenomeEvent, emitTemplateEvent } from '../../services/gene-events.js';
 
-const { genes, geneReviews } = schema;
+const { genes, geneReviews, genomes, agentTemplates } = schema;
 
 async function findGene(slug: string) {
   const result = await db
@@ -115,4 +115,72 @@ export async function approveGene(args: { slug: string; model?: string }) {
     .returning();
 
   return { approved: args.slug, review_id: review.id };
+}
+
+export async function reviewGenome(args: {
+  slug: string;
+  score: number;
+  verdict: string;
+  comments: string[];
+  model?: string;
+}) {
+  const result = await db
+    .select()
+    .from(genomes)
+    .where(and(eq(genomes.slug, args.slug), isNull(genomes.deleted_at)));
+  if (result.length === 0) return { error: `基因组 ${args.slug} 不存在` };
+
+  const genome = result[0];
+  const isApproved = args.verdict === 'approve' || args.verdict === 'approved';
+
+  await db
+    .update(genomes)
+    .set({
+      avg_rating: args.score,
+      is_published: isApproved,
+      updated_at: new Date(),
+    })
+    .where(eq(genomes.id, genome.id));
+
+  await emitGenomeEvent('genome.updated', args.slug, 'curator-agent', {
+    action: 'reviewed',
+    score: args.score,
+    verdict: args.verdict,
+  });
+
+  return { slug: args.slug, score: args.score, verdict: args.verdict, comments: args.comments };
+}
+
+export async function reviewTemplate(args: {
+  slug: string;
+  score: number;
+  verdict: string;
+  comments: string[];
+  model?: string;
+}) {
+  const result = await db
+    .select()
+    .from(agentTemplates)
+    .where(and(eq(agentTemplates.slug, args.slug), isNull(agentTemplates.deleted_at)));
+  if (result.length === 0) return { error: `模板 ${args.slug} 不存在` };
+
+  const template = result[0];
+  const isApproved = args.verdict === 'approve' || args.verdict === 'approved';
+
+  await db
+    .update(agentTemplates)
+    .set({
+      avg_rating: args.score,
+      is_published: isApproved,
+      updated_at: new Date(),
+    })
+    .where(eq(agentTemplates.id, template.id));
+
+  await emitTemplateEvent('template.updated', args.slug, 'curator-agent', {
+    action: 'reviewed',
+    score: args.score,
+    verdict: args.verdict,
+  });
+
+  return { slug: args.slug, score: args.score, verdict: args.verdict, comments: args.comments };
 }

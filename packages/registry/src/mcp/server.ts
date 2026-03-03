@@ -20,7 +20,13 @@ import {
   listGenes,
   searchGenes,
 } from './tools/query.js';
-import { approveGene, flagForDeletion, postReview } from './tools/review.js';
+import {
+  approveGene,
+  flagForDeletion,
+  postReview,
+  reviewGenome,
+  reviewTemplate,
+} from './tools/review.js';
 import {
   getTemplate,
   listTemplates as listTemplatesMcp,
@@ -298,6 +304,38 @@ export function createMcpServer() {
     },
     async (args) => {
       const result = await approveGene(args);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'review_genome',
+    '审核基因组：评分 + 评语，verdict 为 approve 时发布',
+    {
+      slug: z.string().describe('基因组 slug'),
+      score: z.number().min(0).max(10).describe('评分 0-10'),
+      verdict: z.enum(['approve', 'reject', 'needs_improvement']).describe('审核结论'),
+      comments: z.array(z.string()).describe('评语列表'),
+      model: z.string().optional().describe('使用的 AI 模型'),
+    },
+    async (args) => {
+      const result = await reviewGenome(args);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'review_template',
+    '审核 AI 员工模板：评分 + 评语，verdict 为 approve 时发布',
+    {
+      slug: z.string().describe('模板 slug'),
+      score: z.number().min(0).max(10).describe('评分 0-10'),
+      verdict: z.enum(['approve', 'reject', 'needs_improvement']).describe('审核结论'),
+      comments: z.array(z.string()).describe('评语列表'),
+      model: z.string().optional().describe('使用的 AI 模型'),
+    },
+    async (args) => {
+      const result = await reviewTemplate(args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     },
   );
