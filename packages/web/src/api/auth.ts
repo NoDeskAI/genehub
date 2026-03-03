@@ -4,6 +4,7 @@ export type AuthUser = {
   github_name: string;
   github_avatar_url: string;
   github_profile_url: string;
+  role: 'admin' | 'publisher';
 };
 
 export type ApiKeyItem = {

@@ -1,4 +1,4 @@
-import { Search } from 'lucide-react';
+import { Search, Shield } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { type AgentTemplate, listTemplates } from '@/api/client';
@@ -6,6 +6,7 @@ import TemplateCard from '@/components/TemplateCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/useAuth';
 
 const SORT_OPTIONS = [
   { value: 'newest', label: '最新' },
@@ -19,6 +20,7 @@ export default function TemplateBrowse() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { isAdmin } = useAuth();
 
   const q = searchParams.get('q') || '';
   const category = searchParams.get('category') || '';
@@ -46,6 +48,7 @@ export default function TemplateBrowse() {
       sort,
       page,
       page_size: 12,
+      ...(isAdmin && { include_unpublished: true }),
     })
       .then((data) => {
         setTemplates(data.items);
@@ -57,7 +60,7 @@ export default function TemplateBrowse() {
         setTotal(0);
       })
       .finally(() => setLoading(false));
-  }, [q, category, sort, page]);
+  }, [q, category, sort, page, isAdmin]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -93,6 +96,15 @@ export default function TemplateBrowse() {
           ))}
         </select>
       </div>
+
+      {isAdmin && (
+        <div className="flex items-center gap-2 px-3 py-2 mb-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <Shield className="w-4 h-4 text-amber-600" />
+          <span className="text-xs font-medium text-amber-700">
+            管理员模式：显示所有模板（含未发布）
+          </span>
+        </div>
+      )}
 
       {loading ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

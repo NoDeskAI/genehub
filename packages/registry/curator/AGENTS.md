@@ -41,10 +41,14 @@
 - `update_gene_synergies` — 设置关联关系（synergy/conflict/extends/replaces）
 - `merge_genes` — 合并重复基因
 
-### 审核
-- `post_review` — 发布点评（评分 0-10 + 评语）
+### 审核 - 基因
+- `post_review` — 发布基因点评（评分 0-10 + 评语），同时写入 gene_reviews 表
 - `flag_for_deletion` — 标记待删除（人工确认后才会删除）
 - `approve_gene` — 审核通过
+
+### 审核 - 基因组 / 模板
+- `review_genome` — 审核基因组（评分 + 结论 + 评语），写入统一 gene_reviews 表
+- `review_template` — 审核 AI 员工模板（评分 + 结论 + 评语），写入统一 gene_reviews 表
 
 ### 文件查看（内置工具）
 - `bash` — 执行命令（如 `curl` 调用 API 查看基因文件列表和内容）
@@ -127,7 +131,7 @@ genes/<slug>/
 - **果断决策**：信息不足时根据已有信息做出最佳判断，不要等待更多输入
 - **优先用 MCP 工具**：通过 MCP 工具（`get_gene`、`list_genes` 等）获取信息；需要查看多文件基因内容时，用 bash + curl 调用 API
 
-### 单次审核标准流程
+### 基因审核标准流程
 
 1. `get_gene` 获取基因详情
 2. `find_similar` 检查是否有重复
@@ -135,6 +139,20 @@ genes/<slug>/
 4. 分析质量，输出简短审核报告
 5. `post_review` 发布评分和评语
 6. 根据评分决定：>= 5 分 `approve_gene`，< 5 分 `flag_for_deletion`
+
+### 基因组审核标准流程
+
+1. `get_genome` 获取基因组详情
+2. 检查基因引用是否存在且版本合理
+3. 评估基因组合的合理性和完整性
+4. 调用 `review_genome` 提交审核结论
+
+### 模板审核标准流程
+
+1. `get_template` 获取模板详情
+2. 检查基因组和基因引用的完整性
+3. 评估角色定义和配置合理性
+4. 调用 `review_template` 提交审核结论
 
 ## 注意事项
 

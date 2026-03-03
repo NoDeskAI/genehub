@@ -26,6 +26,8 @@ export async function postReview(args: {
     .insert(geneReviews)
     .values({
       gene_id: gene.id,
+      entity_type: 'gene',
+      entity_slug: args.slug,
       reviewer: 'curator-agent',
       score: args.score,
       verdict: args.verdict,
@@ -73,6 +75,8 @@ export async function flagForDeletion(args: { slug: string; reason: string; mode
     .insert(geneReviews)
     .values({
       gene_id: gene.id,
+      entity_type: 'gene',
+      entity_slug: args.slug,
       reviewer: 'curator-agent',
       score: 0,
       verdict: 'flagged',
@@ -107,6 +111,8 @@ export async function approveGene(args: { slug: string; model?: string }) {
     .insert(geneReviews)
     .values({
       gene_id: gene.id,
+      entity_type: 'gene',
+      entity_slug: args.slug,
       reviewer: 'curator-agent',
       verdict: 'approved',
       comments: ['审核通过'],
@@ -142,13 +148,26 @@ export async function reviewGenome(args: {
     })
     .where(eq(genomes.id, genome.id));
 
+  const [review] = await db
+    .insert(geneReviews)
+    .values({
+      entity_type: 'genome',
+      entity_slug: args.slug,
+      reviewer: 'curator-agent',
+      score: args.score,
+      verdict: args.verdict,
+      comments: args.comments,
+      model: args.model,
+    })
+    .returning();
+
   await emitGenomeEvent('genome.updated', args.slug, 'curator-agent', {
     action: 'reviewed',
     score: args.score,
     verdict: args.verdict,
   });
 
-  return { slug: args.slug, score: args.score, verdict: args.verdict, comments: args.comments };
+  return { review_id: review.id, slug: args.slug, score: args.score, verdict: args.verdict };
 }
 
 export async function reviewTemplate(args: {
@@ -176,11 +195,24 @@ export async function reviewTemplate(args: {
     })
     .where(eq(agentTemplates.id, template.id));
 
+  const [review] = await db
+    .insert(geneReviews)
+    .values({
+      entity_type: 'template',
+      entity_slug: args.slug,
+      reviewer: 'curator-agent',
+      score: args.score,
+      verdict: args.verdict,
+      comments: args.comments,
+      model: args.model,
+    })
+    .returning();
+
   await emitTemplateEvent('template.updated', args.slug, 'curator-agent', {
     action: 'reviewed',
     score: args.score,
     verdict: args.verdict,
   });
 
-  return { slug: args.slug, score: args.score, verdict: args.verdict, comments: args.comments };
+  return { review_id: review.id, slug: args.slug, score: args.score, verdict: args.verdict };
 }

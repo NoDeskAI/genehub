@@ -1,22 +1,43 @@
 import { Bot, MessageSquare, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { type GeneReview, getGeneReviews, type PagedData } from '@/api/client';
+import {
+  type GeneReview,
+  getGeneReviews,
+  getGenomeReviews,
+  getTemplateReviews,
+  type PagedData,
+} from '@/api/client';
 import { getReviewStatusConfig } from '@/lib/status';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 
-export default function ReviewList({ slug }: { slug: string }) {
+type EntityType = 'gene' | 'genome' | 'template';
+
+const FETCH_MAP: Record<EntityType, typeof getGeneReviews> = {
+  gene: getGeneReviews,
+  genome: getGenomeReviews,
+  template: getTemplateReviews,
+};
+
+export default function ReviewList({
+  slug,
+  entityType = 'gene',
+}: {
+  slug: string;
+  entityType?: EntityType;
+}) {
   const [data, setData] = useState<PagedData<GeneReview> | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     setLoading(true);
-    getGeneReviews(slug, { page, page_size: 10 })
+    const fetcher = FETCH_MAP[entityType];
+    fetcher(slug, { page, page_size: 10 })
       .then(setData)
       .catch(() => setData(null))
       .finally(() => setLoading(false));
-  }, [slug, page]);
+  }, [slug, entityType, page]);
 
   if (loading) {
     return (

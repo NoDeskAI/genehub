@@ -1,7 +1,7 @@
 import { Dna, Github, Key, Layers, LogOut, Menu, Search, User, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { AuthProvider, useAuthState } from '../hooks/useAuth';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
@@ -16,7 +16,8 @@ export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, isLoading, login, logout } = useAuth();
+  const authState = useAuthState();
+  const { user, isLoading, login, logout } = authState;
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -179,7 +180,9 @@ export default function Layout() {
       </header>
 
       <main className="flex-1">
-        <Outlet />
+        <AuthProvider value={authState}>
+          <Outlet />
+        </AuthProvider>
       </main>
 
       <footer className="bg-surface border-t border-border py-8 text-sm text-muted">

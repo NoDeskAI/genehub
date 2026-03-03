@@ -160,9 +160,9 @@ export const geneReviews = pgTable(
   'gene_reviews',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    gene_id: uuid('gene_id')
-      .notNull()
-      .references(() => genes.id, { onDelete: 'cascade' }),
+    gene_id: uuid('gene_id').references(() => genes.id, { onDelete: 'cascade' }),
+    entity_type: varchar('entity_type', { length: 16 }).notNull().default('gene'),
+    entity_slug: varchar('entity_slug', { length: 128 }),
     reviewer: varchar('reviewer', { length: 64 }).notNull().default('curator-agent'),
     score: real('score'),
     verdict: varchar('verdict', { length: 24 }),
@@ -172,7 +172,10 @@ export const geneReviews = pgTable(
     model: varchar('model', { length: 64 }),
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('gene_reviews_gene_id_idx').on(table.gene_id)],
+  (table) => [
+    index('gene_reviews_gene_id_idx').on(table.gene_id),
+    index('gene_reviews_entity_idx').on(table.entity_type, table.entity_slug),
+  ],
 );
 
 export const geneRelations = pgTable(

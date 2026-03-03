@@ -353,14 +353,16 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | is_latest | bool | 是否最新 |
 | published_at | datetime | 发布时间 |
 
-#### GeneReview（AI 审核记录）
+#### GeneReview（审核记录，统一表）
 
-每次 AI Curator 审核或人工 feedback 均产生一条记录：
+统一存储基因、基因组、AI 员工模板的审核记录。通过 `entity_type` + `entity_slug` 区分实体类型：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | UUID | 主键 |
-| gene_id | FK | 所属基因 |
+| gene_id | FK nullable | 所属基因（向后兼容旧数据，新增记录可为空） |
+| entity_type | string(16) | 实体类型：`gene` / `genome` / `template`，默认 `gene` |
+| entity_slug | string(128) nullable | 实体 slug（方便查询，不依赖外键） |
 | reviewer | string(64) | 审核者标识（默认 `curator-agent`） |
 | score | float nullable | 评分（0-10） |
 | verdict | string(24) nullable | 结论（`approve` / `reject` / `needs_improvement` / `flagged`） |
@@ -370,39 +372,7 @@ pip install genehub-<gene-slug>   # Python 生态兼容
 | model | string(64) nullable | 使用的 LLM 模型标识 |
 | created_at | datetime | |
 
-#### GeneRelation（基因关系）
-
-记录基因之间的结构化关系，由 AI Curator 自动发现或人工维护：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | UUID | 主键 |
-| source_gene_id | FK | 源基因 |
-| target_gene_id | FK | 目标基因 |
-| relation_type | string(24) | `synergy` / `conflict` / `extends` / `replaces` |
-| strength | float | 关系强度（0-1，默认 0.5） |
-| reason | text nullable | 关系说明 |
-| created_by | string(64) | 创建者（默认 `curator-agent`） |
-| created_at | datetime | |
-
-#### GenomeVersion（基因组版本历史）-- 重复，见上
-
-#### GeneReview（基因审核记录）
-
-AI Curator 或人工审核的评审记录：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | UUID | 主键 |
-| gene_id | FK | 所属基因 |
-| reviewer | string(64) | 审核者标识（默认 `curator-agent`） |
-| score | float nullable | 评分（0-10） |
-| verdict | string(24) nullable | 审核结论（`approve` / `reject` / `needs_improvement` / `flagged`） |
-| comments | JSON | 审核意见数组 |
-| changes_made | JSON nullable | AI 做出的修改记录 |
-| feedback | string(32) nullable | 人工反馈覆盖 |
-| model | string(64) nullable | 使用的 AI 模型标识 |
-| created_at | datetime | |
+索引：`(entity_type, entity_slug)` 联合索引，`(gene_id)` 保持向后兼容。
 
 #### GeneRelation（基因关系）
 

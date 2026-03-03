@@ -14,6 +14,12 @@ const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET ?? '';
 const JWT_SECRET = process.env.GENEHUB_JWT_SECRET ?? 'genehub-dev-jwt-secret';
 const FRONTEND_URL = process.env.GENEHUB_FRONTEND_URL ?? 'http://localhost:5173';
 const COOKIE_NAME = 'ghb_session';
+const ADMIN_LOGINS = new Set(
+  (process.env.GENEHUB_ADMIN_LOGINS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
+);
 
 export const authRouter = new Hono();
 
@@ -184,12 +190,14 @@ authRouter.get('/me', async (c) => {
     if (result.length === 0) return success(c, null);
 
     const p = result[0];
+    const role = ADMIN_LOGINS.has(p.github_login) ? 'admin' : 'publisher';
     return success(c, {
       id: p.id,
       github_login: p.github_login,
       github_name: p.github_name,
       github_avatar_url: p.github_avatar_url,
       github_profile_url: p.github_profile_url,
+      role,
     });
   } catch {
     deleteCookie(c, COOKIE_NAME);

@@ -40,7 +40,9 @@ export type GeneVersion = {
 
 export type GeneReview = {
   id: string;
-  gene_id: string;
+  gene_id: string | null;
+  entity_type: string;
+  entity_slug: string | null;
   reviewer: string;
   score: number | null;
   verdict: string | null;
@@ -117,6 +119,8 @@ export async function listGenes(params?: {
   sort?: string;
   page?: number;
   page_size?: number;
+  review_status?: string;
+  include_unpublished?: boolean;
 }): Promise<PagedData<Gene>> {
   const sp = new URLSearchParams();
   if (params?.q) sp.set('q', params.q);
@@ -126,6 +130,8 @@ export async function listGenes(params?: {
   if (params?.sort) sp.set('sort', params.sort);
   if (params?.page) sp.set('page', String(params.page));
   if (params?.page_size) sp.set('page_size', String(params.page_size));
+  if (params?.review_status) sp.set('review_status', params.review_status);
+  if (params?.include_unpublished) sp.set('include_unpublished', 'true');
   const qs = sp.toString();
   return get<PagedData<Gene>>(`/genes${qs ? `?${qs}` : ''}`);
 }
@@ -155,6 +161,7 @@ export async function listGenomes(params?: {
   sort?: string;
   page?: number;
   page_size?: number;
+  include_unpublished?: boolean;
 }): Promise<PagedData<Genome>> {
   const sp = new URLSearchParams();
   if (params?.q) sp.set('q', params.q);
@@ -162,6 +169,7 @@ export async function listGenomes(params?: {
   if (params?.sort) sp.set('sort', params.sort);
   if (params?.page) sp.set('page', String(params.page));
   if (params?.page_size) sp.set('page_size', String(params.page_size));
+  if (params?.include_unpublished) sp.set('include_unpublished', 'true');
   const qs = sp.toString();
   return get<PagedData<Genome>>(`/genomes${qs ? `?${qs}` : ''}`);
 }
@@ -200,6 +208,7 @@ export async function listTemplates(params?: {
   sort?: string;
   page?: number;
   page_size?: number;
+  include_unpublished?: boolean;
 }): Promise<PagedData<AgentTemplate>> {
   const sp = new URLSearchParams();
   if (params?.q) sp.set('q', params.q);
@@ -208,6 +217,7 @@ export async function listTemplates(params?: {
   if (params?.sort) sp.set('sort', params.sort);
   if (params?.page) sp.set('page', String(params.page));
   if (params?.page_size) sp.set('page_size', String(params.page_size));
+  if (params?.include_unpublished) sp.set('include_unpublished', 'true');
   const qs = sp.toString();
   return get<PagedData<AgentTemplate>>(`/templates${qs ? `?${qs}` : ''}`);
 }
@@ -247,4 +257,62 @@ export async function federatedSearch(params: {
   if (params.category) sp.set('category', params.category);
   if (params.limit) sp.set('limit', String(params.limit));
   return get<FederatedSearchResult>(`/genes/search?${sp.toString()}`);
+}
+
+export async function getGenomeVersions(slug: string): Promise<GeneVersion[]> {
+  return get<GeneVersion[]>(`/genomes/${slug}/versions`);
+}
+
+export async function getGenomeFiles(slug: string, version?: string): Promise<GeneFileEntry[]> {
+  const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+  return get<GeneFileEntry[]>(`/genomes/${slug}/files${qs}`);
+}
+
+export async function getGenomeFileContent(
+  slug: string,
+  filePath: string,
+  version?: string,
+): Promise<{ path: string; content: string }> {
+  const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+  return get<{ path: string; content: string }>(`/genomes/${slug}/files/${filePath}${qs}`);
+}
+
+export async function getGenomeReviews(
+  slug: string,
+  params?: { page?: number; page_size?: number },
+): Promise<PagedData<GeneReview>> {
+  const sp = new URLSearchParams();
+  if (params?.page) sp.set('page', String(params.page));
+  if (params?.page_size) sp.set('page_size', String(params.page_size));
+  const qs = sp.toString();
+  return get<PagedData<GeneReview>>(`/genomes/${slug}/reviews${qs ? `?${qs}` : ''}`);
+}
+
+export async function getTemplateVersions(slug: string): Promise<GeneVersion[]> {
+  return get<GeneVersion[]>(`/templates/${slug}/versions`);
+}
+
+export async function getTemplateFiles(slug: string, version?: string): Promise<GeneFileEntry[]> {
+  const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+  return get<GeneFileEntry[]>(`/templates/${slug}/files${qs}`);
+}
+
+export async function getTemplateFileContent(
+  slug: string,
+  filePath: string,
+  version?: string,
+): Promise<{ path: string; content: string }> {
+  const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+  return get<{ path: string; content: string }>(`/templates/${slug}/files/${filePath}${qs}`);
+}
+
+export async function getTemplateReviews(
+  slug: string,
+  params?: { page?: number; page_size?: number },
+): Promise<PagedData<GeneReview>> {
+  const sp = new URLSearchParams();
+  if (params?.page) sp.set('page', String(params.page));
+  if (params?.page_size) sp.set('page_size', String(params.page_size));
+  const qs = sp.toString();
+  return get<PagedData<GeneReview>>(`/templates/${slug}/reviews${qs ? `?${qs}` : ''}`);
 }

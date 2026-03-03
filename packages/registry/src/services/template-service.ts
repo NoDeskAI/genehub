@@ -15,6 +15,7 @@ export type TemplateListQuery = {
   sort?: string;
   page?: number;
   page_size?: number;
+  include_unpublished?: boolean;
 };
 
 type TemplateRef = {
@@ -45,7 +46,10 @@ export async function listTemplates(query: TemplateListQuery) {
   const pageSize = Math.min(100, Math.max(1, query.page_size ?? 20));
   const offset = (page - 1) * pageSize;
 
-  const conditions = [isNull(agentTemplates.deleted_at), eq(agentTemplates.is_published, true)];
+  const conditions = [isNull(agentTemplates.deleted_at)];
+  if (!query.include_unpublished) {
+    conditions.push(eq(agentTemplates.is_published, true));
+  }
 
   if (query.category) {
     conditions.push(eq(agentTemplates.category, query.category));

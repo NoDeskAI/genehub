@@ -16,6 +16,8 @@ export type GeneListQuery = {
   sort?: string;
   page?: number;
   page_size?: number;
+  review_status?: string;
+  include_unpublished?: boolean;
 };
 
 export async function listGenes(query: GeneListQuery) {
@@ -23,7 +25,13 @@ export async function listGenes(query: GeneListQuery) {
   const pageSize = Math.min(100, Math.max(1, query.page_size ?? 20));
   const offset = (page - 1) * pageSize;
 
-  const conditions = [isNull(genes.deleted_at), eq(genes.is_published, true)];
+  const conditions = [isNull(genes.deleted_at)];
+  if (!query.include_unpublished) {
+    conditions.push(eq(genes.is_published, true));
+  }
+  if (query.review_status) {
+    conditions.push(eq(genes.review_status, query.review_status));
+  }
 
   if (query.category) {
     conditions.push(eq(genes.category, query.category));

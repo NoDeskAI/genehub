@@ -11,12 +11,22 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { type AgentTemplate, getTemplate } from '@/api/client';
+import {
+  type AgentTemplate,
+  type GeneFileEntry,
+  type GeneVersion,
+  getTemplate,
+  getTemplateFileContent,
+  getTemplateFiles,
+  getTemplateVersions,
+} from '@/api/client';
 import LucideIcon from '@/components/LucideIcon';
+import ReviewList from '@/components/ReviewList';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -38,9 +48,136 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+function VersionHistory({ versions }: { versions: GeneVersion[] }) {
+  if (versions.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Layers className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+        <p className="text-muted">暂无版本记录</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {versions.map((v) => (
+        <div
+          key={v.id}
+          className="flex items-start justify-between border border-border rounded-xl px-5 py-4"
+        >
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-sm font-medium text-gray-900">v{v.version}</span>
+              {v.is_latest && (
+                <Badge variant="success" className="text-[10px] px-1.5 py-0">
+                  latest
+                </Badge>
+              )}
+            </div>
+            {v.changelog && <p className="text-sm text-muted mt-1">{v.changelog}</p>}
+          </div>
+          <time className="text-xs text-muted whitespace-nowrap">
+            {new Date(v.published_at).toLocaleDateString('zh-CN')}
+          </time>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FileExplorer({ slug }: { slug: string }) {
+  const [files, setFiles] = useState<GeneFileEntry[]>([]);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getTemplateFiles(slug)
+      .then(setFiles)
+      .catch(() => setFiles([]))
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  useEffect(() => {
+    if (!selectedFile) {
+      setFileContent('');
+      return;
+    }
+    getTemplateFileContent(slug, selectedFile)
+      .then((data) => setFileContent(data.content))
+      .catch(() => setFileContent('(无法加载文件内容)'));
+  }, [slug, selectedFile]);
+
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-6 w-1/2" />
+      </div>
+    );
+  }
+
+  if (files.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Layers className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+        <p className="text-muted">暂无文件信息</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <div className="grid grid-cols-3 divide-x divide-border min-h-[300px]">
+        <div className="col-span-1 bg-gray-50">
+          <div className="px-3 py-2 border-b border-border text-xs font-medium text-muted">
+            文件列表 ({files.length})
+          </div>
+          <div className="divide-y divide-border">
+            {files.map((f) => (
+              <button
+                type="button"
+                key={f.path}
+                onClick={() => setSelectedFile(f.path === selectedFile ? null : f.path)}
+                className={`w-full text-left px-3 py-2 text-sm font-mono hover:bg-white transition ${
+                  selectedFile === f.path ? 'bg-white text-primary font-medium' : 'text-gray-700'
+                }`}
+              >
+                {f.path}
+                <span className="text-xs text-muted ml-2">
+                  {f.size > 1024 ? `${(f.size / 1024).toFixed(1)}KB` : `${f.size}B`}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="col-span-2">
+          {selectedFile ? (
+            <>
+              <div className="px-4 py-2 border-b border-border flex items-center justify-between bg-gray-50">
+                <span className="text-sm font-mono text-gray-700">{selectedFile}</span>
+                <CopyButton text={fileContent} />
+              </div>
+              <pre className="p-4 text-sm font-mono text-gray-800 overflow-auto max-h-[500px] whitespace-pre-wrap">
+                {fileContent}
+              </pre>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted text-sm">
+              选择文件查看内容
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function TemplateDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [template, setTemplate] = useState<AgentTemplate | null>(null);
+  const [versions, setVersions] = useState<GeneVersion[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -48,6 +185,9 @@ export default function TemplateDetail() {
     getTemplate(slug)
       .then(setTemplate)
       .catch(() => setError('找不到该 AI 员工模板'));
+    getTemplateVersions(slug)
+      .then(setVersions)
+      .catch(() => {});
   }, [slug]);
 
   if (error) {
@@ -119,87 +259,108 @@ export default function TemplateDetail() {
             </div>
           </div>
 
-          <Card>
-            <CardContent className="pt-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">描述</h2>
-              <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
-                {template.description}
-              </p>
-            </CardContent>
-          </Card>
+          <Tabs defaultValue="overview">
+            <TabsList>
+              <TabsTrigger value="overview">概述</TabsTrigger>
+              <TabsTrigger value="files">文件</TabsTrigger>
+              <TabsTrigger value="reviews">评审记录</TabsTrigger>
+              <TabsTrigger value="versions">版本历史</TabsTrigger>
+            </TabsList>
 
-          {(template.genomes as { slug: string; version: string }[]).length > 0 && (
-            <Card>
-              <CardContent className="pt-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Layers className="w-5 h-5" />
-                  包含的基因组 ({(template.genomes as { slug: string }[]).length})
-                </h2>
-                <div className="space-y-2">
-                  {(template.genomes as { slug: string; version: string }[]).map((g) => (
-                    <Link
-                      key={g.slug}
-                      to={`/genomes/${g.slug}`}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-gray-50 hover:border-primary/30 transition-all"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Layers className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-medium text-primary">{g.slug}</span>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {g.version}
-                      </Badge>
-                    </Link>
-                  ))}
+            <TabsContent value="overview" className="space-y-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3">描述</h2>
+                  <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
+                    {template.description}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {template.genomes.length > 0 && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Layers className="w-5 h-5" />
+                      包含的基因组 ({template.genomes.length})
+                    </h2>
+                    <div className="space-y-2">
+                      {template.genomes.map((g) => (
+                        <Link
+                          key={g.slug}
+                          to={`/genomes/${g.slug}`}
+                          className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-gray-50 hover:border-primary/30 transition-all"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Layers className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium text-primary">{g.slug}</span>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {g.version}
+                          </Badge>
+                        </Link>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {template.genes.length > 0 && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Dna className="w-5 h-5" />
+                      额外基因 ({template.genes.length})
+                    </h2>
+                    <div className="space-y-2">
+                      {template.genes.map((g) => (
+                        <Link
+                          key={g.slug}
+                          to={`/genes/${g.slug}`}
+                          className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-gray-50 hover:border-primary/30 transition-all"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Dna className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium text-primary">{g.slug}</span>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {g.version}
+                          </Badge>
+                        </Link>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3">安装</h2>
+                <div className="bg-gray-900 rounded-xl overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-red-500" />
+                    <span className="w-3 h-3 rounded-full bg-yellow-500" />
+                    <span className="w-3 h-3 rounded-full bg-green-500" />
+                  </div>
+                  <div className="p-4 font-mono text-sm text-gray-300 flex items-center justify-between gap-4">
+                    <div>
+                      <span className="text-green-400">$ {installCmd}</span>
+                    </div>
+                    <CopyButton text={installCmd} />
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {(template.genes as { slug: string; version: string }[]).length > 0 && (
-            <Card>
-              <CardContent className="pt-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Dna className="w-5 h-5" />
-                  额外基因 ({(template.genes as { slug: string }[]).length})
-                </h2>
-                <div className="space-y-2">
-                  {(template.genes as { slug: string; version: string }[]).map((g) => (
-                    <Link
-                      key={g.slug}
-                      to={`/genes/${g.slug}`}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-gray-50 hover:border-primary/30 transition-all"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Dna className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-medium text-primary">{g.slug}</span>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {g.version}
-                      </Badge>
-                    </Link>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">安装</h2>
-            <div className="bg-gray-900 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-800 flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="w-3 h-3 rounded-full bg-yellow-500" />
-                <span className="w-3 h-3 rounded-full bg-green-500" />
               </div>
-              <div className="p-4 font-mono text-sm text-gray-300 flex items-center justify-between gap-4">
-                <div>
-                  <span className="text-green-400">$ {installCmd}</span>
-                </div>
-                <CopyButton text={installCmd} />
-              </div>
-            </div>
-          </div>
+            </TabsContent>
+
+            <TabsContent value="files">{slug && <FileExplorer slug={slug} />}</TabsContent>
+
+            <TabsContent value="reviews">
+              {slug && <ReviewList slug={slug} entityType="template" />}
+            </TabsContent>
+
+            <TabsContent value="versions">
+              <VersionHistory versions={versions} />
+            </TabsContent>
+          </Tabs>
         </div>
 
         <div className="space-y-4">
@@ -233,14 +394,14 @@ export default function TemplateDetail() {
                 <span className="text-muted">基因组</span>
                 <span className="text-gray-700 flex items-center gap-1">
                   <Layers className="w-3 h-3" />
-                  {(template.genomes as { slug: string }[]).length}
+                  {template.genomes.length}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">额外基因</span>
                 <span className="text-gray-700 flex items-center gap-1">
                   <Dna className="w-3 h-3" />
-                  {(template.genes as { slug: string }[]).length}
+                  {template.genes.length}
                 </span>
               </div>
               <Separator />

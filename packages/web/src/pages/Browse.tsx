@@ -1,4 +1,4 @@
-import { Globe, Search } from 'lucide-react';
+import { Globe, Search, Shield } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { type FederatedGeneItem, federatedSearch, type Gene, listGenes } from '@/api/client';
@@ -9,6 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/useAuth';
+
+const REVIEW_STATUS_OPTIONS = [
+  { value: '', label: '全部状态' },
+  { value: 'draft', label: '待审核' },
+  { value: 'approved', label: '已通过' },
+  { value: 'flagged', label: '已拒绝' },
+];
 
 const SORT_OPTIONS = [
   { value: 'newest', label: '最新' },
@@ -38,6 +46,7 @@ export default function Browse() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { isAdmin } = useAuth();
 
   const [federatedMode, setFederatedMode] = useState(false);
   const [federatedItems, setFederatedItems] = useState<FederatedGeneItem[]>([]);
@@ -51,6 +60,7 @@ export default function Browse() {
   const tag = searchParams.get('tag') || '';
   const compatibility = searchParams.get('compatibility') || '';
   const sort = searchParams.get('sort') || 'newest';
+  const reviewStatus = searchParams.get('review_status') || '';
   const page = Number(searchParams.get('page')) || 1;
 
   const updateParam = useCallback(
@@ -93,6 +103,8 @@ export default function Browse() {
       sort,
       page,
       page_size: 12,
+      ...(isAdmin && { include_unpublished: true }),
+      ...(isAdmin && reviewStatus && { review_status: reviewStatus }),
     })
       .then((data) => {
         setGenes(data.items);
@@ -104,7 +116,7 @@ export default function Browse() {
         setTotal(0);
       })
       .finally(() => setLoading(false));
-  }, [q, category, tag, compatibility, sort, page, federatedMode]);
+  }, [q, category, tag, compatibility, sort, page, federatedMode, isAdmin, reviewStatus]);
 
   const showFederated = federatedMode && q.trim();
 
@@ -186,6 +198,25 @@ export default function Browse() {
             </select>
           </div>
         </div>
+
+        {/* Admin filters */}
+        {isAdmin && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+            <Shield className="w-4 h-4 text-amber-600" />
+            <span className="text-xs font-medium text-amber-700">管理员</span>
+            <select
+              value={reviewStatus}
+              onChange={(e) => updateParam('review_status', e.target.value)}
+              className="ml-2 px-2 py-1 rounded border border-amber-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-amber-300"
+            >
+              {REVIEW_STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Active filters */}
         {(tag || compatibility) && (

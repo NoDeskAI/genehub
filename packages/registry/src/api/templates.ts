@@ -1,11 +1,14 @@
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { requireAuth } from '../middleware/auth.js';
+import { db, schema } from '../db/index.js';
+import { optionalAuth, requireAuth } from '../middleware/auth.js';
 import { paginated, success } from '../middleware/response.js';
 import * as templateService from '../services/template-service.js';
 
 export const templatesRouter = new Hono();
 
-templatesRouter.get('/', async (c) => {
+templatesRouter.get('/', optionalAuth(), async (c) => {
+  const isAdmin = c.get('authRole') === 'admin';
   const query: templateService.TemplateListQuery = {
     q: c.req.query('q'),
     category: c.req.query('category'),
@@ -13,6 +16,7 @@ templatesRouter.get('/', async (c) => {
     sort: c.req.query('sort'),
     page: Number(c.req.query('page')) || 1,
     page_size: Number(c.req.query('page_size')) || 20,
+    ...(isAdmin && c.req.query('include_unpublished') === 'true' && { include_unpublished: true }),
   };
 
   const result = await templateService.listTemplates(query);
@@ -69,6 +73,31 @@ templatesRouter.get('/:slug/archive', async (c) => {
       'Content-Disposition': `attachment; filename="${slug}.tar.gz"`,
     },
   });
+});
+
+templatesRouter.get('/:slug/reviews', async (c) => {
+  const slug = c.req.param('slug');
+  await templateService.getTemplateBySlug(slug);
+
+  const page = Number(c.req.query('page')) || 1;
+  const pageSize = Math.min(50, Number(c.req.query('page_size')) || 20);
+  const offset = (page - 1) * pageSize;
+  const { geneReviews } = schema;
+
+  const where = and(eq(geneReviews.entity_type, 'template'), eq(geneReviews.entity_slug, slug));
+
+  const [items, countResult] = await Promise.all([
+    db
+      .select()
+      .from(geneReviews)
+      .where(where)
+      .orderBy(desc(geneReviews.created_at))
+      .limit(pageSize)
+      .offset(offset),
+    db.select({ count: sql<number>`count(*)` }).from(geneReviews).where(where),
+  ]);
+
+  return paginated(c, items, Number(countResult[0]?.count ?? 0), page, pageSize);
 });
 
 templatesRouter.post('/', requireAuth('publisher'), async (c) => {

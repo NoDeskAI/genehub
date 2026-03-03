@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { requireAuth } from '../middleware/auth.js';
+import { optionalAuth, requireAuth } from '../middleware/auth.js';
 import { paginated, success } from '../middleware/response.js';
 import { federatedSearch } from '../services/federated-search.js';
 import * as geneService from '../services/gene-service.js';
@@ -18,7 +18,8 @@ genesRouter.get('/search', async (c) => {
   return success(c, result);
 });
 
-genesRouter.get('/', async (c) => {
+genesRouter.get('/', optionalAuth(), async (c) => {
+  const isAdmin = c.get('authRole') === 'admin';
   const query: geneService.GeneListQuery = {
     q: c.req.query('q'),
     category: c.req.query('category'),
@@ -27,6 +28,8 @@ genesRouter.get('/', async (c) => {
     sort: c.req.query('sort'),
     page: Number(c.req.query('page')) || 1,
     page_size: Number(c.req.query('page_size')) || 20,
+    ...(isAdmin && c.req.query('review_status') && { review_status: c.req.query('review_status') }),
+    ...(isAdmin && c.req.query('include_unpublished') === 'true' && { include_unpublished: true }),
   };
 
   const result = await geneService.listGenes(query);

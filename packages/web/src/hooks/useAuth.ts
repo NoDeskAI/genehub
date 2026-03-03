@@ -1,15 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { type AuthUser, logout as apiLogout, getMe } from '../api/auth';
 
 type AuthState = {
   user: AuthUser | null;
   isLoading: boolean;
+  isAdmin: boolean;
   login: () => void;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
 
-export function useAuth(): AuthState {
+const AuthContext = createContext<AuthState | null>(null);
+
+export const AuthProvider = AuthContext.Provider;
+
+export function useAuthState(): AuthState {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -37,5 +42,13 @@ export function useAuth(): AuthState {
     setUser(null);
   }, []);
 
-  return { user, isLoading, login, logout, refresh };
+  const isAdmin = user?.role === 'admin';
+
+  return { user, isLoading, isAdmin, login, logout, refresh };
+}
+
+export function useAuth(): AuthState {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 }
