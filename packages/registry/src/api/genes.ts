@@ -33,6 +33,17 @@ genesRouter.get('/', async (c) => {
   return paginated(c, result.items, result.total, result.page, result.pageSize);
 });
 
+genesRouter.get('/tags', async (c) => {
+  const tags = await geneService.getGeneTags();
+  return success(c, tags);
+});
+
+genesRouter.get('/featured', async (c) => {
+  const limit = Number(c.req.query('limit')) || 10;
+  const genes = await geneService.getFeaturedGenes(limit);
+  return success(c, genes);
+});
+
 genesRouter.get('/:slug', async (c) => {
   const slug = c.req.param('slug');
   const gene = await geneService.getGeneBySlug(slug);
@@ -88,6 +99,12 @@ genesRouter.delete('/:slug', requireAuth('admin'), async (c) => {
   const slug = c.req.param('slug');
   const gene = await geneService.deleteGene(slug);
   return success(c, gene);
+});
+
+genesRouter.get('/:slug/synergies', async (c) => {
+  const slug = c.req.param('slug');
+  const synergies = await geneService.getGeneSynergies(slug);
+  return success(c, synergies);
 });
 
 genesRouter.post('/:slug/installed', async (c) => {

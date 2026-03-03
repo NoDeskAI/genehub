@@ -18,6 +18,12 @@ genomesRouter.get('/', async (c) => {
   return paginated(c, result.items, result.total, result.page, result.pageSize);
 });
 
+genomesRouter.get('/featured', async (c) => {
+  const limit = Number(c.req.query('limit')) || 10;
+  const genomes = await genomeService.getFeaturedGenomes(limit);
+  return success(c, genomes);
+});
+
 genomesRouter.get('/:slug', async (c) => {
   const slug = c.req.param('slug');
   const genome = await genomeService.getGenomeBySlug(slug);

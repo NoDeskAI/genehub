@@ -1,5 +1,5 @@
 import { GeneManifestSchema } from '@nodeskai/genehub-types';
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import semver from 'semver';
 import { db, schema } from '../db/index.js';
 import { AppError } from '../middleware/error-handler.js';
@@ -70,6 +70,51 @@ export async function listGenes(query: GeneListQuery) {
   const total = Number(countResult[0]?.count ?? 0);
 
   return { items, total, page, pageSize };
+}
+
+export async function getGeneTags() {
+  const result = await db
+    .select({ tags: genes.tags })
+    .from(genes)
+    .where(and(isNull(genes.deleted_at), eq(genes.is_published, true)));
+
+  const counts = new Map<string, number>();
+  for (const row of result) {
+    const tagList = row.tags ?? [];
+    for (const tag of tagList) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+
+  return Array.from(counts.entries())
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+export async function getFeaturedGenes(limit = 10) {
+  return db
+    .select()
+    .from(genes)
+    .where(and(isNull(genes.deleted_at), eq(genes.is_published, true)))
+    .orderBy(desc(genes.install_count), desc(genes.avg_rating))
+    .limit(Math.min(limit, 50));
+}
+
+export async function getGeneSynergies(slug: string) {
+  const gene = await getGeneBySlug(slug);
+  const synergySlugs = (gene.synergies ?? []) as string[];
+  if (synergySlugs.length === 0) return [];
+
+  return db
+    .select()
+    .from(genes)
+    .where(
+      and(
+        inArray(genes.slug, synergySlugs),
+        isNull(genes.deleted_at),
+        eq(genes.is_published, true),
+      ),
+    );
 }
 
 export async function getGeneBySlug(slug: string) {

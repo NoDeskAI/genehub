@@ -73,6 +73,15 @@ export async function listGenomes(query: GenomeListQuery) {
   return { items, total: Number(countResult[0]?.count ?? 0), page, pageSize };
 }
 
+export async function getFeaturedGenomes(limit = 10) {
+  return db
+    .select()
+    .from(genomes)
+    .where(and(isNull(genomes.deleted_at), eq(genomes.is_published, true)))
+    .orderBy(desc(genomes.install_count), desc(genomes.avg_rating))
+    .limit(Math.min(limit, 50));
+}
+
 export async function getGenomeBySlug(slug: string) {
   const result = await db
     .select()
