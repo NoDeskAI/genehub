@@ -1,13 +1,19 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { access, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 import { GeneHubClient } from '@nodeskai/genehub-sdk';
 import type { Gene } from '@nodeskai/genehub-types';
 import { GeneManifestSchema } from '@nodeskai/genehub-types';
 import { Command } from 'commander';
 import ora from 'ora';
-import { parse } from 'yaml';
+import { parse, stringify } from 'yaml';
 import { loadConfig } from '../config.js';
 import * as output from '../output.js';
+import { detectSkillFile, getFormatLabel } from '../utils/detect-skill.js';
+import {
+  buildManifestInteractively,
+  confirmPublish,
+  confirmSaveManifest,
+} from '../utils/interactive-manifest.js';
 
 const IGNORED_PATTERNS = ['.git', 'node_modules', '.DS_Store', '__pycache__', '.venv'];
 
@@ -33,10 +39,20 @@ async function scanDirectory(dirPath: string): Promise<Record<string, string>> {
   return files;
 }
 
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const publishCommand = new Command('publish')
-  .description('发布基因到 GeneHub Registry')
-  .argument('<path>', '基因目录路径（包含 gene.yaml）')
-  .action(async (dirPath: string) => {
+  .description('发布基因到 GeneHub Registry (支持自动检测 SKILL/CLAUDE/AGENTS 文件)')
+  .argument('<path>', '基因目录路径')
+  .option('-y, --yes', '非交互模式，使用默认值')
+  .action(async (dirPath: string, opts: { yes?: boolean }) => {
     const config = await loadConfig();
 
     if (!config.token) {
@@ -48,22 +64,16 @@ export const publishCommand = new Command('publish')
 
     const client = new GeneHubClient({ registryUrl: config.registryUrl, token: config.token });
     const absPath = resolve(dirPath);
+    const yamlPath = join(absPath, 'gene.yaml');
+    const hasGeneYaml = await fileExists(yamlPath);
 
     try {
-      const yamlPath = join(absPath, 'gene.yaml');
-      const raw = await readFile(yamlPath, 'utf-8');
-      const parsed = parse(raw);
+      let parsed: Record<string, unknown>;
 
-      if (parsed.skill?.file && !parsed.skill.content) {
-        try {
-          parsed.skill.content = await readFile(join(absPath, parsed.skill.file), 'utf-8');
-        } catch {
-          try {
-            parsed.skill.content = await readFile(join(absPath, 'SKILL.md'), 'utf-8');
-          } catch {
-            // no skill content file found
-          }
-        }
+      if (hasGeneYaml) {
+        parsed = await loadFromGeneYaml(absPath, yamlPath);
+      } else {
+        parsed = await autoDetectAndBuild(absPath, yamlPath, opts.yes);
       }
 
       const validation = GeneManifestSchema.safeParse(parsed);
@@ -76,6 +86,14 @@ export const publishCommand = new Command('publish')
       }
 
       const { slug, version } = validation.data;
+
+      if (!hasGeneYaml && !opts.yes) {
+        const shouldPublish = await confirmPublish(slug, version);
+        if (!shouldPublish) {
+          output.info('已取消发布');
+          process.exit(0);
+        }
+      }
 
       const scanSpinner = ora('扫描基因目录...').start();
       const files = await scanDirectory(absPath);
@@ -102,3 +120,62 @@ export const publishCommand = new Command('publish')
       process.exit(1);
     }
   });
+
+async function loadFromGeneYaml(
+  absPath: string,
+  yamlPath: string,
+): Promise<Record<string, unknown>> {
+  const raw = await readFile(yamlPath, 'utf-8');
+  const parsed = parse(raw);
+
+  if (parsed.skill?.file && !parsed.skill.content) {
+    try {
+      parsed.skill.content = await readFile(join(absPath, parsed.skill.file), 'utf-8');
+    } catch {
+      try {
+        parsed.skill.content = await readFile(join(absPath, 'SKILL.md'), 'utf-8');
+      } catch {
+        // no skill content file found
+      }
+    }
+  }
+
+  return parsed;
+}
+
+async function autoDetectAndBuild(
+  absPath: string,
+  yamlPath: string,
+  isNonInteractive = false,
+): Promise<Record<string, unknown>> {
+  output.info('未找到 gene.yaml，尝试自动检测 skill 文件...');
+
+  const detected = await detectSkillFile(absPath);
+  if (!detected) {
+    output.fail('目录中未找到任何可识别的 skill 文件');
+    output.info('  支持的格式: CLAUDE.md, SKILL.md, AGENTS.md, .cursorrules, .clinerules, *.md');
+    output.info('  或使用 genehub init 创建标准模板');
+    process.exit(1);
+  }
+
+  output.ok(`检测到: ${detected.fileName} (${getFormatLabel(detected.format)})`);
+  output.info('自动推断基因元数据，请确认或修改:');
+  console.log();
+
+  const manifest = await buildManifestInteractively(detected, isNonInteractive);
+  console.log();
+
+  const shouldSave = isNonInteractive || (await confirmSaveManifest());
+  if (shouldSave) {
+    const yamlManifest = { ...manifest } as Record<string, unknown>;
+    if (yamlManifest.skill && typeof yamlManifest.skill === 'object') {
+      const s = { ...(yamlManifest.skill as Record<string, unknown>) };
+      delete s.content;
+      yamlManifest.skill = s;
+    }
+    await writeFile(yamlPath, stringify(yamlManifest), 'utf-8');
+    output.ok('gene.yaml 已保存');
+  }
+
+  return manifest as unknown as Record<string, unknown>;
+}

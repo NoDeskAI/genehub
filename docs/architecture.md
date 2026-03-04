@@ -186,7 +186,8 @@ genehub install <gene-slug>       # 安装基因（支持 @version、--force、-
 genehub uninstall <gene-slug>     # 卸载基因
 genehub search <keyword>          # 搜索基因（当前本地搜索，计划接入联邦搜索）
 genehub list                      # 列出已安装基因
-genehub publish <path>            # 发布基因（支持新建 + 更新版本）
+genehub publish <path>            # 发布基因（自动检测 CLAUDE.md/SKILL.md/AGENTS.md，无需预建 gene.yaml）
+genehub publish <path> -y         # 非交互模式发布（使用默认值）
 genehub init [path]               # 初始化 gene.yaml + SKILL.md 模板
 genehub config set/get            # 管理配置（registry / token）
 genehub auth login/status/logout  # GitHub OAuth 认证

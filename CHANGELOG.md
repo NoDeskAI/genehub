@@ -4,12 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## v2026-03-04-3
 
+### Added
+- CLI `publish` 支持自动检测 skill 文件（CLAUDE.md / SKILL.md / AGENTS.md / .cursorrules / .clinerules 等），无需预建 gene.yaml
+- 交互式 manifest 构建：自动推断 slug / name / description，交互选择 category / tags
+- `-y` 非交互模式，CI/CD 场景可直接使用默认值发布
+- 首次发布后自动生成 gene.yaml 保存到目录，后续发布无缝衔接
+- 联邦搜索测试覆盖新增 Gitea 集成场景（下载+上传、Gitea 不可用、下载失败降级）
+
 ### Fixed
 - 联邦搜索入库适配 Gitea 存储架构：外部基因（ClawHub）入库时自动下载 SKILL.md、创建 Gitea 仓库、上传文件并打 tag，确保版本历史和 CLI 安装可用
 - ClawHub 下载失败或 Gitea 不可用时优雅降级，仍完成 DB 入库
-
-### Added
-- 联邦搜索测试覆盖新增 Gitea 集成场景（下载+上传、Gitea 不可用、下载失败降级）
 
 ---
 
