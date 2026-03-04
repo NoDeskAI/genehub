@@ -114,6 +114,18 @@ async function get<T>(path: string): Promise<T> {
   return json.data;
 }
 
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  const json: ApiResponse<T> = await res.json();
+  if (json.code !== 0) throw new Error(json.message);
+  return json.data;
+}
+
 export async function listGenes(params?: {
   q?: string;
   category?: string;
@@ -318,4 +330,25 @@ export async function getTemplateReviews(
   if (params?.page_size) sp.set('page_size', String(params.page_size));
   const qs = sp.toString();
   return get<PagedData<GeneReview>>(`/templates/${slug}/reviews${qs ? `?${qs}` : ''}`);
+}
+
+export type ReviewPayload = {
+  score?: number;
+  verdict: string;
+  comments?: string[];
+};
+
+const REVIEW_ENTITY_PREFIX: Record<string, string> = {
+  gene: '/genes',
+  genome: '/genomes',
+  template: '/templates',
+};
+
+export async function submitReview(
+  entityType: string,
+  slug: string,
+  payload: ReviewPayload,
+): Promise<GeneReview> {
+  const prefix = REVIEW_ENTITY_PREFIX[entityType] ?? '/genes';
+  return post<GeneReview>(`${prefix}/${slug}/reviews`, payload);
 }

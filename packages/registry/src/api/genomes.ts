@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { db, schema } from '../db/index.js';
 import { optionalAuth, requireAuth } from '../middleware/auth.js';
 import { paginated, success } from '../middleware/response.js';
+import { emitGenomeEvent } from '../services/gene-events.js';
 import * as genomeService from '../services/genome-service.js';
 
 export const genomesRouter = new Hono();
@@ -105,6 +106,45 @@ genomesRouter.get('/:slug/reviews', async (c) => {
   ]);
 
   return paginated(c, items, Number(countResult[0]?.count ?? 0), page, pageSize);
+});
+
+genomesRouter.post('/:slug/reviews', requireAuth('admin'), async (c) => {
+  const slug = c.req.param('slug');
+  const body = await c.req.json();
+  const genome = await genomeService.getGenomeBySlug(slug);
+
+  const reviewer = (c.get('publisherId') as string) ?? 'admin';
+  const isApproved = body.verdict === 'approved';
+  const { geneReviews, genomes } = schema;
+
+  const [review] = await db
+    .insert(geneReviews)
+    .values({
+      entity_type: 'genome',
+      entity_slug: slug,
+      reviewer,
+      score: body.score ?? null,
+      verdict: body.verdict,
+      comments: body.comments ?? [],
+    })
+    .returning();
+
+  if (body.verdict) {
+    const updateFields: Record<string, unknown> = { updated_at: new Date() };
+    if (isApproved) updateFields.is_published = true;
+    if (body.verdict === 'rejected' || body.verdict === 'flagged')
+      updateFields.is_published = false;
+
+    await db.update(genomes).set(updateFields).where(eq(genomes.id, genome.id));
+  }
+
+  await emitGenomeEvent('genome.updated', slug, reviewer, {
+    action: 'reviewed',
+    score: body.score,
+    verdict: body.verdict,
+  });
+
+  return success(c, review);
 });
 
 genomesRouter.post('/', requireAuth('publisher'), async (c) => {

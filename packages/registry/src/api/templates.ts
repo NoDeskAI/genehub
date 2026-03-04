@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { db, schema } from '../db/index.js';
 import { optionalAuth, requireAuth } from '../middleware/auth.js';
 import { paginated, success } from '../middleware/response.js';
+import { emitTemplateEvent } from '../services/gene-events.js';
 import * as templateService from '../services/template-service.js';
 
 export const templatesRouter = new Hono();
@@ -98,6 +99,45 @@ templatesRouter.get('/:slug/reviews', async (c) => {
   ]);
 
   return paginated(c, items, Number(countResult[0]?.count ?? 0), page, pageSize);
+});
+
+templatesRouter.post('/:slug/reviews', requireAuth('admin'), async (c) => {
+  const slug = c.req.param('slug');
+  const body = await c.req.json();
+  const template = await templateService.getTemplateBySlug(slug);
+
+  const reviewer = (c.get('publisherId') as string) ?? 'admin';
+  const isApproved = body.verdict === 'approved';
+  const { geneReviews, agentTemplates } = schema;
+
+  const [review] = await db
+    .insert(geneReviews)
+    .values({
+      entity_type: 'template',
+      entity_slug: slug,
+      reviewer,
+      score: body.score ?? null,
+      verdict: body.verdict,
+      comments: body.comments ?? [],
+    })
+    .returning();
+
+  if (body.verdict) {
+    const updateFields: Record<string, unknown> = { updated_at: new Date() };
+    if (isApproved) updateFields.is_published = true;
+    if (body.verdict === 'rejected' || body.verdict === 'flagged')
+      updateFields.is_published = false;
+
+    await db.update(agentTemplates).set(updateFields).where(eq(agentTemplates.id, template.id));
+  }
+
+  await emitTemplateEvent('template.updated', slug, reviewer, {
+    action: 'reviewed',
+    score: body.score,
+    verdict: body.verdict,
+  });
+
+  return success(c, review);
 });
 
 templatesRouter.post('/', requireAuth('publisher'), async (c) => {
