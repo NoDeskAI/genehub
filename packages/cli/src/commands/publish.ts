@@ -1,5 +1,5 @@
-import { access, readdir, readFile, writeFile } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
+import { access, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { GeneHubClient } from '@nodeskai/genehub-sdk';
 import type { Gene } from '@nodeskai/genehub-types';
 import { GeneManifestSchema } from '@nodeskai/genehub-types';
@@ -49,10 +49,10 @@ async function fileExists(path: string): Promise<boolean> {
 }
 
 export const publishCommand = new Command('publish')
-  .description('发布基因到 GeneHub Registry (支持自动检测 SKILL/CLAUDE/AGENTS 文件)')
-  .argument('<path>', '基因目录路径')
+  .description('发布基因到 GeneHub Registry (支持目录路径或 gene.yaml 文件路径)')
+  .argument('<path>', '基因目录路径或 gene.yaml 文件路径')
   .option('-y, --yes', '非交互模式，使用默认值')
-  .action(async (dirPath: string, opts: { yes?: boolean }) => {
+  .action(async (inputPath: string, opts: { yes?: boolean }) => {
     const config = await loadConfig();
 
     if (!config.token) {
@@ -63,9 +63,30 @@ export const publishCommand = new Command('publish')
     }
 
     const client = new GeneHubClient({ registryUrl: config.registryUrl, token: config.token });
-    const absPath = resolve(dirPath);
-    const yamlPath = join(absPath, 'gene.yaml');
-    const hasGeneYaml = await fileExists(yamlPath);
+    const resolved = resolve(inputPath);
+
+    let absPath: string;
+    let yamlPath: string;
+    let hasGeneYaml: boolean;
+
+    try {
+      const info = await stat(resolved);
+      if (info.isFile() && basename(resolved).endsWith('.yaml')) {
+        yamlPath = resolved;
+        absPath = dirname(resolved);
+        hasGeneYaml = true;
+      } else if (info.isDirectory()) {
+        absPath = resolved;
+        yamlPath = join(absPath, 'gene.yaml');
+        hasGeneYaml = await fileExists(yamlPath);
+      } else {
+        output.fail(`路径不是目录也不是 YAML 文件: ${inputPath}`);
+        process.exit(1);
+      }
+    } catch {
+      output.fail(`路径不存在: ${inputPath}`);
+      process.exit(1);
+    }
 
     try {
       let parsed: Record<string, unknown>;
