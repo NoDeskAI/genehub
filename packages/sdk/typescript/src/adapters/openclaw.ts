@@ -207,7 +207,9 @@ export class OpenClawAdapter extends BaseAdapter {
     try {
       content = await readFile(agentsPath, 'utf-8');
     } catch {
-      return;
+      if (action === 'remove') return;
+      await mkdir(this.workspaceDir, { recursive: true });
+      content = '# AGENTS.md\n';
     }
 
     const marker = `<!-- genehub:${manifest.slug} -->`;

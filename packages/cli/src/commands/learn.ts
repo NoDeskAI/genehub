@@ -82,10 +82,21 @@ export const learnCommand = new Command('learn')
 
       output.ok(`任务文件: ${join(workspaceDir, 'learning-tasks', `${slug}.md`)}`);
       output.info(`结果路径: ${task.callback_path}`);
+
+      if (adapter.triggerLearning) {
+        const triggerSpinner = ora('触发 bot 学习...').start();
+        try {
+          await adapter.triggerLearning('检查 learning-tasks/ 目录并处理学习任务');
+          triggerSpinner.succeed('已触发 bot 学习（后台处理中）');
+        } catch {
+          triggerSpinner.warn('自动触发失败，Agent 将在下次对话中处理');
+        }
+      } else {
+        output.info('Agent 将在下次对话中处理学习任务');
+      }
+
       output.info('');
-      output.info('下一步：');
-      output.info('  1. Agent 在下次对话中会自动发现并处理学习任务');
-      output.info(`  2. 学习完成后运行: genehub learn --check ${slug}`);
+      output.info(`学习完成后运行: genehub learn --check ${slug}`);
     } catch (err) {
       spinner.fail('学习任务创建失败');
       output.fail(err instanceof Error ? err.message : String(err));

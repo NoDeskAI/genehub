@@ -41,7 +41,7 @@ export class LearningEngine {
     if (this.client) {
       try {
         manifest = await this.client.getManifest('genehub-learner');
-      } catch (err) {
+      } catch {
         // Fallback to built-in manifest if remote fetch fails
       }
     }
@@ -57,7 +57,7 @@ export class LearningEngine {
     try {
       content = await readFile(agentsPath, 'utf-8');
     } catch {
-      return;
+      content = '# AGENTS.md\n';
     }
 
     const BEGIN = '<!-- genehub:learning-boot -->';
@@ -88,6 +88,7 @@ export class LearningEngine {
       content += `\n${instruction}\n`;
     }
 
+    await mkdir(join(this.workspaceDir), { recursive: true });
     await writeFile(agentsPath, content, 'utf-8');
   }
 
