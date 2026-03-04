@@ -43,10 +43,6 @@ export class LearningEngine {
         manifest = await this.client.getManifest('genehub-learner');
       } catch (err) {
         // Fallback to built-in manifest if remote fetch fails
-        console.warn(
-          '[GeneHub] Failed to fetch latest genehub-learner, using built-in version.',
-          err,
-        );
       }
     }
 
