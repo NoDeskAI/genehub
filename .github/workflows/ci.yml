@@ -10,9 +10,27 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: genehub
+          POSTGRES_PASSWORD: genehub
+          POSTGRES_DB: genehub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     strategy:
       matrix:
         node-version: [20, 22]
+
+    env:
+      DATABASE_URL: postgres://genehub:genehub@localhost:5432/genehub_test
 
     steps:
       - uses: actions/checkout@v4
@@ -35,6 +53,9 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Run database migrations
+        run: pnpm --filter @nodeskai/genehub-registry db:migrate
 
       - name: Test
         run: pnpm test

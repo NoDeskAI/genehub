@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { authCommand } from './commands/auth.js';
 import { configCommand } from './commands/config.js';
@@ -11,7 +12,7 @@ import { searchCommand } from './commands/search.js';
 import { templateCommand } from './commands/template.js';
 import { uninstallCommand } from './commands/uninstall.js';
 
-const program = new Command();
+export const program = new Command();
 
 program.name('genehub').description('GeneHub CLI - AI 员工基因管理工具').version('0.1.0');
 
@@ -27,4 +28,7 @@ program.addCommand(learnCommand);
 program.addCommand(genomeCommand);
 program.addCommand(templateCommand);
 
-program.parse();
+const __filename = fileURLToPath(import.meta.url);
+if (process.argv[1] === __filename) {
+  program.parse();
+}
