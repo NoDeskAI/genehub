@@ -29,7 +29,7 @@ export const learnCommand = new Command('learn')
     const adapter = opts.product ? getAdapter(opts.product) : await detectAdapter();
 
     const workspaceDir = getWorkspaceDir(adapter.product);
-    const engine = new LearningEngine({ workspaceDir, adapter });
+    const engine = new LearningEngine({ workspaceDir, adapter, client });
 
     if (opts.check) {
       const spinner = ora('检查学习结果...').start();

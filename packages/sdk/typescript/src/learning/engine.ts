@@ -1,6 +1,7 @@
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { GeneAdapter, GeneManifest } from '@nodeskai/genehub-types';
+import type { GeneHubClient } from '../client.js';
 import { META_LEARNER_MANIFEST } from './meta-gene.js';
 import { generateForgetTaskMarkdown, generateLearningTaskMarkdown } from './prompts.js';
 import type { LearningResult, LearningTask } from './task.js';
@@ -8,15 +9,18 @@ import type { LearningResult, LearningTask } from './task.js';
 export type LearningEngineOptions = {
   workspaceDir: string;
   adapter?: GeneAdapter;
+  client?: GeneHubClient;
 };
 
 export class LearningEngine {
   private workspaceDir: string;
   private adapter?: GeneAdapter;
+  private client?: GeneHubClient;
 
   constructor(options: LearningEngineOptions) {
     this.workspaceDir = options.workspaceDir;
     this.adapter = options.adapter;
+    this.client = options.client;
   }
 
   private get tasksDir(): string {
@@ -33,7 +37,20 @@ export class LearningEngine {
     const installed = await this.adapter.isInstalled('genehub-learner');
     if (installed) return false;
 
-    await this.adapter.install(META_LEARNER_MANIFEST, { force: true });
+    let manifest = META_LEARNER_MANIFEST;
+    if (this.client) {
+      try {
+        manifest = await this.client.getManifest('genehub-learner');
+      } catch (err) {
+        // Fallback to built-in manifest if remote fetch fails
+        console.warn(
+          '[GeneHub] Failed to fetch latest genehub-learner, using built-in version.',
+          err,
+        );
+      }
+    }
+
+    await this.adapter.install(manifest, { force: true });
     await this.injectBootInstruction();
     return true;
   }

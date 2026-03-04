@@ -114,7 +114,7 @@ export const installCommand = new Command('install')
               ? join(homedir(), '.nanobot', 'workspace')
               : join(process.cwd(), '.genehub');
 
-        const engine = new LearningEngine({ workspaceDir, adapter });
+        const engine = new LearningEngine({ workspaceDir, adapter, client });
         const learnSpinner = ora('生成学习任务...').start();
         await engine.createLearningTask(manifest);
         learnSpinner.succeed('学习任务已创建');
