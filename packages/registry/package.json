@@ -28,6 +28,7 @@
     "hono": "^4.6",
     "postgres": "^3.4",
     "semver": "^7.7.4",
+    "yaml": "^2.7",
     "zod": "^3.24"
   },
   "devDependencies": {

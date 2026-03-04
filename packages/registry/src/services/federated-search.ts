@@ -1,7 +1,9 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { stringify } from 'yaml';
 import { ClawHubClient, type ClawHubSearchResult } from '../adapters/clawhub/client.js';
 import { db, schema } from '../db/index.js';
 import { emitGeneEvent } from './gene-events.js';
+import * as gitea from './gitea-service.js';
 
 const { genes, geneVersions } = schema;
 
@@ -182,13 +184,26 @@ async function syncExternalResults(items: FederatedGeneItem[]) {
 }
 
 async function insertNewGene(item: FederatedGeneItem) {
+  const version = item.version ?? '0.0.0';
   const manifest = buildMinimalManifest(item);
+
+  let skillContent: string | null = null;
+  try {
+    skillContent = await clawhubClient.downloadFile(item.slug, version);
+    manifest.skill.content = skillContent;
+  } catch (err) {
+    console.warn(`[federated-search] download ${item.slug}@${version} from ClawHub failed:`, err);
+  }
+
+  const giteaFiles = buildGiteaFiles(manifest, skillContent);
+  const giteaMeta = await uploadToGitea(item.slug, version, giteaFiles, item.description ?? '');
+
   const [gene] = await db
     .insert(genes)
     .values({
       name: item.name,
       slug: item.slug,
-      version: item.version ?? '0.0.0',
+      version,
       description: item.description ?? '',
       short_description: (item.description ?? '').slice(0, 256),
       category: item.category ?? 'development',
@@ -204,6 +219,8 @@ async function insertNewGene(item: FederatedGeneItem) {
       avg_rating: item.avg_rating ?? 0,
       review_status: 'pending',
       is_published: false,
+      repository_url: giteaMeta.repositoryUrl,
+      file_count: giteaMeta.fileCount,
     })
     .onConflictDoNothing({ target: genes.slug })
     .returning();
@@ -213,7 +230,10 @@ async function insertNewGene(item: FederatedGeneItem) {
       gene_id: gene.id,
       version: gene.version,
       manifest,
-      changelog: 'Auto-imported from federated search',
+      commit_sha: giteaMeta.commitSha,
+      git_tag: giteaMeta.gitTag,
+      files: giteaMeta.fileList,
+      changelog: 'Auto-imported from ClawHub federated search',
       is_latest: true,
     });
     await emitGeneEvent('gene.created', item.slug, 'clawhub');
@@ -221,8 +241,19 @@ async function insertNewGene(item: FederatedGeneItem) {
 }
 
 async function updateExistingGene(geneId: string, item: FederatedGeneItem) {
-  const manifest = buildMinimalManifest(item);
   const version = item.version ?? '0.0.0';
+  const manifest = buildMinimalManifest(item);
+
+  let skillContent: string | null = null;
+  try {
+    skillContent = await clawhubClient.downloadFile(item.slug, version);
+    manifest.skill.content = skillContent;
+  } catch (err) {
+    console.warn(`[federated-search] download ${item.slug}@${version} from ClawHub failed:`, err);
+  }
+
+  const giteaFiles = buildGiteaFiles(manifest, skillContent);
+  const giteaMeta = await uploadToGitea(item.slug, version, giteaFiles, item.description ?? '');
 
   await db.update(geneVersions).set({ is_latest: false }).where(eq(geneVersions.gene_id, geneId));
 
@@ -230,27 +261,120 @@ async function updateExistingGene(geneId: string, item: FederatedGeneItem) {
     gene_id: geneId,
     version,
     manifest,
-    changelog: 'Version updated from federated search',
+    commit_sha: giteaMeta.commitSha,
+    git_tag: giteaMeta.gitTag,
+    files: giteaMeta.fileList,
+    changelog: `Version ${version} updated from ClawHub`,
     is_latest: true,
   });
 
-  await db
-    .update(genes)
-    .set({
-      version,
-      name: item.name,
-      description: item.description ?? '',
-      short_description: (item.description ?? '').slice(0, 256),
-      manifest,
-      install_count: item.install_count ?? 0,
-      avg_rating: item.avg_rating ?? 0,
-      review_status: 'pending',
-      is_published: false,
-      updated_at: new Date(),
-    })
-    .where(eq(genes.id, geneId));
+  const geneUpdates: Record<string, unknown> = {
+    version,
+    name: item.name,
+    description: item.description ?? '',
+    short_description: (item.description ?? '').slice(0, 256),
+    manifest,
+    install_count: item.install_count ?? 0,
+    avg_rating: item.avg_rating ?? 0,
+    review_status: 'pending',
+    is_published: false,
+    updated_at: new Date(),
+  };
+  if (giteaMeta.repositoryUrl) {
+    geneUpdates.repository_url = giteaMeta.repositoryUrl;
+    geneUpdates.file_count = giteaMeta.fileCount;
+  }
+
+  await db.update(genes).set(geneUpdates).where(eq(genes.id, geneId));
 
   await emitGeneEvent('gene.updated', item.slug, 'clawhub');
+}
+
+// ---------------------------------------------------------------------------
+// Gitea integration helpers
+// ---------------------------------------------------------------------------
+
+type GiteaUploadMeta = {
+  repositoryUrl: string | null;
+  commitSha: string | null;
+  gitTag: string | null;
+  fileList: { path: string; size: number; sha: string }[] | null;
+  fileCount: number;
+};
+
+const EMPTY_GITEA_META: GiteaUploadMeta = {
+  repositoryUrl: null,
+  commitSha: null,
+  gitTag: null,
+  fileList: null,
+  fileCount: 0,
+};
+
+function buildGiteaFiles(
+  manifest: ReturnType<typeof buildMinimalManifest>,
+  skillContent: string | null,
+): Record<string, string> {
+  const files: Record<string, string> = {};
+
+  const yamlManifest = { ...manifest } as Record<string, unknown>;
+  if (yamlManifest.skill && typeof yamlManifest.skill === 'object') {
+    const s = { ...(yamlManifest.skill as Record<string, unknown>) };
+    delete s.content;
+    yamlManifest.skill = s;
+  }
+  files['gene.yaml'] = stringify(yamlManifest);
+
+  if (skillContent) {
+    files['SKILL.md'] = skillContent;
+  }
+
+  return files;
+}
+
+async function uploadToGitea(
+  slug: string,
+  version: string,
+  files: Record<string, string>,
+  description: string,
+): Promise<GiteaUploadMeta> {
+  const isGiteaReady = await gitea.isGiteaAvailable();
+  if (!isGiteaReady) {
+    console.warn(`[federated-search] Gitea unavailable, skipping file upload for ${slug}`);
+    return EMPTY_GITEA_META;
+  }
+
+  try {
+    const hasRepo = await gitea.repoExists(slug);
+    if (!hasRepo) {
+      await gitea.createRepo(slug, description.slice(0, 256));
+    }
+
+    const tag = `v${version}`;
+    const result = await gitea.uploadFiles(slug, files, `feat: import ${tag} from ClawHub`);
+
+    try {
+      await gitea.createTag(slug, tag, result.sha);
+    } catch {
+      // tag may already exist for this version
+    }
+
+    const fileList = Object.entries(files).map(([path, content]) => ({
+      path,
+      size: Buffer.byteLength(content, 'utf-8'),
+      sha: '',
+    }));
+
+    return {
+      repositoryUrl: gitea.getRepoUrl(slug),
+      commitSha: result.sha,
+      gitTag: tag,
+      fileList,
+      fileCount: fileList.length,
+    };
+  } catch (err) {
+    console.error(`[federated-search] Gitea upload failed for ${slug}:`, err);
+    return EMPTY_GITEA_META;
+  }
 }
 
 function buildMinimalManifest(item: FederatedGeneItem) {

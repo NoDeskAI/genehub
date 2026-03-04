@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2026-03-04-3
+
+### Fixed
+- 联邦搜索入库适配 Gitea 存储架构：外部基因（ClawHub）入库时自动下载 SKILL.md、创建 Gitea 仓库、上传文件并打 tag，确保版本历史和 CLI 安装可用
+- ClawHub 下载失败或 Gitea 不可用时优雅降级，仍完成 DB 入库
+
+### Added
+- 联邦搜索测试覆盖新增 Gitea 集成场景（下载+上传、Gitea 不可用、下载失败降级）
+
+---
+
 ## v2026-03-04-2
 
 ### Added

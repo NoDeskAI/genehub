@@ -1216,15 +1216,22 @@ tsx listener.ts
                                             ↓
                                   去重（本地优先）→ 分数归一化 → 合并排序 → 返回
                                             ↓ (后台 fire-and-forget)
-                                  ClawHub 新结果 → 入库为 pending → 发 gene.created 事件
-                                                                    → Curator AI 审核
+                                  ClawHub 新结果 → downloadFile 下载 SKILL.md
+                                       ↓                ↓
+                                  创建 Gitea 仓库 → 上传 gene.yaml + SKILL.md → 打 tag
+                                       ↓
+                                  入库 DB（含 repository_url / commit_sha / git_tag / files）
+                                       ↓
+                                  发 gene.created 事件 → Curator AI 审核
 ```
 
 **设计原则**：
 - ClawHub 结果**立即展示**，用户无需等待入库
 - 后台自动将新的外部结果入库为 `pending` + `is_published: false`，触发 AI 审核
+- **入库时同步下载 ClawHub 文件内容，创建 Gitea 仓库存储**，确保版本历史和文件浏览可用
 - 审核通过后 `approved` + `is_published: true`，后续搜索将作为本地结果命中
 - 入库时通过 slug 去重，已存在的不重复插入
+- ClawHub 下载失败或 Gitea 不可用时优雅降级：仍然入库但无文件仓库
 - ClawHub 超时或失败时优雅降级，只返回本地结果
 - NoDeskClaw 同步为白名单，直接 `approved` 入库
 - 返回 `sources` 字段标明各来源命中数量
@@ -1317,7 +1324,7 @@ MINIMAX_API_KEY: sk-xxx
 - [x] ~~定时同步 / 手动触发同步（`POST /sync/clawhub`）~~ → **已弃用**，改用联邦搜索
 - [x] 来源溯源：`source=clawhub` + `source_ref` 指向 ClawHub 原始 URL
 - [x] 安全审查：过滤 ClawHavoc 事件后被标记的恶意技能
-- [x] **联邦搜索（当前方案）**：实时查询 ClawHub API，不入库，按来源标记
+- [x] **联邦搜索（当前方案）**：实时查询 ClawHub API，后台下载文件并存储到 Gitea，按来源标记
 
 #### M2.3 — Evomap Adapter ✅
 

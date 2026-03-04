@@ -1,15 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockSearchSkills, mockLocalRows } = vi.hoisted(() => ({
+const { mockSearchSkills, mockDownloadFile, mockLocalRows, mockGitea } = vi.hoisted(() => ({
   mockSearchSkills: vi.fn(),
+  mockDownloadFile: vi.fn(),
   mockLocalRows: vi.fn(),
+  mockGitea: {
+    isGiteaAvailable: vi.fn().mockResolvedValue(true),
+    repoExists: vi.fn().mockResolvedValue(false),
+    createRepo: vi.fn().mockResolvedValue(undefined),
+    uploadFiles: vi.fn().mockResolvedValue({ sha: 'abc123' }),
+    createTag: vi.fn().mockResolvedValue(undefined),
+    getRepoUrl: vi.fn().mockReturnValue('genes/test-slug'),
+  },
 }));
 
 vi.mock('../adapters/clawhub/client.js', () => ({
   ClawHubClient: vi.fn().mockImplementation(() => ({
     searchSkills: mockSearchSkills,
+    downloadFile: mockDownloadFile,
   })),
 }));
+vi.mock('../services/gitea-service.js', () => mockGitea);
 vi.mock('../db/index.js', () => {
   const createSelectChain = () => {
     const chain = {
@@ -32,7 +43,7 @@ vi.mock('../db/index.js', () => {
       insert: vi.fn().mockReturnValue({
         values: vi.fn().mockReturnValue({
           onConflictDoNothing: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([{ id: 'gene-1' }]),
+            returning: vi.fn().mockResolvedValue([{ id: 'gene-1', version: '1.0.0' }]),
           }),
         }),
       }),
@@ -57,7 +68,7 @@ vi.mock('../db/index.js', () => {
         category: 'category',
         avg_rating: 'avg_rating',
       },
-      geneVersions: { gene_id: 'gene_id' },
+      geneVersions: { gene_id: 'gene_id', is_latest: 'is_latest' },
     },
   };
 });
@@ -173,5 +184,72 @@ describe('federatedSearch', () => {
     expect(highItem?.score).toBeCloseTo(0.85, 5);
     expect(clawhubItems.find((g) => g.slug === 'mid')?.score).toBeCloseTo(0.425, 5);
     expect(clawhubItems.find((g) => g.slug === 'low')?.score).toBeCloseTo(0.2125, 5);
+  });
+
+  it('后台同步时从 ClawHub 下载文件并上传到 Gitea', async () => {
+    mockLocalRows.mockReturnValue([]);
+    mockSearchSkills.mockResolvedValue({
+      results: [makeClawHubResult('new-skill', 0.9)],
+    });
+    mockDownloadFile.mockResolvedValue('# Skill Content\nThis is a test skill.');
+    mockGitea.isGiteaAvailable.mockResolvedValue(true);
+    mockGitea.repoExists.mockResolvedValue(false);
+    mockGitea.uploadFiles.mockResolvedValue({ sha: 'commit-sha-123' });
+    mockGitea.getRepoUrl.mockReturnValue('genes/new-skill');
+
+    await federatedSearch('test', { limit: 20 });
+
+    // 等待后台同步完成
+    await new Promise((r) => setTimeout(r, 200));
+
+    expect(mockDownloadFile).toHaveBeenCalledWith('new-skill', '1.0.0');
+    expect(mockGitea.isGiteaAvailable).toHaveBeenCalled();
+    expect(mockGitea.createRepo).toHaveBeenCalledWith('new-skill', expect.any(String));
+    expect(mockGitea.uploadFiles).toHaveBeenCalledWith(
+      'new-skill',
+      expect.objectContaining({
+        'gene.yaml': expect.any(String),
+        'SKILL.md': '# Skill Content\nThis is a test skill.',
+      }),
+      expect.stringContaining('v1.0.0'),
+    );
+    expect(mockGitea.createTag).toHaveBeenCalledWith('new-skill', 'v1.0.0', 'commit-sha-123');
+  });
+
+  it('Gitea 不可用时仍然入库但不写文件', async () => {
+    mockLocalRows.mockReturnValue([]);
+    mockSearchSkills.mockResolvedValue({
+      results: [makeClawHubResult('no-gitea', 0.9)],
+    });
+    mockDownloadFile.mockResolvedValue('# Content');
+    mockGitea.isGiteaAvailable.mockResolvedValue(false);
+
+    await federatedSearch('test', { limit: 20 });
+    await new Promise((r) => setTimeout(r, 200));
+
+    expect(mockGitea.createRepo).not.toHaveBeenCalled();
+    expect(mockGitea.uploadFiles).not.toHaveBeenCalled();
+  });
+
+  it('ClawHub 下载失败时降级处理，仍然完成入库', async () => {
+    mockLocalRows.mockReturnValue([]);
+    mockSearchSkills.mockResolvedValue({
+      results: [makeClawHubResult('download-fail', 0.9)],
+    });
+    mockDownloadFile.mockRejectedValue(new Error('404 not found'));
+    mockGitea.isGiteaAvailable.mockResolvedValue(true);
+    mockGitea.repoExists.mockResolvedValue(false);
+    mockGitea.uploadFiles.mockResolvedValue({ sha: 'fallback-sha' });
+    mockGitea.getRepoUrl.mockReturnValue('genes/download-fail');
+
+    await federatedSearch('test', { limit: 20 });
+    await new Promise((r) => setTimeout(r, 200));
+
+    // gene.yaml 仍然被上传（不含 SKILL.md）
+    expect(mockGitea.uploadFiles).toHaveBeenCalledWith(
+      'download-fail',
+      expect.not.objectContaining({ 'SKILL.md': expect.any(String) }),
+      expect.any(String),
+    );
   });
 });
