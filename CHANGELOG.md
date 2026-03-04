@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2026-03-04-4
+
+### Added
+- 基因组：渊博、威严、灵敏、远见四大基因组及 10 个基因
+- 管理员可在 web 页面直接提交评审（Gene / Genome / Template）
+- SDK / CLI / federated-search / reviews API 单元测试覆盖
+
+### Fixed
+- CLI `publish` 支持直接传入 gene.yaml 文件路径（之前只接受目录路径，传文件路径会导致路径拼接错误）
+- CLI `publish` 在 gene.yaml 无 `skill.file` 时自动读取同目录 SKILL.md / CLAUDE.md / AGENTS.md
+- Curator 审核逻辑修复：`postReview` 统一处理所有 verdict（approved / rejected / needs_improvement / flagged），不再产生重复 review 记录
+- Curator 提示词优化：引导 AI 写详细评语并给出明确评级，不再一律通过
+- web 评审状态显示修复：新增 `needs_improvement`、`approve` 兼容映射
+
+---
+
 ## v2026-03-04-3
 
 ### Added
