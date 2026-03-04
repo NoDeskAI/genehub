@@ -8,9 +8,11 @@ type StatusConfig = {
 const REVIEW_STATUS_MAP: Record<string, StatusConfig> = {
   draft: { label: '草稿', variant: 'secondary' },
   pending: { label: '待审核', variant: 'warning' },
+  approve: { label: '已通过', variant: 'success' },
   approved: { label: '已通过', variant: 'success' },
+  needs_improvement: { label: '待改进', variant: 'warning' },
   rejected: { label: '已拒绝', variant: 'destructive' },
-  flagged: { label: '已标记', variant: 'warning' },
+  flagged: { label: '已标记', variant: 'destructive' },
 };
 
 export function getReviewStatusConfig(status: string): StatusConfig {

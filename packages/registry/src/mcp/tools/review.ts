@@ -36,25 +36,37 @@ export async function postReview(args: {
     })
     .returning();
 
-  const isApproved = args.verdict === 'approve' || args.verdict === 'approved';
+  const normalizedVerdict = args.verdict.replace(/^approve$/, 'approved');
+  const isApproved = normalizedVerdict === 'approved';
+  const isRejected = normalizedVerdict === 'rejected' || normalizedVerdict === 'needs_improvement';
+  const isFlagged = normalizedVerdict === 'flagged';
 
-  await db
-    .update(genes)
-    .set({
-      ai_score: args.score,
-      ai_verdict: args.verdict,
-      ai_enriched: true,
-      ...(isApproved && { review_status: 'approved', is_published: true }),
-      updated_at: new Date(),
-    })
-    .where(eq(genes.id, gene.id));
+  const statusUpdate: Record<string, unknown> = {
+    ai_score: args.score,
+    ai_verdict: normalizedVerdict,
+    ai_enriched: true,
+    updated_at: new Date(),
+  };
+
+  if (isApproved) {
+    statusUpdate.review_status = 'approved';
+    statusUpdate.is_published = true;
+  } else if (isRejected) {
+    statusUpdate.review_status = 'rejected';
+    statusUpdate.is_published = false;
+  } else if (isFlagged) {
+    statusUpdate.review_status = 'flagged';
+    statusUpdate.is_published = false;
+  }
+
+  await db.update(genes).set(statusUpdate).where(eq(genes.id, gene.id));
 
   await emitGeneEvent('gene.reviewed', args.slug, 'curator-agent', {
     score: args.score,
-    verdict: args.verdict,
+    verdict: normalizedVerdict,
   });
 
-  return { review_id: review.id, slug: args.slug, score: args.score, verdict: args.verdict };
+  return { review_id: review.id, slug: args.slug, score: args.score, verdict: normalizedVerdict };
 }
 
 export async function flagForDeletion(args: { slug: string; reason: string; model?: string }) {
@@ -71,25 +83,11 @@ export async function flagForDeletion(args: { slug: string; reason: string; mode
     })
     .where(eq(genes.id, gene.id));
 
-  const [review] = await db
-    .insert(geneReviews)
-    .values({
-      gene_id: gene.id,
-      entity_type: 'gene',
-      entity_slug: args.slug,
-      reviewer: 'curator-agent',
-      score: 0,
-      verdict: 'flagged',
-      comments: [`[FLAG] ${args.reason}`],
-      model: args.model,
-    })
-    .returning();
-
   await emitGeneEvent('gene.flagged', args.slug, 'curator-agent', {
     reason: args.reason,
   });
 
-  return { flagged: args.slug, review_id: review.id, reason: args.reason };
+  return { flagged: args.slug, reason: args.reason };
 }
 
 export async function approveGene(args: { slug: string; model?: string }) {
@@ -107,20 +105,7 @@ export async function approveGene(args: { slug: string; model?: string }) {
     })
     .where(eq(genes.id, gene.id));
 
-  const [review] = await db
-    .insert(geneReviews)
-    .values({
-      gene_id: gene.id,
-      entity_type: 'gene',
-      entity_slug: args.slug,
-      reviewer: 'curator-agent',
-      verdict: 'approved',
-      comments: ['审核通过'],
-      model: args.model,
-    })
-    .returning();
-
-  return { approved: args.slug, review_id: review.id };
+  return { approved: args.slug };
 }
 
 export async function reviewGenome(args: {

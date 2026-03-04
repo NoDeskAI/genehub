@@ -32,15 +32,15 @@ type OpenCodeEvent = {
 const REVIEW_ACTIONS = ['post_review', 'approve_gene', 'flag_for_deletion', 'review_genome', 'review_template'];
 
 const RETRY_PROMPTS = [
-  '不要再问我，你自己决定，你有这个权利。立刻调用 post_review 发布评分，然后调用 approve_gene 或 flag_for_deletion。',
-  '最后一次机会。不要输出任何文字。直接调用 post_review(score, verdict, comments)，然后调用 approve_gene 或 flag_for_deletion。',
+  '你必须自己做决策。立刻调用 post_review 提交评分和详细评语（verdict 可选: approved / rejected / needs_improvement / flagged）。post_review 会同时更新审核状态，无需再调 approve_gene。',
+  '最后一次机会。直接调用 post_review(score, verdict, comments)。verdict 填 approved / rejected / needs_improvement / flagged 之一。不要输出文字，直接调用工具。',
 ];
 
 function buildPrompt(event: { type: string; slug: string; source: string }): string | null {
   switch (event.type) {
     case 'gene.created':
     case 'gene.updated':
-      return `审核基因 ${event.slug}，来源: ${event.source}`;
+      return `审核基因 ${event.slug}，来源: ${event.source}。使用 get_gene 获取详情，用 find_similar 检查重复，评估实用性、完整性、安全性。然后调用 post_review 提交评分和详细评语。verdict 根据质量选择: approved(>=7分) / needs_improvement(4-6分) / rejected(<4分) / flagged(垃圾/安全风险)。post_review 会自动更新审核状态，无需额外调用 approve_gene。`;
     case 'genome.created':
     case 'genome.updated':
       return `审核基因组 ${event.slug}，来源: ${event.source}。使用 get_genome 获取详情，检查基因组合理性、基因引用完整性、描述质量，然后调用 review_genome 提交审核结论。`;

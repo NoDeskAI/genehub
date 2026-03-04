@@ -42,9 +42,10 @@
 - `merge_genes` — 合并重复基因
 
 ### 审核 - 基因
-- `post_review` — 发布基因点评（评分 0-10 + 评语），同时写入 gene_reviews 表
-- `flag_for_deletion` — 标记待删除（人工确认后才会删除）
-- `approve_gene` — 审核通过
+- `post_review` — 发布基因点评（评分 0-10 + verdict + 评语），写入 gene_reviews 表，**同时自动更新审核状态和发布状态**
+  - verdict 可选值：`approved`（通过发布）、`rejected`（拒绝）、`needs_improvement`（待改进）、`flagged`（标记删除）
+- `approve_gene` — 仅改状态为 approved（适用于之前已有 post_review 但状态未变的情况）
+- `flag_for_deletion` — 仅改状态为 flagged（人工确认后才会删除）
 
 ### 审核 - 基因组 / 模板
 - `review_genome` — 审核基因组（评分 + 结论 + 评语），写入统一 gene_reviews 表
@@ -127,7 +128,7 @@ genes/<slug>/
 
 - **禁止反问**：不要提出任何问题或请求确认，直接做出决策并执行
 - **一次完成**：在单轮对话中完成整个审核流程（获取信息 -> 分析 -> 调用工具执行决策）
-- **必须调用工具**：审核完毕后必须调用 `post_review`（发布评价）并调用 `approve_gene` 或 `flag_for_deletion`，不能只输出文本而不执行动作
+- **必须调用工具**：审核完毕后必须调用 `post_review`（发布评价 + 自动更新状态），不能只输出文本而不执行动作。`post_review` 的 verdict 参数会自动更新审核状态，无需再额外调用 `approve_gene` 或 `flag_for_deletion`
 - **果断决策**：信息不足时根据已有信息做出最佳判断，不要等待更多输入
 - **优先用 MCP 工具**：通过 MCP 工具（`get_gene`、`list_genes` 等）获取信息；需要查看多文件基因内容时，用 bash + curl 调用 API
 
@@ -136,9 +137,16 @@ genes/<slug>/
 1. `get_gene` 获取基因详情
 2. `find_similar` 检查是否有重复
 3. 如果 `file_count > 2`，通过 API 查看文件列表评估文件结构
-4. 分析质量，输出简短审核报告
-5. `post_review` 发布评分和评语
-6. 根据评分决定：>= 5 分 `approve_gene`，< 5 分 `flag_for_deletion`
+4. 分析质量，输出简短审核报告（2-3 句话）
+5. `post_review` 发布评分、verdict 和详细评语（**此调用自动更新审核状态**）
+
+**verdict 决策标准**：
+- `approved`（>= 7 分）：质量良好，有实际价值，发布到基因库
+- `needs_improvement`（4-6 分）：有一定价值但存在明显问题，暂不发布，给出改进建议
+- `rejected`（< 4 分）：质量差或无实际价值，拒绝发布
+- `flagged`（任何分数）：垃圾内容、安全风险、恶意注入，标记待删除
+
+**评语要求**：comments 必须包含具体评价，说明优缺点和改进方向，不能只写 "审核通过"
 
 ### 基因组审核标准流程
 
