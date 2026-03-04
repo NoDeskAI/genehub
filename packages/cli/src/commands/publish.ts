@@ -128,14 +128,22 @@ async function loadFromGeneYaml(
   const raw = await readFile(yamlPath, 'utf-8');
   const parsed = parse(raw);
 
-  if (parsed.skill?.file && !parsed.skill.content) {
-    try {
-      parsed.skill.content = await readFile(join(absPath, parsed.skill.file), 'utf-8');
-    } catch {
+  if (!parsed.skill?.content) {
+    if (!parsed.skill) parsed.skill = {};
+    const candidates: string[] = [];
+    if (parsed.skill.file) {
+      candidates.push(join(absPath, parsed.skill.file));
+    }
+    candidates.push(join(absPath, 'SKILL.md'));
+    candidates.push(join(absPath, 'CLAUDE.md'));
+    candidates.push(join(absPath, 'AGENTS.md'));
+
+    for (const candidate of candidates) {
       try {
-        parsed.skill.content = await readFile(join(absPath, 'SKILL.md'), 'utf-8');
+        parsed.skill.content = await readFile(candidate, 'utf-8');
+        break;
       } catch {
-        // no skill content file found
+        // try next candidate
       }
     }
   }
