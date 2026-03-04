@@ -24,14 +24,22 @@ genomes/
 
 ## 使用方法
 
-- 基因组定义文件（`genome.yaml`）用于版本管理和 seed 数据源。
-- 将基因组导入 Registry 需通过 seed 脚本或 API，当前 GeneHub 暂无从文件自动加载基因组的 CLI。
+通过 GeneHub CLI 管理基因组：
+
+```bash
+genehub genome publish ./genes/genomes/agile-executor   # 发布基因组到 Registry
+genehub genome install agile-executor                    # 安装基因组（递归安装所有基因）
+genehub genome list                                      # 搜索基因组
+genehub genome info agile-executor                       # 查看基因组详情
+```
+
+本地的 `genome.yaml` 文件是基因组的源定义，发布后会存储到 Registry（DB + Gitea）。
 
 ## 已定义基因组
 
-| slug | 名称 | 角色 |
-|------|------|------|
-| agile-executor | 灵敏 -- 执行者基因组 | 卓越执行者（Act 类型） |
-| visionary-planner | 远见 -- 规划者基因组 | 远见规划者（Plan 类型） |
-| erudite-scholar | 渊博 -- 博学者基因组 | 博学者（Knowledge 类型） |
-| steadfast-guardian | 威严 -- 守护者基因组 | 守护者（Judge 类型） |
+| slug | 名称 | 分类 | 角色 |
+|------|------|------|------|
+| agile-executor | 灵敏 -- 执行者基因组 | efficiency | 卓越执行者（Act 类型） |
+| visionary-planner | 远见 -- 规划者基因组 | leadership | 远见规划者（Plan 类型） |
+| erudite-scholar | 渊博 -- 博学者基因组 | knowledge | 博学者（Knowledge 类型） |
+| steadfast-guardian | 威严 -- 守护者基因组 | governance | 守护者（Judge 类型） |
