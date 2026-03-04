@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2026-03-04-5
+
+### Added
+- PR #2 合入: LearningEngine 优先从 Registry 拉取最新 genehub-learner manifest
+
+### Fixed
+- CLI `publish` 支持直接传入 gene.yaml 文件路径（之前只接受目录，传文件路径导致拼接错误）
+- CLI `publish` 在 gene.yaml 无 `skill.file` 时自动读取同目录 SKILL.md / CLAUDE.md / AGENTS.md
+- `install --learn` / `learn` 对 OpenClaw 无效：AGENTS.md 不存在时创建而非静默跳过
+- `learn` 命令补充 `triggerLearning` 调用，与 `install --learn` 行为一致
+- boot 指令注入不再依赖 genehub-learner 首次安装，已安装用户也能补上
+
+---
+
 ## v2026-03-04-4
 
 ### Added
