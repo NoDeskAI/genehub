@@ -34,6 +34,8 @@ export class LearningEngine {
   async ensureMetaGeneInstalled(): Promise<boolean> {
     if (!this.adapter) return false;
 
+    await this.injectBootInstruction();
+
     const installed = await this.adapter.isInstalled('genehub-learner');
     if (installed) return false;
 
@@ -47,7 +49,6 @@ export class LearningEngine {
     }
 
     await this.adapter.install(manifest, { force: true });
-    await this.injectBootInstruction();
     return true;
   }
 
