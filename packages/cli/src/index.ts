@@ -1,3 +1,5 @@
+import { readFileSync, realpathSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { authCommand } from './commands/auth.js';
@@ -14,7 +16,19 @@ import { uninstallCommand } from './commands/uninstall.js';
 
 export const program = new Command();
 
-program.name('genehub').description('GeneHub CLI - AI 员工基因管理工具').version('0.1.0');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+function loadVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
+    return pkg.version ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+program.name('genehub').description('GeneHub CLI - AI 员工基因管理工具').version(loadVersion());
 
 program.addCommand(authCommand);
 program.addCommand(installCommand);
@@ -28,7 +42,14 @@ program.addCommand(learnCommand);
 program.addCommand(genomeCommand);
 program.addCommand(templateCommand);
 
-const __filename = fileURLToPath(import.meta.url);
-if (process.argv[1] === __filename) {
+function isDirectRun(): boolean {
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(__filename);
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectRun()) {
   program.parse();
 }

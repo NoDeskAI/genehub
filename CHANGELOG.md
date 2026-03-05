@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2026-03-04-6
+
+### Fixed
+- **CLI 全局安装后无法使用**：`npm install -g` 创建的 symlink 路径和 `import.meta.url` 不匹配，导致 `program.parse()` 永远不执行，CLI 静默退出无任何输出
+- `--version` 从 package.json 动态读取，不再硬编码为 `0.1.0`
+
+---
+
 ## v2026-03-04-5
 
 ### Added
