@@ -324,7 +324,18 @@ export class OpenClawAdapter extends BaseAdapter {
   }
 
   async triggerLearning(prompt: string): Promise<void> {
-    const { spawn } = await import('node:child_process');
+    const { execFile, spawn } = await import('node:child_process');
+    const { promisify } = await import('node:util');
+    const { setTimeout: sleep } = await import('node:timers/promises');
+    const run = promisify(execFile);
+
+    try {
+      await run('openclaw', ['gateway', 'restart'], { timeout: 15_000 });
+    } catch {
+      // gateway might not be installed as a service; continue anyway
+    }
+
+    await sleep(5000);
 
     const child = spawn('openclaw', ['agent', '--agent', 'main', '--message', prompt], {
       detached: true,
