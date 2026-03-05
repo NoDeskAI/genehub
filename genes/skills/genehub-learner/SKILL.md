@@ -1,6 +1,6 @@
 ---
 name: genehub-learner
-version: 1.1.0
+version: 1.2.1
 description: GeneHub 基因管理与深度学习引擎
 metadata:
   openclaw:
@@ -104,6 +104,8 @@ reason: "我已深入理解代码审查的四个维度，并结合自己的经�
 
 (你个性化后的 SKILL.md 完整内容放在这里)
 ```
+
+**提交结果后，必须立即删除 `learning-tasks/` 目录下对应的任务文件，以防重复处理。**
 
 ### decision 选项
 

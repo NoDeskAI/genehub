@@ -34,8 +34,6 @@ export class LearningEngine {
   async ensureMetaGeneInstalled(): Promise<boolean> {
     if (!this.adapter) return false;
 
-    await this.injectBootInstruction();
-
     const installed = await this.adapter.isInstalled('genehub-learner');
     if (installed) return false;
 
@@ -43,12 +41,13 @@ export class LearningEngine {
     if (this.client) {
       try {
         manifest = await this.client.getManifest('genehub-learner');
-      } catch {
+      } catch (err) {
         // Fallback to built-in manifest if remote fetch fails
       }
     }
 
     await this.adapter.install(manifest, { force: true });
+    await this.injectBootInstruction();
     return true;
   }
 
@@ -58,7 +57,7 @@ export class LearningEngine {
     try {
       content = await readFile(agentsPath, 'utf-8');
     } catch {
-      content = '# AGENTS.md\n';
+      return;
     }
 
     const BEGIN = '<!-- genehub:learning-boot -->';
@@ -76,7 +75,8 @@ export class LearningEngine {
       '1. Read `skills/genehub-learner/SKILL.md` for the full learning protocol',
       '2. Process each task file following those instructions',
       '3. Write results to `learning-results/`',
-      '4. Log what you learned in `memory/YYYY-MM-DD.md`',
+      '4. **Delete the completed task file from `learning-tasks/`**',
+      '5. Log what you learned in `memory/YYYY-MM-DD.md`',
       END,
     ].join('\n');
 
@@ -89,7 +89,6 @@ export class LearningEngine {
       content += `\n${instruction}\n`;
     }
 
-    await mkdir(join(this.workspaceDir), { recursive: true });
     await writeFile(agentsPath, content, 'utf-8');
   }
 

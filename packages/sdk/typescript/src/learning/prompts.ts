@@ -54,11 +54,14 @@ export function generateLearningTaskMarkdown(task: LearningTask): string {
   lines.push('');
   lines.push('## 完成学习');
   lines.push('');
-  lines.push('学习完成后，请执行以下操作：');
+  lines.push('学习完成后，请**严格按顺序**执行以下操作：');
   lines.push('');
   lines.push(`1. 在 \`${task.callback_path}\` 创建学习结果文件`);
   lines.push('2. 包含 YAML front matter（task_id, decision, self_eval）');
   lines.push('3. 如果你个性化了技能内容，将修改后的 SKILL.md 内容放在正文中');
+  lines.push(
+    `4. **删除本任务文件** — 确认结果文件写入成功后，立即删除 \`learning-tasks/${task.gene_slug}.md\`（即本文件），防止下次会话重复处理`,
+  );
   lines.push('');
   lines.push('### 结果文件模板');
   lines.push('');
@@ -108,5 +111,7 @@ export function generateForgetTaskMarkdown(
     '```',
     '',
     `请将遗忘结果写入 \`${callbackPath}\``,
+    '',
+    `**结果文件写入成功后，立即删除 \`learning-tasks/${slug}.md\`（即本文件），防止下次会话重复处理。**`,
   ].join('\n');
 }

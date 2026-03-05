@@ -1,6 +1,6 @@
 slug: "genehub-learner"
 name: "GeneHub 学习引擎"
-version: "1.1.1"
+version: "1.2.1"
 description: |
   GeneHub 基因管理与学习引擎。提供从 GeneHub 搜索、安装、深度学习基因的完整能力——
   包括 CLI 命令操作、学习任务处理、个性化技能版本生成、学习心得记录。
