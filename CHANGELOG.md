@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2026-03-05
+
+### Fixed
+- **OpenClaw triggerLearning**：修复 `openclaw agent` 命令缺少 `--agent main` 参数，且被 5s timeout 提前 kill 的问题
+- **OpenClaw 学习触发流程**：triggerLearning 先执行 `openclaw gateway restart` 等待 gateway 重载 skills，再 spawn agent 发消息（detached 后台运行，不阻塞 CLI）
+
+---
+
 ## v2026-03-04-6
 
 ### Fixed
