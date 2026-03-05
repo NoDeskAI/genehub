@@ -324,16 +324,13 @@ export class OpenClawAdapter extends BaseAdapter {
   }
 
   async triggerLearning(prompt: string): Promise<void> {
-    const { exec } = await import('node:child_process');
-    const { promisify } = await import('node:util');
-    const execAsync = promisify(exec);
+    const { spawn } = await import('node:child_process');
 
-    const escaped = prompt.replace(/"/g, '\\"');
-    try {
-      await execAsync(`openclaw agent --message "${escaped}"`, { timeout: 5000 });
-    } catch {
-      // fire-and-forget: the command may keep running after timeout
-    }
+    const child = spawn('openclaw', ['agent', '--agent', 'main', '--message', prompt], {
+      detached: true,
+      stdio: 'ignore',
+    });
+    child.unref();
   }
 
   async notifySkillChange(
