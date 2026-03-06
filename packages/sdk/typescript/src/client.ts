@@ -5,6 +5,7 @@ import type {
   ApiResponse,
   CreateAgentTemplateRequest,
   CreateGenomeRequest,
+  FederatedSearchParams,
   FederatedSearchResult,
   Gene,
   GeneListParams,
@@ -73,15 +74,13 @@ export class GeneHubClient {
   }
 
   /** 联邦搜索：合并本地 DB 与外部源（如 ClawHub）结果 */
-  async federatedSearch(params: {
-    q: string;
-    category?: string;
-    limit?: number;
-  }): Promise<FederatedSearchResult> {
+  async federatedSearch(params: FederatedSearchParams): Promise<FederatedSearchResult> {
     const qs = new URLSearchParams();
     qs.set('q', params.q);
     if (params.category) qs.set('category', params.category);
-    if (params.limit != null) qs.set('limit', String(params.limit));
+    if (Number.isFinite(params.limit) && (params.limit as number) > 0) {
+      qs.set('limit', String(params.limit));
+    }
     return this.request<FederatedSearchResult>(`/api/v1/genes/search?${qs.toString()}`);
   }
 
