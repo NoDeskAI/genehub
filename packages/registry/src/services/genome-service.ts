@@ -384,16 +384,19 @@ export async function updateGenome(slug: string, updates: Record<string, unknown
 export async function deleteGenome(slug: string) {
   const genome = await getGenomeBySlug(slug);
 
-  const [deleted] = await db.delete(genomes).where(eq(genomes.id, genome.id)).returning();
-
-  try {
-    if (await gitea.repoExists(slug, GITEA_ORG)) {
+  if (genome.repository_url) {
+    try {
       await gitea.deleteRepo(slug, GITEA_ORG);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('404')) {
+        // 仓库已被删或不存在，继续删 DB
+      } else {
+        throw err;
+      }
     }
-  } catch (err) {
-    console.error(`[genome] Failed to delete Gitea repo ${GITEA_ORG}/${slug}:`, err);
   }
-
+  const [deleted] = await db.delete(genomes).where(eq(genomes.id, genome.id)).returning();
   return deleted;
 }
 

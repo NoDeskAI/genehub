@@ -443,16 +443,19 @@ export async function updateGene(slug: string, updates: Record<string, unknown>)
 export async function deleteGene(slug: string) {
   const gene = await getGeneBySlug(slug);
 
-  const [deleted] = await db.delete(genes).where(eq(genes.id, gene.id)).returning();
-
-  try {
-    if (await gitea.repoExists(slug)) {
+  if (gene.repository_url) {
+    try {
       await gitea.deleteRepo(slug);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('404')) {
+        // 仓库已被删或不存在，继续删 DB
+      } else {
+        throw err;
+      }
     }
-  } catch (err) {
-    console.error(`[gene] Failed to delete Gitea repo genes/${slug}:`, err);
   }
-
+  const [deleted] = await db.delete(genes).where(eq(genes.id, gene.id)).returning();
   return deleted;
 }
 
