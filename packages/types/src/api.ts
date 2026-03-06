@@ -101,12 +101,14 @@ export type FederatedGeneItem = {
   clawhub_display_name?: string;
 };
 
-export type FederatedSearchResponse = ApiResponse<{
+export type FederatedSearchResult = {
   query: string;
   total: number;
   items: FederatedGeneItem[];
   sources: { local: number; clawhub: number };
-}>;
+};
+
+export type FederatedSearchResponse = ApiResponse<FederatedSearchResult>;
 
 export type AgentTemplateListParams = {
   q?: string;

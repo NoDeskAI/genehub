@@ -226,13 +226,41 @@ export class NanobotAdapter extends BaseAdapter {
     let config: Record<string, unknown> = {};
     try {
       const raw = await readFile(this.configPath, 'utf-8');
-      config = JSON.parse(raw);
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        console.warn(
+          '[NanobotAdapter] config.json 内容不是有效对象，MCP 配置未写入:',
+          this.configPath,
+        );
+        return;
+      }
+      config = parsed as Record<string, unknown>;
     } catch (err) {
-      console.warn(
-        '[NanobotAdapter] config.json 不存在或读取失败，MCP 配置未写入:',
-        this.configPath,
-        err instanceof Error ? err.message : err,
-      );
+      const errorDetail = err instanceof Error ? err.message : err;
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        (err as { code?: string }).code === 'ENOENT'
+      ) {
+        console.warn(
+          '[NanobotAdapter] config.json 不存在，MCP 配置未写入:',
+          this.configPath,
+          errorDetail,
+        );
+      } else if (err instanceof SyntaxError) {
+        console.warn(
+          '[NanobotAdapter] config.json 解析失败（JSON 格式错误），MCP 配置未写入:',
+          this.configPath,
+          errorDetail,
+        );
+      } else {
+        console.warn(
+          '[NanobotAdapter] config.json 读取或解析失败，MCP 配置未写入:',
+          this.configPath,
+          errorDetail,
+        );
+      }
       return;
     }
 

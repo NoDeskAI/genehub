@@ -53,7 +53,7 @@ genehub auth logout     # 退出登录（清除本地 token）
 | `genehub auth login` | GitHub OAuth 登录 |
 | `genehub auth status` | 查看登录状态 |
 | `genehub auth logout` | 退出登录 |
-| `genehub search [keyword]` | 搜索基因库 |
+| `genehub search [keyword]` | 搜索基因库（默认联邦搜索；`--local` 仅本地 DB） |
 | `genehub install <slug>` | 安装基因到当前 Agent 环境 |
 | `genehub uninstall <slug>` | 卸载基因 |
 | `genehub publish <path>` | 发布基因到 Registry（自动检测 CLAUDE.md / SKILL.md / AGENTS.md） |

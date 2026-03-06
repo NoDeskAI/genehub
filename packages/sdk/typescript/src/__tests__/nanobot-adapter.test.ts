@@ -106,6 +106,7 @@ describe('NanobotAdapter', () => {
       mcp_servers: [
         {
           name: 'test-mcp',
+          transport: 'stdio',
           command: 'npx',
           args: ['-y', 'test-server'],
           env: {},
@@ -130,13 +131,60 @@ describe('NanobotAdapter', () => {
     });
     const manifestWithMcp: GeneManifest = {
       ...TEST_MANIFEST,
-      mcp_servers: [{ name: 'mcp1', command: 'cmd', args: [], env: {} }],
+      mcp_servers: [{ name: 'mcp1', transport: 'stdio', command: 'cmd', args: [], env: {} }],
     };
 
     await noConfigAdapter.install(manifestWithMcp);
 
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('[NanobotAdapter]'),
+      expect.any(String),
+      expect.any(String),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('mergeNanobotMcpConfig() 当 config.json 内容非对象时应 warn 且不写入', async () => {
+    const invalidConfigPath = join(tempDir, 'invalid-object.json');
+    await writeFile(invalidConfigPath, 'null', 'utf-8');
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const badAdapter = new NanobotAdapter({
+      workspace: join(tempDir, 'ws2'),
+      configPath: invalidConfigPath,
+    });
+    const manifestWithMcp: GeneManifest = {
+      ...TEST_MANIFEST,
+      mcp_servers: [{ name: 'mcp1', transport: 'stdio', command: 'cmd', args: [], env: {} }],
+    };
+
+    await badAdapter.install(manifestWithMcp);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('内容不是有效对象'),
+      invalidConfigPath,
+    );
+    const stillRaw = await readFile(invalidConfigPath, 'utf-8');
+    expect(stillRaw).toBe('null');
+    warnSpy.mockRestore();
+  });
+
+  it('mergeNanobotMcpConfig() 当 config.json JSON 格式错误时应 warn 解析失败', async () => {
+    const badJsonPath = join(tempDir, 'bad-json.json');
+    await writeFile(badJsonPath, '{ invalid }', 'utf-8');
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const badAdapter = new NanobotAdapter({
+      workspace: join(tempDir, 'ws3'),
+      configPath: badJsonPath,
+    });
+    const manifestWithMcp: GeneManifest = {
+      ...TEST_MANIFEST,
+      mcp_servers: [{ name: 'mcp1', transport: 'stdio', command: 'cmd', args: [], env: {} }],
+    };
+
+    await badAdapter.install(manifestWithMcp);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('解析失败'),
       expect.any(String),
       expect.any(String),
     );
