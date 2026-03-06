@@ -423,19 +423,22 @@ export async function updateTemplate(slug: string, updates: Record<string, unkno
 export async function deleteTemplate(slug: string) {
   const template = await getTemplateBySlug(slug);
 
+  if (template.repository_url) {
+    try {
+      await gitea.deleteRepo(slug, GITEA_ORG);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('404')) {
+        // 仓库已被删或不存在，继续删 DB
+      } else {
+        throw err;
+      }
+    }
+  }
   const [deleted] = await db
     .delete(agentTemplates)
     .where(eq(agentTemplates.id, template.id))
     .returning();
-
-  try {
-    if (await gitea.repoExists(slug, GITEA_ORG)) {
-      await gitea.deleteRepo(slug, GITEA_ORG);
-    }
-  } catch (err) {
-    console.error(`[template] Failed to delete Gitea repo ${GITEA_ORG}/${slug}:`, err);
-  }
-
   return deleted;
 }
 
