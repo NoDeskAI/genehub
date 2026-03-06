@@ -172,7 +172,7 @@ AI 员工模板是最高层抽象，GeneHub 存储公共模板（面向社区）
 | 适配器 | 目标产品 | 注入方式 |
 |--------|---------|---------|
 | OpenClaw Adapter | openClaw / NoDeskClaw | SKILL.md + openclaw.json（NFS / API） | 初期 |
-| nanobot Adapter | nanobot | 配置注入（待定） | 初期 |
+| nanobot Adapter | nanobot | 配置注入（Future：capabilities/requires 校验与注入） | 初期 |
 | Generic Adapter | 通用 Agent | 标准学习协议 HTTP 回调 | 初期 |
 | DeskClaw Adapter | DeskClaw | .cursor/rules/ + SKILL.md | 后续扩展 |
 
@@ -603,6 +603,8 @@ GitHub OAuth                   API Key
 | POST | `/genes/:slug/effectiveness` | 效能数据上报（EMA 算法） | 已实现 |
 | POST | `/genomes/:slug/installed` | 基因组安装计数上报 | 已实现 |
 | POST | `/effectiveness/batch` | 批量效能上报 | Future |
+
+删除基因/基因组/模板时，先删除 Gitea 对应仓库再删除 DB 记录；Gitea 删除失败时请求返回 5xx，避免 DB 已删但 Gitea 残留导致同 slug 无法再创建。
 
 #### 审核
 

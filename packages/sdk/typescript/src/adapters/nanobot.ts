@@ -12,14 +12,17 @@ import type {
 import { BaseAdapter } from './base.js';
 
 const DEFAULT_WORKSPACE = join(homedir(), '.nanobot', 'workspace');
+const DEFAULT_CONFIG_PATH = join(homedir(), '.nanobot', 'config.json');
 
 export class NanobotAdapter extends BaseAdapter {
   readonly product = 'nanobot';
   private workspace: string;
+  private configPath: string;
 
-  constructor(options?: { workspace?: string }) {
+  constructor(options?: { workspace?: string; configPath?: string }) {
     super();
     this.workspace = options?.workspace ?? DEFAULT_WORKSPACE;
+    this.configPath = options?.configPath ?? DEFAULT_CONFIG_PATH;
   }
 
   private get skillsDir(): string {
@@ -28,7 +31,7 @@ export class NanobotAdapter extends BaseAdapter {
 
   async detect(): Promise<boolean> {
     try {
-      await stat(join(homedir(), '.nanobot', 'config.json'));
+      await stat(this.configPath);
       return true;
     } catch {
       return false;
@@ -220,13 +223,16 @@ export class NanobotAdapter extends BaseAdapter {
   }
 
   private async mergeNanobotMcpConfig(mcpServers: GeneManifest['mcp_servers']): Promise<void> {
-    const configPath = join(homedir(), '.nanobot', 'config.json');
-
     let config: Record<string, unknown> = {};
     try {
-      const raw = await readFile(configPath, 'utf-8');
+      const raw = await readFile(this.configPath, 'utf-8');
       config = JSON.parse(raw);
-    } catch {
+    } catch (err) {
+      console.warn(
+        '[NanobotAdapter] config.json 不存在或读取失败，MCP 配置未写入:',
+        this.configPath,
+        err instanceof Error ? err.message : err,
+      );
       return;
     }
 
@@ -243,6 +249,6 @@ export class NanobotAdapter extends BaseAdapter {
       };
     }
 
-    await writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    await writeFile(this.configPath, JSON.stringify(config, null, 2), 'utf-8');
   }
 }
