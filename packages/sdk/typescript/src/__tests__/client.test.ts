@@ -35,6 +35,72 @@ describe('GeneHubClient', () => {
     expect(result).toEqual(mockData);
   });
 
+  it('federatedSearch(q) 应请求 /api/v1/genes/search 并返回合并结果', async () => {
+    const mockData = {
+      query: 'task',
+      total: 2,
+      items: [
+        {
+          slug: 'task-discipline',
+          name: '任务纪律',
+          description: null,
+          version: '1.0.0',
+          category: null,
+          tags: [],
+          source: 'local',
+          score: 1,
+          install_count: null,
+          avg_rating: null,
+        },
+        {
+          slug: 'some-gene',
+          name: 'Some',
+          description: null,
+          version: '2.1.0',
+          category: null,
+          tags: [],
+          source: 'clawhub',
+          score: 0.9,
+          install_count: null,
+          avg_rating: null,
+        },
+      ],
+      sources: { local: 1, clawhub: 1 },
+    };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ code: 0, data: mockData }),
+    });
+
+    const result = await client.federatedSearch({ q: 'task' });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BASE_URL}/api/v1/genes/search?q=task`,
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+      }),
+    );
+    expect(result).toEqual(mockData);
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0].source).toBe('local');
+    expect(result.items[1].source).toBe('clawhub');
+  });
+
+  it('federatedSearch 支持 category 与 limit 参数', async () => {
+    const mockData = { query: 'x', total: 0, items: [], sources: { local: 0, clawhub: 0 } };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ code: 0, data: mockData }),
+    });
+
+    await client.federatedSearch({ q: 'x', category: 'productivity', limit: 10 });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BASE_URL}/api/v1/genes/search?q=x&category=productivity&limit=10`,
+      expect.any(Object),
+    );
+  });
+
   it('getGene(slug) 应构造正确 URL 并返回基因数据', async () => {
     const mockGene = { slug: 'my-gene', name: 'My Gene', version: '1.0.0' };
     fetchMock.mockResolvedValueOnce({

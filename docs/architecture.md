@@ -184,7 +184,7 @@ AI 员工模板是最高层抽象，GeneHub 存储公共模板（面向社区）
 # 已实现命令
 genehub install <gene-slug>       # 安装基因（支持 @version、--force、--learn、--target）
 genehub uninstall <gene-slug>     # 卸载基因
-genehub search <keyword>          # 搜索基因（当前本地搜索，计划接入联邦搜索）
+genehub search <keyword>          # 搜索基因（默认联邦搜索；--local 仅本地 DB）
 genehub list                      # 列出已安装基因
 genehub publish <path>            # 发布基因（自动检测 CLAUDE.md/SKILL.md/AGENTS.md，无需预建 gene.yaml）
 genehub publish <path> -y         # 非交互模式发布（使用默认值）
@@ -1365,8 +1365,8 @@ MINIMAX_API_KEY: sk-xxx
 - [ ] 全文搜索升级（Meilisearch）
 - [ ] DeskClaw Adapter（后续扩展）
 - [ ] CLI `info` 命令
-- [ ] CLI `search` 接入联邦搜索
-- [ ] SDK `federatedSearch()` 方法
+- [x] CLI `search` 接入联邦搜索（默认联邦，`--local` 仅本地）
+- [x] SDK `federatedSearch()` 方法
 - [ ] `POST /resolve` 批量解析
 - [ ] `GET /genes/:slug/variants` 变体列表
 - [ ] `POST /genes/:slug/deprecate` 废弃基因
