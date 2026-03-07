@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: gene-curator
-  namespace: nodeskclaw-system
+  namespace: genehub
 spec:
   schedule: "0 */6 * * *"
   concurrencyPolicy: Forbid
@@ -15,11 +15,11 @@ spec:
       template:
         spec:
           restartPolicy: Never
-          imagePullSecrets:
-            - name: cr-nodesk-center-cn-beijing
+          # imagePullSecrets:
+          #   - name: your-registry-secret
           containers:
             - name: curator
-              image: nodesk-center-cn-beijing.cr.volces.com/base-image/genehub-curator:latest
+              image: your-registry.example.com/genehub-curator:latest
               workingDir: /app/curator
               command:
                 - opencode
@@ -50,7 +50,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gene-curator-listener
-  namespace: nodeskclaw-system
+  namespace: genehub
 spec:
   replicas: 1
   selector:
@@ -61,11 +61,11 @@ spec:
       labels:
         app: gene-curator-listener
     spec:
-      imagePullSecrets:
-        - name: cr-nodesk-center-cn-beijing
+      # imagePullSecrets:
+      #   - name: your-registry-secret
       containers:
         - name: listener
-          image: nodesk-center-cn-beijing.cr.volces.com/base-image/genehub-curator:latest
+          image: your-registry.example.com/genehub-curator:latest
           workingDir: /app/curator
           command:
             - tsx
