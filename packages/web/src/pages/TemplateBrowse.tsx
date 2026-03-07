@@ -60,6 +60,7 @@ export default function TemplateBrowse() {
       .catch(() => {
         setTemplates([]);
         setTotal(0);
+        setTotalPages(0);
         setListError('列表加载失败，请刷新重试');
       })
       .finally(() => setLoading(false));

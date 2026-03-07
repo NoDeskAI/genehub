@@ -191,10 +191,13 @@ export default function GeneDetail() {
 
   useEffect(() => {
     if (!slug) return;
+    setError('');
+    setGene(null);
+    setVersions([]);
+    setVersionsError(null);
     getGene(slug)
       .then(setGene)
       .catch(() => setError('找不到该基因'));
-    setVersionsError(null);
     getGeneVersions(slug)
       .then(setVersions)
       .catch(() => setVersionsError('版本历史加载失败，请刷新重试'));

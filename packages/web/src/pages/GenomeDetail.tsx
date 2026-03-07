@@ -137,10 +137,13 @@ export default function GenomeDetail() {
 
   useEffect(() => {
     if (!slug) return;
+    setError('');
+    setGenome(null);
+    setVersions([]);
+    setVersionsError(null);
     getGenome(slug)
       .then(setGenome)
       .catch(() => setError('找不到该基因组'));
-    setVersionsError(null);
     getGenomeVersions(slug)
       .then(setVersions)
       .catch(() => setVersionsError('版本历史加载失败，请刷新重试'));

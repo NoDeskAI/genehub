@@ -1,4 +1,4 @@
-import { Search, Shield } from 'lucide-react';
+import { FlaskConical, Search, Shield } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { type Genome, listGenomes } from '@/api/client';
@@ -60,6 +60,7 @@ export default function GenomeBrowse() {
       .catch(() => {
         setGenomes([]);
         setTotal(0);
+        setTotalPages(0);
         setListError('列表加载失败，请刷新重试');
       })
       .finally(() => setLoading(false));
@@ -128,7 +129,7 @@ export default function GenomeBrowse() {
         </div>
       ) : genomes.length === 0 ? (
         <div className="text-center py-20">
-          <div className="text-4xl mb-4">🧫</div>
+          <FlaskConical className="w-12 h-12 mx-auto mb-4 text-muted" />
           <p className="text-muted">暂无基因组</p>
         </div>
       ) : (

@@ -147,10 +147,13 @@ export default function TemplateDetail() {
 
   useEffect(() => {
     if (!slug) return;
+    setError('');
+    setTemplate(null);
+    setVersions([]);
+    setVersionsError(null);
     getTemplate(slug)
       .then(setTemplate)
       .catch(() => setError('找不到该 AI 员工模板'));
-    setVersionsError(null);
     getTemplateVersions(slug)
       .then(setVersions)
       .catch(() => setVersionsError('版本历史加载失败，请刷新重试'));
