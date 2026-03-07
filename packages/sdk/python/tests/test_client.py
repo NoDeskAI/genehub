@@ -111,3 +111,16 @@ def test_api_error_raises(httpx_mock: pytest.FixtureRequest) -> None:
     with pytest.raises(GeneHubError) as exc_info:
         client.get_gene("not-found")
     assert "gene_not_found" in str(exc_info.value) or "基因" in str(exc_info.value)
+
+
+def test_non_json_response_raises_genehub_error(httpx_mock: pytest.FixtureRequest) -> None:
+    """服务端返回非 JSON（如 502 HTML）时应抛出 GeneHubError。"""
+    httpx_mock.add_response(
+        url="https://registry.example.com/api/v1/genes/clean-code",
+        status_code=502,
+        content=b"<html>Bad Gateway</html>",
+    )
+    client = GeneHubClient(base_url="https://registry.example.com")
+    with pytest.raises(GeneHubError) as exc_info:
+        client.get_gene("clean-code")
+    assert "502" in str(exc_info.value) or "Bad Gateway" in str(exc_info.value)

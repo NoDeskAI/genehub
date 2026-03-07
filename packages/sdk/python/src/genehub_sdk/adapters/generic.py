@@ -47,7 +47,8 @@ class GenericAdapter(GeneAdapter):
 
         gene_yaml = target_dir / "gene.yaml"
         gene_yaml.write_text(
-            yaml.dump(manifest, allow_unicode=True, default_flow_style=False), encoding="utf-8"
+            yaml.safe_dump(manifest, allow_unicode=True, default_flow_style=False),
+            encoding="utf-8",
         )
         files.append(str(gene_yaml))
 
