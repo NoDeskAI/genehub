@@ -514,7 +514,7 @@ GitHub OAuth                   API Key
 | 搜索引擎 | PostgreSQL ILIKE（当前）/ Meilisearch（Future） | 先简后繁 |
 | CLI | TypeScript (tsx) | 跨平台，npm 全局安装 |
 | Web 前端 | React 19 + Vite 7 + Tailwind CSS 4 + Radix UI | 基因浏览、搜索、API Key 管理（6 个页面） |
-| SDK | TypeScript（已实现）+ Python（Future） | 覆盖主流 Agent 开发语言 |
+| SDK | TypeScript（已实现）+ Python（已实现最小可用） | 覆盖主流 Agent 开发语言 |
 | 分发 | npm + pip + GitHub Releases | 兼容主流包管理器 |
 | Git Hooks | lefthook | pre-commit 执行 Biome lint |
 
@@ -725,11 +725,19 @@ genehub/
 │   │   └── package.json
 │   │
 │   ├── sdk/
-│   │   └── typescript/             # TypeScript SDK（@nodeskai/genehub-sdk）
-│   │       └── src/
-│   │           ├── client.ts       # GeneHub API 客户端
-│   │           ├── learning/       # 标准学习协议引擎（L1/L2）
-│   │           └── adapters/       # 产品适配器（openclaw / nanobot / generic）
+│   │   ├── typescript/             # TypeScript SDK（@nodeskai/genehub-sdk）
+│   │   │   └── src/
+│   │   │       ├── client.ts       # GeneHub API 客户端
+│   │   │       ├── learning/       # 标准学习协议引擎（L1/L2）
+│   │   │       └── adapters/       # 产品适配器（openclaw / nanobot / generic）
+│   │   └── python/                 # Python SDK（genehub-sdk，最小可用）
+│   │       ├── pyproject.toml
+│   │       ├── src/genehub_sdk/
+│   │       │   ├── client.py       # GeneHubClient
+│   │       │   ├── types.py        # Gene / GeneManifest / 适配器类型
+│   │       │   ├── adapters/       # GeneAdapter 基类 + GenericAdapter
+│   │       │   └── learning/       # LearningEngine
+│   │       └── tests/
 │   │
 │   ├── cli/                        # 命令行工具（@nodeskai/genehub）
 │   │   └── src/
@@ -774,7 +782,7 @@ genehub/
 ```
 
 > **未实现的目录**（计划中）：
-> - `packages/sdk/python/` — Python SDK（M3 计划）
+> - ~~`packages/sdk/python/`~~ — Python SDK 已实现最小可用（Client + Adapter + GenericAdapter + LearningEngine）
 > - `adapters/` — 安装方式兼容层（clawhub / npm / pip，后续扩展）
 > - `genes/rules/`、`genes/protocols/` — 规则类、协议类基因（当前仅有 skills 分类）
 
@@ -1359,7 +1367,7 @@ MINIMAX_API_KEY: sk-xxx
 - [x] Web 版本历史展开查看文件内容和安装命令
 - [x] GitHub OAuth + API Key 认证 + 管理员角色
 - [x] GitHub Actions CI/CD（lint + build + test + npm publish + Docker deploy + K8s rolling update）
-- [ ] Python SDK
+- [x] Python SDK（最小可用：GeneHubClient、GeneAdapter、GenericAdapter、LearningEngine）
 - [ ] npm / pip 分发支持
 - [ ] 基因效能数据聚合与排行
 - [ ] 全文搜索升级（Meilisearch）
