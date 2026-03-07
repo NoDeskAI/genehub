@@ -173,6 +173,7 @@ describe('command registration', () => {
       'install',
       'uninstall',
       'search',
+      'info',
       'list',
       'publish',
       'init',
