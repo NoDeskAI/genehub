@@ -20,6 +20,7 @@ export default function GenomeBrowse() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const { isAdmin } = useAuth();
 
   const q = searchParams.get('q') || '';
@@ -42,6 +43,7 @@ export default function GenomeBrowse() {
 
   useEffect(() => {
     setLoading(true);
+    setListError(null);
     listGenomes({
       q: q || undefined,
       category: category || undefined,
@@ -58,6 +60,7 @@ export default function GenomeBrowse() {
       .catch(() => {
         setGenomes([]);
         setTotal(0);
+        setListError('列表加载失败，请刷新重试');
       })
       .finally(() => setLoading(false));
   }, [q, category, sort, page, isAdmin]);
@@ -118,6 +121,10 @@ export default function GenomeBrowse() {
               <Skeleton className="h-4 w-3/4" />
             </div>
           ))}
+        </div>
+      ) : listError ? (
+        <div className="text-center py-20">
+          <p className="text-red-600 text-sm">{listError}</p>
         </div>
       ) : genomes.length === 0 ? (
         <div className="text-center py-20">

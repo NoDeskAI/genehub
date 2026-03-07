@@ -1,4 +1,4 @@
-import { ExternalLink, Globe } from 'lucide-react';
+import { Dna, ExternalLink, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { FederatedGeneItem } from '@/api/client';
 import { Badge } from './ui/badge';
@@ -11,7 +11,7 @@ export default function FederatedSearchCard({ item }: { item: FederatedGeneItem 
     <Card className="p-5 h-full hover:shadow-md hover:border-primary/30 transition-all">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-xl shrink-0">🧬</span>
+          <Dna className="w-5 h-5 shrink-0 text-primary" />
           <h3 className="font-semibold text-gray-900 group-hover:text-primary transition truncate">
             {item.clawhub_display_name || item.name}
           </h3>

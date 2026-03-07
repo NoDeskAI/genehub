@@ -132,6 +132,7 @@ export default function GenomeDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [genome, setGenome] = useState<Genome | null>(null);
   const [versions, setVersions] = useState<GeneVersion[]>([]);
+  const [versionsError, setVersionsError] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -139,9 +140,10 @@ export default function GenomeDetail() {
     getGenome(slug)
       .then(setGenome)
       .catch(() => setError('找不到该基因组'));
+    setVersionsError(null);
     getGenomeVersions(slug)
       .then(setVersions)
-      .catch(() => {});
+      .catch(() => setVersionsError('版本历史加载失败，请刷新重试'));
   }, [slug]);
 
   if (error) {
@@ -263,7 +265,11 @@ export default function GenomeDetail() {
             </TabsContent>
 
             <TabsContent value="versions">
-              <VersionHistory versions={versions} slug={genome.slug} entityType="genome" />
+              {versionsError ? (
+                <p className="text-sm text-red-600">{versionsError}</p>
+              ) : (
+                <VersionHistory versions={versions} slug={genome.slug} entityType="genome" />
+              )}
             </TabsContent>
           </Tabs>
         </div>

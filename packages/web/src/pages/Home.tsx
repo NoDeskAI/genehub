@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle, Search } from 'lucide-react';
+import { ArrowRight, Bot, CheckCircle, Dna, Plug, Rocket, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { type Gene, listGenes } from '@/api/client';
@@ -80,14 +80,26 @@ export default function Home() {
               </button>
             </div>
           </form>
-          <div className="mt-6 flex justify-center gap-4 text-sm text-white/60 flex-wrap">
-            <span>🧬 {totalGenes > 0 ? `${totalGenes} 个基因` : '基因持续上新'}</span>
+          <div className="mt-6 flex justify-center items-center gap-4 text-sm text-white/60 flex-wrap">
+            <span className="flex items-center gap-1.5">
+              <Dna className="w-4 h-4 shrink-0" />
+              {totalGenes > 0 ? `${totalGenes} 个基因` : '基因持续上新'}
+            </span>
             <span>•</span>
-            <span>🚀 L0-L3 学习协议</span>
+            <span className="flex items-center gap-1.5">
+              <Rocket className="w-4 h-4 shrink-0" />
+              L0-L3 学习协议
+            </span>
             <span>•</span>
-            <span>🔌 多平台兼容</span>
+            <span className="flex items-center gap-1.5">
+              <Plug className="w-4 h-4 shrink-0" />
+              多平台兼容
+            </span>
             <span>•</span>
-            <span>🤖 AI Curator 自动审核</span>
+            <span className="flex items-center gap-1.5">
+              <Bot className="w-4 h-4 shrink-0" />
+              AI Curator 自动审核
+            </span>
           </div>
         </div>
       </section>
