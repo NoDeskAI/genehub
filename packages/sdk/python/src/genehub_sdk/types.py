@@ -1,6 +1,6 @@
 """GeneHub 数据类型，与 Registry API 及标准学习协议对齐。"""
 
-from typing import Any, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 
 class Author(TypedDict, total=False):
@@ -51,7 +51,9 @@ class Learning(TypedDict, total=False):
     scenarios: list[LearningScenario]
 
 
-class GeneManifest(TypedDict, total=False):
+class GeneManifest(TypedDict, total=True):
+    """基因清单；slug/name/version 等为必填，其余为可选。"""
+
     slug: str
     name: str
     version: str
@@ -59,15 +61,15 @@ class GeneManifest(TypedDict, total=False):
     short_description: str
     category: str
     tags: list[str]
-    icon: str | None
-    author: Author | None
     compatibility: list[CompatibilityEntry]
-    dependencies: list[DependencyEntry]
-    synergies: list[str]
     skill: Skill
-    rules: list[Rule]
-    config: GeneConfig | None
-    learning: Learning | None
+    icon: NotRequired[str | None]
+    author: NotRequired[Author | None]
+    dependencies: NotRequired[list[DependencyEntry]]
+    synergies: NotRequired[list[str]]
+    rules: NotRequired[list[Rule]]
+    config: NotRequired[GeneConfig | None]
+    learning: NotRequired[Learning | None]
 
 
 class Gene(TypedDict, total=False):

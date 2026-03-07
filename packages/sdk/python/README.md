@@ -50,7 +50,7 @@ uv add ./packages/sdk/python
 from genehub_sdk import GeneHubClient
 
 client = GeneHubClient(base_url="https://registry.genehub.dev", token="ghb_xxx")
-genes = client.search_genes(q="code")
+genes = client.search_genes("code")
 gene = client.get_gene("clean-code")
 manifest = client.get_manifest("clean-code", version="1.0.0")
 published = client.publish(manifest)

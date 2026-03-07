@@ -1,6 +1,7 @@
 """标准学习协议引擎（最小可用）：创建学习任务、检查结果。"""
 
 import re
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -53,9 +54,7 @@ class LearningEngine:
                 "short_description": manifest.get("short_description") or "",
             },
             "callback_path": str(self._results_dir / f"{slug}.md"),
-            "created_at": __import__("datetime")
-            .datetime.now(__import__("datetime").timezone.utc)
-            .isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
         if learning:
             task["learning"] = {

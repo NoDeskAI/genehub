@@ -1,5 +1,6 @@
 """GeneHub Registry HTTP 客户端，与 TypeScript SDK client 对齐。"""
 
+import json
 from typing import Any
 
 import httpx
@@ -37,7 +38,11 @@ class GeneHubClient:
                 headers=self._headers(),
                 **kwargs,
             )
-        data = resp.json()
+        try:
+            data = resp.json()
+        except json.JSONDecodeError:
+            msg = resp.text or f"HTTP {resp.status_code}"
+            raise GeneHubError(msg) from None
         body = data if isinstance(data, dict) else {}
         code = body.get("code", -1)
         if not resp.is_success or code != 0:
@@ -58,24 +63,22 @@ class GeneHubClient:
         page_size: int | None = None,
     ) -> list[Gene]:
         """搜索基因列表。返回当前页的 items；完整分页信息可后续扩展。"""
-        params: list[tuple[str, str]] = []
+        params: dict[str, str | int] = {}
         if query:
-            params.append(("q", query))
+            params["q"] = query
         if category:
-            params.append(("category", category))
+            params["category"] = category
         if tags:
-            params.append(("tags", ",".join(tags)))
+            params["tags"] = ",".join(tags)
         if compatibility:
-            params.append(("compatibility", compatibility))
+            params["compatibility"] = compatibility
         if sort:
-            params.append(("sort", sort))
+            params["sort"] = sort
         if page is not None:
-            params.append(("page", str(page)))
+            params["page"] = page
         if page_size is not None:
-            params.append(("page_size", str(page_size)))
-        qs = "&".join(f"{k}={v}" for k, v in params)
-        path = f"/api/v1/genes?{qs}" if qs else "/api/v1/genes"
-        result = self._request("GET", path)
+            params["page_size"] = page_size
+        result = self._request("GET", "/api/v1/genes", params=params)
         if isinstance(result, dict) and "items" in result:
             return result["items"]
         return result if isinstance(result, list) else []
@@ -86,10 +89,8 @@ class GeneHubClient:
 
     def get_manifest(self, slug: str, version: str | None = None) -> GeneManifest:
         """获取基因 Manifest；可选 version 指定版本。"""
-        path = f"/api/v1/genes/{slug}/manifest"
-        if version:
-            path += f"?version={version}"
-        return self._request("GET", path)
+        params = {"version": version} if version else None
+        return self._request("GET", f"/api/v1/genes/{slug}/manifest", params=params)
 
     def publish(self, manifest: GeneManifest, files: dict[str, str] | None = None) -> Gene:
         """发布新基因。body: { manifest, files? }。"""
