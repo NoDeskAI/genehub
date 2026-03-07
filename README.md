@@ -97,6 +97,7 @@ npm install -g @nodeskai/genehub
 |---|---|
 | [`@nodeskai/genehub`](https://www.npmjs.com/package/@nodeskai/genehub) | CLI 命令行工具 |
 | [`@nodeskai/genehub-sdk`](https://www.npmjs.com/package/@nodeskai/genehub-sdk) | TypeScript SDK（Adapters + Learning Engine） |
+| `genehub-sdk` (PyPI / `packages/sdk/python`) | Python SDK（最小可用：Client + Adapter + GenericAdapter + LearningEngine） |
 | [`@nodeskai/genehub-types`](https://www.npmjs.com/package/@nodeskai/genehub-types) | 共享类型定义与 Zod Schemas |
 
 ## 快速开始
@@ -210,6 +211,7 @@ genehub/
 │   │       ├── AGENTS.md          # Curator 系统提示词
 │   │       └── listener.ts        # 事件监听器（LISTEN/NOTIFY）
 │   ├── sdk/typescript/             # @nodeskai/genehub-sdk - TypeScript SDK + Adapters
+│   ├── sdk/python/                 # genehub-sdk - Python SDK（Client + Adapter + GenericAdapter + LearningEngine）
 │   ├── cli/                        # @nodeskai/genehub - 命令行工具 (Commander.js)
 │   └── web/                        # 基因仓库 Web UI (React + Vite + Tailwind)
 ├── genes/                          # 官方基因库
