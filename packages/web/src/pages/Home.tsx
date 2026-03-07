@@ -3,18 +3,19 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { type Gene, listGenes } from '@/api/client';
 import GeneCard from '@/components/GeneCard';
+import LucideIcon from '@/components/LucideIcon';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const CATEGORIES = [
-  { id: 'development', label: '开发', icon: '💻', desc: '编码、测试、重构' },
-  { id: 'efficiency', label: '效率', icon: '⚡', desc: '流程、自动化、工具' },
-  { id: 'data', label: '数据', icon: '📊', desc: '分析、可视化、建模' },
-  { id: 'communication', label: '沟通', icon: '💬', desc: '表达、协作、汇报' },
-  { id: 'creative', label: '创意', icon: '🎨', desc: '设计、写作、脑暴' },
-  { id: 'security', label: '安全', icon: '🔒', desc: '审计、加固、合规' },
-  { id: 'operations', label: '运维', icon: '🔧', desc: '部署、监控、运维' },
-  { id: 'network', label: '网络', icon: '🌐', desc: '协议、API、网关' },
+  { id: 'development', label: '开发', icon: 'Code2', desc: '编码、测试、重构' },
+  { id: 'efficiency', label: '效率', icon: 'Zap', desc: '流程、自动化、工具' },
+  { id: 'data', label: '数据', icon: 'BarChart2', desc: '分析、可视化、建模' },
+  { id: 'communication', label: '沟通', icon: 'MessageCircle', desc: '表达、协作、汇报' },
+  { id: 'creative', label: '创意', icon: 'Palette', desc: '设计、写作、脑暴' },
+  { id: 'security', label: '安全', icon: 'Shield', desc: '审计、加固、合规' },
+  { id: 'operations', label: '运维', icon: 'Wrench', desc: '部署、监控、运维' },
+  { id: 'network', label: '网络', icon: 'Globe', desc: '协议、API、网关' },
 ];
 
 export default function Home() {
@@ -114,7 +115,7 @@ export default function Home() {
               to={`/browse?category=${cat.id}`}
               className="bg-surface rounded-xl border border-border p-4 text-center hover:shadow-md hover:border-primary/30 transition-all"
             >
-              <div className="text-3xl mb-2">{cat.icon}</div>
+              <LucideIcon name={cat.icon} className="w-8 h-8 mx-auto mb-2" />
               <div className="font-medium text-gray-900 text-sm">{cat.label}</div>
               <div className="text-xs text-muted mt-1">{cat.desc}</div>
             </Link>

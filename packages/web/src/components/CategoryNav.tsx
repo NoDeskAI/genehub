@@ -1,12 +1,14 @@
+import LucideIcon from '@/components/LucideIcon';
+
 const CATEGORIES = [
-  { id: 'development', label: '开发', icon: '💻' },
-  { id: 'efficiency', label: '效率', icon: '⚡' },
-  { id: 'data', label: '数据', icon: '📊' },
-  { id: 'communication', label: '沟通', icon: '💬' },
-  { id: 'creative', label: '创意', icon: '🎨' },
-  { id: 'security', label: '安全', icon: '🔒' },
-  { id: 'operations', label: '运维', icon: '🔧' },
-  { id: 'network', label: '网络', icon: '🌐' },
+  { id: 'development', label: '开发', icon: 'Code2' },
+  { id: 'efficiency', label: '效率', icon: 'Zap' },
+  { id: 'data', label: '数据', icon: 'BarChart2' },
+  { id: 'communication', label: '沟通', icon: 'MessageCircle' },
+  { id: 'creative', label: '创意', icon: 'Palette' },
+  { id: 'security', label: '安全', icon: 'Shield' },
+  { id: 'operations', label: '运维', icon: 'Wrench' },
+  { id: 'network', label: '网络', icon: 'Globe' },
 ] as const;
 
 export default function CategoryNav({
@@ -40,7 +42,10 @@ export default function CategoryNav({
               : 'bg-surface border border-border text-muted hover:text-gray-900 hover:border-gray-300'
           }`}
         >
-          {cat.icon} {cat.label}
+          <span className="inline-flex items-center gap-1.5">
+            <LucideIcon name={cat.icon} className="w-3.5 h-3.5 shrink-0" />
+            {cat.label}
+          </span>
         </button>
       ))}
     </div>

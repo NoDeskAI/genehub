@@ -92,7 +92,9 @@ export default function Browse() {
         })
         .catch(() => {
           setFederatedItems([]);
+          setFederatedSources({ local: 0, clawhub: 0 });
           setTotal(0);
+          setTotalPages(0);
           setListError('搜索加载失败，请刷新重试');
         })
         .finally(() => setLoading(false));
@@ -120,6 +122,7 @@ export default function Browse() {
       .catch(() => {
         setGenes([]);
         setTotal(0);
+        setTotalPages(0);
         setListError('列表加载失败，请刷新重试');
       })
       .finally(() => setLoading(false));
