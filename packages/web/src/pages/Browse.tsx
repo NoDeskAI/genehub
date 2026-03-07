@@ -50,6 +50,7 @@ export default function Browse() {
   const [loading, setLoading] = useState(true);
   const { isAdmin } = useAuth();
 
+  const [listError, setListError] = useState<string | null>(null);
   const [federatedMode, setFederatedMode] = useState(false);
   const [federatedItems, setFederatedItems] = useState<FederatedGeneItem[]>([]);
   const [federatedSources, setFederatedSources] = useState<{ local: number; clawhub: number }>({
@@ -81,6 +82,7 @@ export default function Browse() {
   useEffect(() => {
     if (federatedMode && q.trim()) {
       setLoading(true);
+      setListError(null);
       federatedSearch({ q, category: category || undefined, limit: 20 })
         .then((result) => {
           setFederatedItems(result.items);
@@ -91,12 +93,14 @@ export default function Browse() {
         .catch(() => {
           setFederatedItems([]);
           setTotal(0);
+          setListError('搜索加载失败，请刷新重试');
         })
         .finally(() => setLoading(false));
       return;
     }
 
     setLoading(true);
+    setListError(null);
     listGenes({
       q: q || undefined,
       category: category || undefined,
@@ -116,6 +120,7 @@ export default function Browse() {
       .catch(() => {
         setGenes([]);
         setTotal(0);
+        setListError('列表加载失败，请刷新重试');
       })
       .finally(() => setLoading(false));
   }, [q, category, tag, compatibility, sort, page, federatedMode, isAdmin, reviewStatus]);
@@ -258,10 +263,14 @@ export default function Browse() {
             </div>
           ))}
         </div>
+      ) : listError ? (
+        <div className="text-center py-20">
+          <p className="text-red-600 text-sm">{listError}</p>
+        </div>
       ) : showFederated ? (
         federatedItems.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-4xl mb-4">🔍</div>
+            <Search className="w-12 h-12 mx-auto mb-4 text-muted" />
             <p className="text-muted">没有找到匹配的基因</p>
           </div>
         ) : (
@@ -273,7 +282,7 @@ export default function Browse() {
         )
       ) : genes.length === 0 ? (
         <div className="text-center py-20">
-          <div className="text-4xl mb-4">🔍</div>
+          <Search className="w-12 h-12 mx-auto mb-4 text-muted" />
           <p className="text-muted">没有找到匹配的基因</p>
         </div>
       ) : (

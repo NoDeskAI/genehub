@@ -20,6 +20,7 @@ export default function TemplateBrowse() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const { isAdmin } = useAuth();
 
   const q = searchParams.get('q') || '';
@@ -42,6 +43,7 @@ export default function TemplateBrowse() {
 
   useEffect(() => {
     setLoading(true);
+    setListError(null);
     listTemplates({
       q: q || undefined,
       category: category || undefined,
@@ -58,6 +60,7 @@ export default function TemplateBrowse() {
       .catch(() => {
         setTemplates([]);
         setTotal(0);
+        setListError('列表加载失败，请刷新重试');
       })
       .finally(() => setLoading(false));
   }, [q, category, sort, page, isAdmin]);
@@ -116,6 +119,10 @@ export default function TemplateBrowse() {
               <Skeleton className="h-4 w-3/4" />
             </div>
           ))}
+        </div>
+      ) : listError ? (
+        <div className="text-center py-20">
+          <p className="text-red-600 text-sm">{listError}</p>
         </div>
       ) : templates.length === 0 ? (
         <div className="text-center py-20">

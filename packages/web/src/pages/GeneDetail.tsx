@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   Bot,
   Calendar,
   Check,
@@ -185,6 +186,7 @@ export default function GeneDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [gene, setGene] = useState<Gene | null>(null);
   const [versions, setVersions] = useState<GeneVersion[]>([]);
+  const [versionsError, setVersionsError] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -192,15 +194,16 @@ export default function GeneDetail() {
     getGene(slug)
       .then(setGene)
       .catch(() => setError('找不到该基因'));
+    setVersionsError(null);
     getGeneVersions(slug)
       .then(setVersions)
-      .catch(() => {});
+      .catch(() => setVersionsError('版本历史加载失败，请刷新重试'));
   }, [slug]);
 
   if (error) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-20 text-center">
-        <div className="text-5xl mb-4">😵</div>
+        <AlertCircle className="w-14 h-14 mx-auto mb-4 text-muted" />
         <p className="text-xl text-gray-900 mb-2">{error}</p>
         <Link to="/browse" className="text-primary hover:underline">
           返回浏览
@@ -390,7 +393,11 @@ export default function GeneDetail() {
             <TabsContent value="reviews">{slug && <ReviewList slug={slug} />}</TabsContent>
 
             <TabsContent value="versions">
-              <VersionHistory versions={versions} slug={gene.slug} />
+              {versionsError ? (
+                <p className="text-sm text-red-600">{versionsError}</p>
+              ) : (
+                <VersionHistory versions={versions} slug={gene.slug} />
+              )}
             </TabsContent>
           </Tabs>
         </div>

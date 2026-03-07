@@ -142,6 +142,7 @@ export default function TemplateDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [template, setTemplate] = useState<AgentTemplate | null>(null);
   const [versions, setVersions] = useState<GeneVersion[]>([]);
+  const [versionsError, setVersionsError] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -149,9 +150,10 @@ export default function TemplateDetail() {
     getTemplate(slug)
       .then(setTemplate)
       .catch(() => setError('找不到该 AI 员工模板'));
+    setVersionsError(null);
     getTemplateVersions(slug)
       .then(setVersions)
-      .catch(() => {});
+      .catch(() => setVersionsError('版本历史加载失败，请刷新重试'));
   }, [slug]);
 
   if (error) {
@@ -322,7 +324,11 @@ export default function TemplateDetail() {
             </TabsContent>
 
             <TabsContent value="versions">
-              <VersionHistory versions={versions} slug={template.slug} entityType="template" />
+              {versionsError ? (
+                <p className="text-sm text-red-600">{versionsError}</p>
+              ) : (
+                <VersionHistory versions={versions} slug={template.slug} entityType="template" />
+              )}
             </TabsContent>
           </Tabs>
         </div>
