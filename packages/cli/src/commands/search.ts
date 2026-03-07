@@ -19,6 +19,8 @@ export const searchCommand = new Command('search')
     const client = new GeneHubClient({ registryUrl: config.registryUrl, token: config.token });
 
     try {
+      const trimmedKeyword = keyword?.trim();
+
       if (opts.local) {
         const result = await client.searchGenes({
           q: keyword,
@@ -55,8 +57,44 @@ export const searchCommand = new Command('search')
         return;
       }
 
+      if (!trimmedKeyword) {
+        const result = await client.searchGenes({
+          q: undefined,
+          category: opts.category,
+          tags: opts.tags?.split(','),
+          compatibility: opts.compat,
+          sort: opts.sort,
+          page: Number(opts.page),
+        });
+
+        if (opts.json) {
+          console.log(JSON.stringify(result, null, 2));
+          return;
+        }
+
+        if (result.items.length === 0) {
+          output.info('未找到匹配的基因');
+          return;
+        }
+
+        output.table(
+          ['slug', '名称', '版本', '分类', '兼容', '安装数'],
+          result.items.map((g) => [
+            g.slug,
+            g.name,
+            g.version,
+            g.category,
+            (g.compatibility as string[]).join(', '),
+            String(g.install_count),
+          ]),
+        );
+
+        output.info(`共 ${result.total} 条结果，第 ${result.page}/${result.total_pages} 页`);
+        return;
+      }
+
       const result = await client.federatedSearch({
-        q: keyword ?? '',
+        q: trimmedKeyword,
         category: opts.category,
         limit: Number(opts.limit) || 20,
       });
