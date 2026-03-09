@@ -15,9 +15,10 @@ import { syncRouter } from './api/sync.js';
 import { templatesRouter } from './api/templates.js';
 import { webhooksRouter } from './api/webhooks.js';
 import { handleMcpRequest } from './mcp/http.js';
+import type { AuthVariables } from './middleware/auth.js';
 import { errorHandler } from './middleware/error-handler.js';
 
-export const app = new Hono();
+export const app = new Hono<{ Variables: AuthVariables }>();
 
 let healthOkCount = 0;
 app.use('*', async (c, next) => {
