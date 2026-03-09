@@ -10,6 +10,13 @@ const { apiKeys, publishers } = schema;
 
 export type AuthRole = 'public' | 'publisher' | 'admin';
 
+/** Hono Context 上由 auth 中间件注入的变量，需在 App/Router 的 Variables 中声明。 */
+export type AuthVariables = {
+  authRole?: AuthRole;
+  publisherId?: string;
+  githubLogin?: string;
+};
+
 const ADMIN_TOKEN = process.env.GENEHUB_ADMIN_TOKEN ?? 'admin-dev-token';
 const JWT_SECRET = process.env.GENEHUB_JWT_SECRET ?? 'genehub-dev-jwt-secret';
 const COOKIE_NAME = 'ghb_session';

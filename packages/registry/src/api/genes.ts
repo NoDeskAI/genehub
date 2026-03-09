@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
+import type { AuthVariables } from '../middleware/auth.js';
 import { optionalAuth, requireAuth } from '../middleware/auth.js';
 import { paginated, success } from '../middleware/response.js';
 import { federatedSearch } from '../services/federated-search.js';
 import * as geneService from '../services/gene-service.js';
 
-export const genesRouter = new Hono();
+export const genesRouter = new Hono<{ Variables: AuthVariables }>();
 
 genesRouter.get('/search', async (c) => {
   const q = c.req.query('q') ?? '';
