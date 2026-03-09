@@ -2,9 +2,9 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: gitea-data
-  namespace: nodeskclaw-system
+  namespace: genehub
 spec:
-  storageClassName: ebs-ssd
+  # storageClassName: ebs-ssd  # change to your cluster's storage class
   accessModes:
     - ReadWriteOnce
   resources:
@@ -15,7 +15,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: genehub-gitea
-  namespace: nodeskclaw-system
+  namespace: genehub
   labels:
     app: genehub-gitea
 spec:
@@ -30,11 +30,11 @@ spec:
       labels:
         app: genehub-gitea
     spec:
-      imagePullSecrets:
-        - name: cr-nodesk-center-cn-beijing
+      # imagePullSecrets:
+      #   - name: your-registry-secret
       containers:
         - name: gitea
-          image: nodesk-center-cn-beijing.cr.volces.com/base-image/gitea:1.22
+          image: gitea/gitea:1.22
           ports:
             - containerPort: 3000
           env:
@@ -91,7 +91,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: genehub-gitea
-  namespace: nodeskclaw-system
+  namespace: genehub
   labels:
     app: genehub-gitea
 spec:

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: genehub-app-secret
-  namespace: nodeskclaw-system
+  namespace: genehub
 type: Opaque
 stringData:
   DATABASE_URL: "postgres://genehub:<CHANGE_ME>@genehub-postgres:5432/genehub"
@@ -15,7 +15,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: genehub
-  namespace: nodeskclaw-system
+  namespace: genehub
   labels:
     app: genehub
 spec:
@@ -28,11 +28,11 @@ spec:
       labels:
         app: genehub
     spec:
-      imagePullSecrets:
-        - name: cr-nodesk-center-cn-beijing
+      # imagePullSecrets:
+      #   - name: your-registry-secret
       containers:
         - name: genehub
-          image: nodesk-center-cn-beijing.cr.volces.com/base-image/genehub:latest
+          image: your-registry.example.com/genehub:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -62,7 +62,7 @@ spec:
                   name: genehub-app-secret
                   key: GENEHUB_ADMIN_TOKEN
             - name: GENEHUB_ADMIN_LOGINS
-              value: "xzq-xu"
+              value: "<CHANGE_ME>"
             - name: GITEA_URL
               value: "http://genehub-gitea:3000"
           resources:
@@ -89,7 +89,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: genehub
-  namespace: nodeskclaw-system
+  namespace: genehub
   labels:
     app: genehub
 spec:
@@ -104,7 +104,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: genehub-nginx-route
-  namespace: nodeskclaw-system
+  namespace: genehub
 spec:
   ingressClassName: nginx
   rules:

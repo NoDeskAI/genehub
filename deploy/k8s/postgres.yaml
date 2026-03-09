@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: genehub-postgres-secret
-  namespace: nodeskclaw-system
+  namespace: genehub
 type: Opaque
 stringData:
   POSTGRES_USER: genehub
@@ -13,7 +13,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: genehub-postgres
-  namespace: nodeskclaw-system
+  namespace: genehub
   labels:
     app: genehub-postgres
 spec:
@@ -27,11 +27,11 @@ spec:
       labels:
         app: genehub-postgres
     spec:
-      imagePullSecrets:
-        - name: cr-nodesk-center-cn-beijing
+      # imagePullSecrets:
+      #   - name: your-registry-secret
       containers:
         - name: postgres
-          image: nodesk-center-cn-beijing.cr.volces.com/base-image/postgres:15-alpine
+          image: postgres:15-alpine
           imagePullPolicy: Always
           ports:
             - containerPort: 5432
@@ -73,7 +73,7 @@ spec:
         name: pgdata
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: ebs-ssd
+        # storageClassName: ebs-ssd  # change to your cluster's storage class
         resources:
           requests:
             storage: 10Gi
@@ -82,7 +82,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: genehub-postgres
-  namespace: nodeskclaw-system
+  namespace: genehub
   labels:
     app: genehub-postgres
 spec:
