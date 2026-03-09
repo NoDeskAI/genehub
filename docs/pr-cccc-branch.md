@@ -2,10 +2,7 @@
 
 ---
 
-在 GitHub 创建 PR 时，将下方「PR 正文」整段复制到描述框。
-
-- **仅关闭已解决**：正文中已写 `Closes #8`、`Closes #9`，合并后 #8、#9 会自动关闭。#4、#5、#6、#7 本分支未实现，不建议写 Closes。
-- **若希望合并后关闭全部 6 个 Issue**：在 PR 描述中把 `Closes #8`、`Closes #9` 改为一行 `Closes #4, Closes #5, Closes #6, Closes #7, Closes #8, Closes #9` 即可（注意 #4/#5/#6/#7 本 PR 未实现，一般仅维护者确认后才这样关）。
+在 GitHub 创建 PR 时，将下方「PR 正文」整段复制到描述框。PR 合并后，正文中的 6 个 `Closes #N` 会使对应 Issue 自动关闭。
 
 ---
 
@@ -15,19 +12,23 @@
 
 本 PR 包含 Web 端错误态与 emoji 替换、Python SDK 最小可用实现、Registry Context 类型修复等改动。
 
+Closes #4
+Closes #5
+Closes #6
+Closes #7
 Closes #8
 Closes #9
 
-### 关联的 Open Issues（[GeneHub Issues](https://github.com/NoDeskAI/genehub/issues)）
+### 关联的 Issues（[GeneHub Issues](https://github.com/NoDeskAI/genehub/issues)，合并后将自动关闭）
 
-| Issue | 标题 | 本 PR 是否解决 |
-|-------|------|----------------|
-| #9 | [sdk] Python SDK 初始化实现 | 是，已实现最小可用（Client + Adapter + GenericAdapter + LearningEngine） |
-| #8 | [web] 版本历史加载失败静默吞错 + 违规使用 emoji | 是，已修复列表/版本历史错误态展示并移除 emoji 改用 Lucide 图标 |
-| #7 | [cli] 实现 genehub info 命令，查看单个基因详情 | 否，未实现 |
-| #6 | [cli] search 命令未接入联邦搜索，无法搜到外部基因源 | 否，未在本 PR 改动 |
-| #5 | [sdk] Nanobot Adapter 缺少测试覆盖，config.nanobot 配置注入未实现 | 否，未实现 |
-| #4 | [registry] 删除基因/基因组/模板时 Gitea 仓库清理失败不抛错，导致数据不一致 | 否，未实现 |
+| Issue | 标题 |
+|-------|------|
+| #9 | [sdk] Python SDK 初始化实现 |
+| #8 | [web] 版本历史加载失败静默吞错 + 违规使用 emoji |
+| #7 | [cli] 实现 genehub info 命令，查看单个基因详情 |
+| #6 | [cli] search 命令未接入联邦搜索，无法搜到外部基因源 |
+| #5 | [sdk] Nanobot Adapter 缺少测试覆盖，config.nanobot 配置注入未实现 |
+| #4 | [registry] 删除基因/基因组/模板时 Gitea 仓库清理失败不抛错，导致数据不一致 |
 
 ### 主要变更
 
